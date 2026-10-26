@@ -11,7 +11,7 @@ import pandas as pd
 
 from . import data, notify, research
 from .config import SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
-from .engine import cost_price, hold_bars, run, simulate
+from .engine import cost_price, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
 from . import indicators as ta
 from .sizing import lots_for
 
@@ -60,6 +60,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     min_lot_risk = round(0.01 * sl_dist * size.get("value_per_point_per_lot", 0), 2)  # what the broker's minimum lot would risk
     bar_t = df.index[-1]
     tfm = TIMEFRAMES[cfg["tf"]]
+    entry_t = bar_t + pd.Timedelta(minutes=tfm)
+    close_by = min(entry_t + pd.Timedelta(hours=p["max_hold_h"]), friday_cutoff(entry_t))  # Friday 20:00 Bangkok at the latest
     return {
         "id": f"{sym}-{cfg['tf']}-{cfg['strategy']}-{int(bar_t.timestamp())}",
         "created": datetime.now(timezone.utc).isoformat(),
@@ -75,7 +77,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "reward_usd": round(size["actual_risk_usd"] * float(p["rr"]), 2), "below_min_lot": size["below_min_lot"],
         "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk,
         "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
-        "max_hold_h": p["max_hold_h"], "close_by": (bar_t + pd.Timedelta(minutes=tfm) + pd.Timedelta(hours=p["max_hold_h"])).isoformat(),
+        "max_hold_h": p["max_hold_h"], "close_by": close_by.isoformat(),
         "price_source": data.source_for(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
         "outcome": "open", "outcome_r": None, "exit_time": None, "user_status": "new",
     }
@@ -90,10 +92,12 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     a = ta.atr(h, l, c, 14)
     p = sig["params"]
-    res = simulate(o, h, l, c, i + 1, sig["dir"], float(p["sl_atr"]) * a[i], float(p["rr"]), hold_bars(p, sig["tf"]), cost_price(spec))
+    wlast, _, _ = week_guard(df.index, sig["tf"])
+    res = simulate(o, h, l, c, i + 1, sig["dir"], float(p["sl_atr"]) * a[i], float(p["rr"]), hold_bars(p, sig["tf"]), cost_price(spec),
+                   int(wlast[i + 1]))
     if res:
         k, px, reason, entry, *_ = res
-        sig.update(outcome={"SL": "loss", "TP": "win", "Time": "time"}[reason],
+        sig.update(outcome={"SL": "loss", "TP": "win", "Time": "time", "Fri": "time"}[reason], exit_reason=reason,
                    outcome_r=round(sig["dir"] * (px - entry) / (float(p["sl_atr"]) * a[i]), 3),
                    exit_time=df.index[k].isoformat(), exit_price=round(float(px), spec["digits"]))
 
@@ -117,7 +121,9 @@ def scan_once() -> list[dict]:
                 res = run(df, cfg["strategy"], cfg["params"], symbol_spec(sym, settings), cfg["tf"])
                 n = len(df)
                 flat = res["open_trade"] is None and (not res["trades"] or res["trades"][-1]["exit_i"] < n - 1)
-                if res["last_signal"] and flat and np.isfinite(res["atr_last"]):
+                entry_t = df.index[-1] + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])
+                weekend = weekend_blocked(entry_t) or friday_cutoff(entry_t) < entry_t + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])
+                if res["last_signal"] and flat and np.isfinite(res["atr_last"]) and not weekend:
                     s = _make_signal(sym, cfg, df, res, settings)
                     if s["id"] not in known:
                         sigs.insert(0, s)

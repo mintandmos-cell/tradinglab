@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from . import indicators as ta
-from .engine import cost_price, hold_bars, run, simulate
+from .engine import cost_price, hold_bars, run, simulate, week_guard
 from .metrics import summarize
 from .strategies import grid
 
@@ -112,6 +112,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
     a = ta.atr(h, l, c, 14)
     idx = df.index
     cost = cost_price(spec)
+    wlast, wblock, _ = week_guard(idx, tf)
     rng = np.random.default_rng(seed)
     p_long = np.mean([t["dir"] > 0 for t in trades])
     per_fold = {}
@@ -129,11 +130,11 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
                 continue
             H = hold_bars(f["p"], tf)
             for i in rng.integers(f["lo"], f["hi"], size=f["n"]):
-                if not np.isfinite(a[i]) or a[i] <= 0:
+                if not np.isfinite(a[i]) or a[i] <= 0 or wblock[i + 1]:
                     continue
                 d = 1 if rng.random() < p_long else -1
                 sl_dist = f["p"]["sl_atr"] * a[i]
-                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost)
+                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost, int(wlast[i + 1]))
                 if res:
                     rs.append(d * (res[1] - res[3]) / sl_dist)
         means[s] = np.mean(rs) if rs else 0.0

@@ -11,6 +11,9 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
   - push to `main` touching app/web/research/settings: rebuild the site only.
   - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
+- Weekly flat (user's rule): every position closes by **Friday 20:00 Bangkok (13:00 UTC)**, at the close of the last bar ending by then;
+  no new entries from then until Sunday 22:00 UTC. `engine.week_guard` / `friday_cutoff` apply it in backtest, WF, random benchmark,
+  forward tracking and the signal `close_by`; exit reason "Fri".
 - Sizing: every signal risks the fixed `risk_per_trade_pct` (0.25%, user's choice) of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
   The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
@@ -41,7 +44,9 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
 7. Report to the user in a few lines; do not claim profitability the data does not show.
 
 ## Improving the strategy library — rules
-- Library: 10 strategies (Oct 2026: +tsmom, adx_trend, squeeze_breakout, session_breakout, ema_pullback, range_fade) → 104 combos per TF, 208 per symbol.
+- Library: 20 strategies (Oct 2026: +tsmom, adx_trend, squeeze_breakout, session_breakout, ema_pullback, range_fade; then +macd_trend, supertrend,
+  rsi_momentum, ichimoku_tk, inside_bar, pin_bar, stoch_pullback, zscore_reversion, prev_day_breakout, aroon_trend) → 188 combos per TF, 40 candidates
+  per symbol, so the multiple-testing gate asks OOS t ≥ ~3.0. More strategies make passing harder, not easier — say so when the user asks for more.
 - New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos. Every addition raises the trial count; mention it.
 - Judge only on walk-forward OOS + random benchmark + robustness + MC of OOS trades. Never tune on OOS results, never re-run folds until something passes.
 - Never lower `research.gates` or raise `max_hold_hours` above 120 to manufacture signals.

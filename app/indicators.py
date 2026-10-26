@@ -69,3 +69,38 @@ def keltner(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 20, mult: floa
     mid = ema(c, n)
     a = atr(h, l, c, n)
     return mid, mid + mult * a, mid - mult * a
+
+
+def stdev(x: np.ndarray, n: int) -> np.ndarray:
+    return pd.Series(x).rolling(n, min_periods=n).std(ddof=0).to_numpy()
+
+
+def bars_since_extreme(x: np.ndarray, n: int, highest_: bool) -> np.ndarray:
+    """Bars since the highest (or lowest) value of the last n+1 bars (Aroon style); NaN during warm-up."""
+    out = np.full(len(x), np.nan)
+    if len(x) <= n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(np.nan_to_num(x, nan=-np.inf if highest_ else np.inf), n + 1)
+    pos = np.argmax(w[:, ::-1], axis=1) if highest_ else np.argmin(w[:, ::-1], axis=1)  # most recent extreme
+    out[n:] = pos
+    return out
+
+
+def supertrend(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 10, mult: float = 3.0):
+    """Classic Supertrend: returns (line, direction +1/-1)."""
+    a = atr(h, l, c, n)
+    mid = (h + l) / 2
+    ub, lb = mid + mult * a, mid - mult * a
+    fu, fl = ub.copy(), lb.copy()
+    d = np.zeros(len(c))
+    line = np.full(len(c), np.nan)
+    for i in range(1, len(c)):
+        if not np.isfinite(a[i]):
+            continue
+        if np.isfinite(fu[i - 1]):
+            fu[i] = ub[i] if (ub[i] < fu[i - 1] or c[i - 1] > fu[i - 1]) else fu[i - 1]
+            fl[i] = lb[i] if (lb[i] > fl[i - 1] or c[i - 1] < fl[i - 1]) else fl[i - 1]
+        prev = d[i - 1] or 1
+        d[i] = 1 if (prev < 0 and c[i] > fu[i]) else -1 if (prev > 0 and c[i] < fl[i]) else prev
+        line[i] = fl[i] if d[i] > 0 else fu[i]
+    return line, d
