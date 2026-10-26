@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TradingLab">
+<title>TradingLab</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="static/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/app.css">
+<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">▲</div><span>TradingLab<small>Research &amp; Signal Desk</small></span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot" id="sideFoot"></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div><h1 id="pageTitle">สัญญาณ</h1><div class="sub" id="pageSub"></div></div>
+      <div class="right">
+        <span class="row small muted hide-sm" id="statusLine"></span>
+        <button class="btn ghost sm" id="themeBtn" title="สลับธีม">◐</button>
+      </div>
+    </header>
+    <div class="content" id="view"></div>
+  </main>
+</div>
+<nav class="bottomnav" id="bottomnav"></nav>
+<script src="config.js"></script>
+<script src="static/app.js"></script>
+</body>
+</html>

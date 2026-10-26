@@ -1,0 +1,91 @@
+{
+ "default_risk_pct": 0.25,
+ "max_risk_pct": 0.5,
+ "target_max_dd_pct": 10,
+ "mt5_symbol_map": {
+  "EURUSD": "EURUSD",
+  "GBPUSD": "GBPUSD",
+  "USDJPY": "USDJPY",
+  "XAUUSD": "XAUUSD",
+  "NAS100": "USTEC",
+  "US500": "US500",
+  "BTCUSD": "BTCUSD",
+  "ETHUSD": "ETHUSD"
+ },
+ "symbol_overrides": {
+  "EURUSD": {
+   "contract": 100000,
+   "spread": 8e-05,
+   "slippage": 2e-05,
+   "commission": 7e-05
+  },
+  "GBPUSD": {
+   "contract": 100000,
+   "spread": 0.00012,
+   "slippage": 2e-05,
+   "commission": 7e-05
+  },
+  "USDJPY": {
+   "contract": 100000,
+   "spread": 0.012,
+   "slippage": 0.002,
+   "commission": 0.01
+  },
+  "XAUUSD": {
+   "contract": 100,
+   "spread": 0.2,
+   "slippage": 0.05,
+   "commission": 0
+  },
+  "NAS100": {
+   "contract": 1,
+   "spread": 1.5,
+   "slippage": 0.5,
+   "commission": 0
+  },
+  "US500": {
+   "contract": 1,
+   "spread": 0.5,
+   "slippage": 0.15,
+   "commission": 0
+  },
+  "BTCUSD": {
+   "contract": 1,
+   "spread": 15,
+   "slippage": 5,
+   "commission": 0
+  },
+  "ETHUSD": {
+   "contract": 1,
+   "spread": 1.2,
+   "slippage": 0.4,
+   "commission": 0
+  }
+ },
+ "research": {
+  "timeframes": [
+   "H1",
+   "H4"
+  ],
+  "is_months": 12,
+  "oos_months": 3,
+  "min_is_trades": 20,
+  "max_hold_hours": 120,
+  "schedule": "weekly",
+  "schedule_hour_bkk": 10,
+  "gates": {
+   "min_oos_trades": 30,
+   "min_expectancy": 0.05,
+   "min_t": 2,
+   "min_mc_pf_p5": 1,
+   "min_random_pct": 90,
+   "min_plateau": 0.4
+  }
+ },
+ "alerts": {
+  "active": true,
+  "watch": false
+ },
+ "force_off": [],
+ "scan_interval_sec": 120
+}

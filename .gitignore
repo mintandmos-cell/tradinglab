@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.claude/
+site/
+data/cache/
+data/local.json
+data/server.log*
+data/cloud_state.json
+data/*.tmp

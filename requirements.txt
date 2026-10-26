@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pandas
+numpy
+requests
+yfinance
+MetaTrader5; sys_platform == "win32"
