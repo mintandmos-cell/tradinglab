@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from .config import CACHE_DIR, SYMBOLS, TIMEFRAMES, load_settings
+from .config import CACHE_DIR, HISTORY_DIR, SYMBOLS, TIMEFRAMES, load_settings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", module="yfinance")
@@ -144,6 +144,45 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["open", "high", "low", "close"])
 
 
+def _seed(sym: str) -> pd.DataFrame | None:
+    """Long Dukascopy H1 history committed in data/history (None if not fetched yet)."""
+    f = HISTORY_DIR / f"{sym}_H1.csv.gz"
+    if not f.exists():
+        return None
+    try:
+        d = pd.read_csv(f)
+        d.index = pd.to_datetime(d.pop("time"), unit="s", utc=True)
+        d["volume"] = 0.0
+        return _clean(d.astype(float))
+    except Exception as e:
+        log.warning("history %s unreadable: %s", sym, e)
+        return None
+
+
+def with_history(sym: str, live: pd.DataFrame) -> pd.DataFrame:
+    """Dukascopy history + the newer free-data bars, the latter scaled onto the history's price level.
+
+    Yahoo gold / indices are futures (contango, a few dollars/points off spot); a ratio measured on the
+    overlapping bars removes that step so the joined series has no artificial jump."""
+    seed = _seed(sym)
+    if seed is None or seed.empty:
+        return live
+    if live is None or live.empty:
+        return seed
+    common = seed.index.intersection(live.index)[-500:]
+    if len(common) >= 20:
+        ratio = float(np.median(seed.close.loc[common].to_numpy() / live.close.loc[common].to_numpy()))
+    else:
+        prev = live.close[live.index <= seed.index[-1]]
+        ratio = float(seed.close.iloc[-1] / prev.iloc[-1]) if len(prev) else 1.0
+    if not np.isfinite(ratio) or abs(ratio - 1) > 0.05:      # something is off: never distort prices by more than 5%
+        ratio = 1.0
+    tail = live[live.index > seed.index[-1]].copy()
+    for k in ("open", "high", "low", "close"):
+        tail[k] = tail[k] * ratio
+    return _clean(pd.concat([seed, tail]))
+
+
 def source_for(sym: str, settings=None) -> str:
     settings = settings or load_settings()
     if settings["data_source"] in ("auto", "mt5") and _mt5_init(settings):
@@ -176,6 +215,8 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
                 raise
             log.warning("refresh %s via %s failed (%s); using cache", sym, src, e)
             df = cached
+        if src == "yahoo":
+            df = with_history(sym, df)       # cache keeps the raw Yahoo bars; the history file is joined on read
         _mem[key] = (time.time(), df)
         return df
 

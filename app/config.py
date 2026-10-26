@@ -17,6 +17,7 @@ for _d in (DATA_DIR, CACHE_DIR, RESEARCH_DIR, RESEARCH_DIR / "history"):
 
 SETTINGS_FILE = DATA_DIR / "settings.json"      # shared research config, committed to git (the cloud uses it)
 LOCAL_FILE = DATA_DIR / "local.json"            # personal / secret values, never committed
+HISTORY_DIR = DATA_DIR / "history"                # long H1 history (Dukascopy), committed; see tools/fetch_history.js
 SITE_DIR = ROOT / "site"                        # static build for GitHub Pages
 SIGNALS_FILE = DATA_DIR / "signals.json"
 LATEST_RESEARCH = RESEARCH_DIR / "latest.json"
