@@ -24,6 +24,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 
 ## Layout
 - `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance. H1 cached in `data/cache`, H4/D1 resampled.
+  Long history: `data/history/{SYM}_H1.csv.gz` (from `export_mt5_history.bat` on the PC; Dukascopy blocks GitHub runners — `tools/fetch_history.js`
+  / workflow History kept for manual retry) is joined with Yahoo bars by `with_history` (ratio-scaled at the overlap). A push touching
+  `data/history/` makes the cloud run the full research.
 - `app/strategies.py` — strategy library (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
 - `app/research.py` — per-symbol pipeline → `data/research/latest.json` (+ `history/`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Every candidate keeps its compact OOS trades (`oos_eq`) for the chart page.

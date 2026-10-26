@@ -2,9 +2,9 @@ name: History
 
 # Long H1 price history from Dukascopy (FX, gold, US indices since 2012) -> data/history/*.csv.gz
 # Weekly, an hour before the Saturday research; or Actions -> History -> Run workflow.
+# NOTE (26 Oct 2026): Dukascopy answers GitHub's servers with 403 (bot wall), so the schedule is off and the long
+# history comes from export_mt5_history.bat on a home PC instead. Kept for a manual retry.
 on:
-  schedule:
-    - cron: "30 1 * * 6"    # Saturday 08:30 Bangkok
   workflow_dispatch:
     inputs:
       symbols:

@@ -13,7 +13,7 @@ on:
         default: research
   push:
     branches: [main]
-    paths: ["app/**", "web/**", "data/research/**", "data/settings.json", ".github/workflows/**"]
+    paths: ["app/**", "web/**", "data/research/**", "data/settings.json", "data/history/**", ".github/workflows/**"]
 
 permissions:
   contents: write
@@ -61,6 +61,8 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ inputs.mode }}"; fi
           if [ "${{ github.event.schedule }}" = "30 2 * * 6" ]; then MODE="research"; fi
           if [ "${{ github.event_name }}" = "push" ]; then MODE="build"; fi
+          # new long price history pushed from the PC (export_mt5_history.bat): research it right away
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
           echo "mode=$MODE"
           python -m app.cloud "$MODE"
 
