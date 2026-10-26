@@ -79,6 +79,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/forward") return staticGet("forward.json");
   if (p === "/api/scan") return { new: [] };
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
+  if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`);
   if (p === "/api/size") return sizeLocal(qp.symbol, +qp.entry, +qp.sl, +qp.risk_pct, +(qp.balance || P.account_balance), qp.tp ? +qp.tp : null);
   if (p.startsWith("/api/signals/") && post) {  // taken / skipped is remembered on this device only
     const marks = store.get("sigMarks", {}); marks[decodeURIComponent(p.slice(13))] = body; store.set("sigMarks", marks); return body;
@@ -138,7 +139,8 @@ function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTi
 function md(text) {
   const lines = esc(text).split("\n"); let html = "", inList = false;
   for (const l of lines) {
-    const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>");
+    const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>")
+      .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/\*([^*\s][^*]*?)\*/g, "<i>$1</i>");
     if (/^\s*[-*] /.test(l)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(l.replace(/^\s*[-*] /, ""))}</li>`; continue; }
     if (inList) { html += "</ul>"; inList = false; }
     const h = l.match(/^(#{1,3}) (.*)/);
@@ -356,23 +358,18 @@ async function renderSystems(view) {
   view.innerHTML = `<div class="stack">
     <div class="card"><div class="bd row" style="gap:16px">
       <div class="kpis" style="flex:1;min-width:280px">${kpi("ACTIVE", counts.ACTIVE, "แจ้งเตือนจริง", "pos")}${kpi("WATCH", counts.WATCH, "forward test")}${kpi("OFF", counts.OFF, "ไม่มี edge", "neg")}${kpi("วิจัยล่าสุด", res.generated ? ago(res.generated) : "ยังไม่เคย", res.generated ? fdt(res.generated, true) : "")}${kpi("รอบอัปเดต", S.settings?.research?.schedule || "–", "IS " + (S.settings?.research?.is_months || "-") + "m / OOS " + (S.settings?.research?.oos_months || "-") + "m")}</div>
-      <div class="stack" style="gap:8px">${STATIC
-        ? `<span class="hint"><b>✅ วิเคราะห์ใหม่เองอัตโนมัติทุกวันเสาร์ 09:30 น.</b> — ไม่ต้องกดอะไร<br>สแกนหาสัญญาณเองทุกชั่วโมง</span>
-           <a class="btn" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที (ไม่บังคับ)</a>
-           <span class="hint">ต้อง <b>Sign in</b> GitHub ก่อน จึงจะเห็นปุ่ม <b>Run workflow</b> → เลือก research → Run · รอ ~5–10 นาที · ดูวิธีในหน้า <a href="#/guide">คู่มือ</a></span>`
-        : `<button class="btn primary" id="runResearch" ${st.running ? "disabled" : ""}>${st.running ? `<span class="spinner"></span> กำลังวิจัย…` : "🤖 วิเคราะห์อัตโนมัติใหม่ทั้งหมด"}</button>
-           <span class="hint" id="resProg">${st.running ? esc(st.progress) : "WF + Robustness + Monte Carlo · ~2–4 นาที"}</span>`}</div>
+      <div class="stack" style="gap:8px;max-width:340px"><span class="hint"><b>✅ วิเคราะห์ใหม่เองอัตโนมัติทุกวันเสาร์ 09:30 น.</b> — ไม่ต้องกดอะไร · สแกนหาสัญญาณเองทุกชั่วโมง<br>
+        ถ้าอยากสั่งวิเคราะห์ใหม่ทันที ใช้ปุ่มในหน้า <a href="#/lab">Strategy Lab</a></span>${st.running ? `<span class="hint" id="resProg"><span class="spinner"></span> ${esc(st.progress)}</span>` : ""}</div>
     </div></div>
     <div class="banner info"><span class="ic">ℹ️</span><div><b>วิธีตัดสิน:</b> ทุกสินทรัพย์ถูกทดสอบ ${S.strategies.length} กลยุทธ์ × ${(S.settings?.research?.timeframes || []).join("/")} ด้วย Walk-Forward แบบ rolling
-      (เลือกพารามิเตอร์จาก In-Sample แล้วเทรดจริงใน Out-of-Sample ที่ระบบไม่เคยเห็น) → เลือกตัวที่ OOS ดีที่สุด → ทดสอบกับการสุ่มจุดเข้า,
+      (เลือกพารามิเตอร์จาก In-Sample แล้วเทรดจริงใน Out-of-Sample ที่ระบบไม่เคยเห็น) → เลือกตัวที่ OOS ดีที่สุด แล้ว <b>ตั้งเกณฑ์ t สูงขึ้นตามจำนวนผู้สมัคร</b> (กันการเลือกตัวที่ดีเพราะโชค) → ทดสอบกับการสุ่มจุดเข้า,
       <b>Robustness</b> 8 แบบ (หน้าต่าง WF อื่น, ต้นทุน ×2, เข้าช้า 1 แท่ง, noise ในราคา, Long/Short, รายครึ่งปี, ตัดไม้ที่ดีที่สุด, พารามิเตอร์ข้างเคียง) และ Monte Carlo — ทุกค่าตั้งอัตโนมัติ ไม่ต้องปรับเอง
-      · <b>ACTIVE</b> = ผ่านทุกเกณฑ์ · <b>WATCH</b> = OOS เป็นบวกแต่ยังพิสูจน์ไม่ได้ · <b>OFF</b> = ไม่พบ edge → ไม่เทรด</div></div>
+      · <b>ACTIVE</b> = ผ่านทุกเกณฑ์ ส่งแจ้งเตือนจริง · <b>WATCH</b> = OOS เป็นบวกแต่ยังพิสูจน์ไม่ได้ → เฝ้าดูผลจริงเงียบ ๆ ไม่แจ้งเตือน · <b>OFF</b> = ไม่พบ edge → ไม่เทรด · <a href="#/guide">วิธีทดสอบทีละขั้น →</a></div></div>
     <div class="sys-grid">${syms.length ? syms.map((s) => systemCard(s)).join("") : `<div class="card"><div class="empty"><div class="big">🧪</div>ยังไม่มีผลวิจัย — กด “รันวิจัยใหม่ทั้งหมด”</div></div>`}</div>
     <div class="card"><div class="hd"><h3>บันทึกจาก AI (Claude)</h3><span class="muted small">data/research/ai_notes.md</span></div><div class="bd md">${notes ? md(notes) : '<span class="hint">ยังไม่มีบันทึก — เมื่อ Claude ตรวจผลวิจัยรอบถัดไป จะเขียนข้อสังเกตและการปรับปรุงไว้ที่นี่</span>'}</div></div>
     <div class="card"><div class="hd"><h3>ประวัติการอัปเดตระบบ</h3></div><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th>${Object.keys(res.symbols || {}).map((k) => `<th>${k}</th>`).join("")}</tr></thead><tbody>
       ${hist.map((h) => `<tr><td>${fdt(h.generated, true)}</td>${Object.keys(res.symbols || {}).map((k) => { const v = h.symbols[k]; return `<td>${v ? `${statusBadge(v.status)} <span class="small muted">${v.tf || ""}</span>` : "–"}</td>`; }).join("")}</tr>`).join("") || '<tr><td class="muted">–</td></tr>'}</tbody></table></div></div>
   </div>`;
-  if (!STATIC) $("#runResearch").onclick = async () => { await api("/api/research/run", { method: "POST", body: {} }); toast("เริ่มวิจัยแล้ว"); pollResearch(); navigate(); };
   $$(".sys [data-a=detail]", view).forEach((b) => b.onclick = () => toggleDetail(b.closest(".sys"), res.symbols[b.dataset.sym]));
   if (st.running) pollResearch();
 }
@@ -482,72 +479,177 @@ function drawTradeLevels(ch, d, open) {
   return markers;
 }
 
+// equity of a list of [exit_time, R] at a fixed risk % per trade, compounded from the balance (TradingView-style stats)
+function equityStats(pts, riskPct, bal) {
+  const f = riskPct / 100; let eq = bal, peak = bal, maxDd = 0, maxDdUsd = 0, gw = 0, gl = 0, wins = 0;
+  const curve = [];
+  pts.forEach(([t, r]) => {
+    const pnl = eq * f * r; eq += pnl;
+    if (pnl > 0) { gw += pnl; wins++; } else gl -= pnl;
+    peak = Math.max(peak, eq);
+    const dd = peak - eq; if (dd > maxDdUsd) { maxDdUsd = dd; maxDd = dd / peak * 100; }
+    curve.push({ time: t, value: +eq.toFixed(2) });
+  });
+  const rs = pts.map((p) => p[1]), n = rs.length, mean = n ? rs.reduce((a, b) => a + b, 0) / n : 0;
+  const sd = n > 1 ? Math.sqrt(rs.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)) : 0;
+  return { curve, n, net: eq - bal, netPct: (eq / bal - 1) * 100, winPct: n ? wins / n * 100 : 0, pf: gl > 0 ? gw / gl : (gw > 0 ? 99 : 0),
+    maxDd, maxDdUsd, avgR: mean, t: sd > 0 ? mean / sd * Math.sqrt(n) : 0, from: n ? pts[0][0] : null, to: n ? pts[n - 1][0] : null };
+}
+
+function equityChart(el, st, bal) {
+  const ch = makeChart(el, { rightPriceScale: { borderColor: cssVar("--line2") }, timeScale: { borderColor: cssVar("--line2"), timeVisible: false } });
+  const s = ch.addBaselineSeries({ baseValue: { type: "price", price: bal }, lineWidth: 2, priceLineVisible: false,
+    topLineColor: "#16c784", topFillColor1: "rgba(22,199,132,.28)", topFillColor2: "rgba(22,199,132,.04)",
+    bottomLineColor: "#ef4444", bottomFillColor1: "rgba(239,68,68,.04)", bottomFillColor2: "rgba(239,68,68,.28)",
+    priceFormat: { type: "price", precision: 0, minMove: 1 } });
+  const pts = st.curve.length ? [{ time: st.curve[0].time - 3600, value: bal }, ...st.curve] : [];
+  s.setData(dedupeTimes(pts.map((p) => ({ time: shiftT(p.time), value: p.value }))));
+  s.createPriceLine({ price: bal, color: cssVar("--faint"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: "ทุนเริ่ม" });
+  ch.timeScale().fitContent();
+  return ch;
+}
+
+const PARAM_SRC = {
+  live: ["ระบบจริง", "พารามิเตอร์ที่ใช้ส่งแจ้งเตือนจริงตอนนี้"],
+  wf: ["ผลวิจัยล่าสุด", "พารามิเตอร์ล่าสุดที่ Walk-Forward เลือกให้กลยุทธ์นี้ (ไม่ได้ใช้เทรดจริง)"],
+  default: ["ค่าเริ่มต้น", "กลยุทธ์ × TF นี้ไม่ได้อยู่ในการวิจัย จึงใช้ค่าเริ่มต้นของกลยุทธ์"],
+  custom: ["กำหนดเอง", "พารามิเตอร์ที่คุณใส่เอง"],
+};
+
 async function renderChart(view) {
   const token = S.chartToken = (S.chartToken || 0) + 1;
   const q = qs();
-  const sym = q.symbol || store.get("chartSym", "USDJPY"), tf = q.tf || store.get("chartTf", "H1");
+  const sym = q.symbol || store.get("chartSym", "XAUUSD"), tf = q.tf || store.get("chartTf", "H4");
   const overlay = store.get("chartOverlay", true);
   store.set("chartSym", sym); store.set("chartTf", tf);
+  const sys = S.symbols.find((x) => x.symbol === sym);
+  const sid = S.strategies.some((s) => s.id === q.strategy) ? q.strategy : (sys?.strategy || S.strategies[0].id);
+  const nav = (o) => { const p = { symbol: sym, tf, strategy: sid, ...o }; location.hash = "#/chart?" + new URLSearchParams(Object.entries(p).filter(([, v]) => v)).toString(); };
   view.innerHTML = `<div class="stack">
-    <div class="row" style="justify-content:space-between">
+    <div class="stack" style="gap:10px">
       <div class="chips" id="symChips">${S.symbols.map((x) => `<button class="chip ${x.symbol === sym ? "active" : ""}" data-s="${x.symbol}">${x.symbol} ${x.status === "ACTIVE" ? '<span class="dot on"></span>' : x.status === "WATCH" ? '<span class="dot mid"></span>' : ""}</button>`).join("")}</div>
-      <div class="row"><div class="seg" id="tfSeg">${["H1", "H4", "D1"].map((t) => `<button class="${t === tf ? "active" : ""}" data-t="${t}">${t}</button>`).join("")}</div>
-      <label class="check small"><input type="checkbox" id="ovl" ${overlay ? "checked" : ""}> ระบบ</label></div>
+      <div class="row">
+        <div class="seg" id="tfSeg">${["H1", "H4", "D1"].map((t) => `<button class="${t === tf ? "active" : ""}" data-t="${t}">${t}</button>`).join("")}</div>
+        <select class="inp" id="stratSel" style="width:auto;max-width:100%;flex:1 1 240px">
+          ${S.strategies.map((s) => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${s.id === sys?.strategy ? "★ " : ""}${esc(s.name)} — ${esc(s.family)}${s.id === sys?.strategy ? ` (ระบบจริง ${sys.tf})` : ""}</option>`).join("")}
+        </select>
+        <label class="check small"><input type="checkbox" id="ovl" ${overlay ? "checked" : ""}> แสดงระบบบนกราฟ</label>
+      </div>
+      <div class="tiny muted"><span class="dot on"></span> ACTIVE = ผ่านทุกเกณฑ์ ส่งแจ้งเตือนจริง · <span class="dot mid"></span> WATCH = ผลดีแต่ยังพิสูจน์ไม่พอ เฝ้าดูเงียบ ๆ ไม่แจ้งเตือน · ไม่มีจุด = OFF · ★ = กลยุทธ์ที่ระบบจริงใช้</div>
     </div>
+    <div id="viewOnly"></div>
     <div class="card"><div class="hd"><h3 id="chTitle">${sym} · ${tf}</h3><div class="right legend" id="chLegend"></div></div><div class="chart" id="mainChart"></div></div>
-    <div class="grid g2"><div class="card"><div class="hd"><h3>ระบบบนกราฟนี้</h3></div><div class="bd" id="chInfo"><span class="spinner"></span></div></div>
-      <div class="card"><div class="hd"><h3>เทรดล่าสุดของระบบ</h3></div><div class="tbl-wrap tbl-scroll" id="chTrades"></div></div></div>
+    <div class="card"><div class="hd"><h3>Equity curve</h3><div class="right"><div class="seg" id="eqSeg"></div></div></div>
+      <div class="bd stack" style="gap:12px"><div class="kpis" id="eqKpis"></div><div class="chart md" id="eqChart"></div><div class="hint" id="eqHint"></div></div></div>
+    <div class="card"><div class="hd"><h3>ระบบบนกราฟนี้</h3></div><div class="bd" id="chInfo"><span class="spinner"></span></div></div>
+    <div class="card"><div class="hd"><h3>เทรดล่าสุดของระบบ</h3><span class="badge" id="trCount"></span></div><div class="tbl-wrap tbl-scroll" id="chTrades"></div></div>
   </div>`;
   $("#symChips").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) location.hash = `#/chart?symbol=${b.dataset.s}&tf=${tf}`; };
-  $("#tfSeg").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) location.hash = `#/chart?symbol=${sym}&tf=${b.dataset.t}`; };
+  $("#tfSeg").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) nav({ tf: b.dataset.t }); };
+  $("#stratSel").onchange = (e) => nav({ strategy: e.target.value });
   $("#ovl").onchange = (e) => { store.set("chartOverlay", e.target.checked); navigate(); };
 
-  const sys = S.symbols.find((x) => x.symbol === sym);
-  let url = `/api/candles?symbol=${sym}&tf=${tf}&limit=1500`;
-  if (overlay && sys?.strategy && sys.tf !== tf) url += `&strategy=${sys.strategy}&params=${encodeURIComponent(JSON.stringify(sys.params))}`;
-  if (!overlay) url += "&system=false";
-  let ch = null, d = null;
+  const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`);
+  if (route() !== "chart" || S.chartToken !== token) return;
+  const strat = S.strategies.find((s) => s.id === sid) || {};
+  const live = sp.is_live;
+  if (!live) {
+    $("#viewOnly").innerHTML = `<div class="banner info"><span class="ic">🔍</span><div><b>โหมดดูอย่างเดียว</b> — กำลังดู <b>${esc(sp.name)}</b> บน ${tf} เพื่อเปรียบเทียบเท่านั้น
+      การเลือกตรงนี้ <b>ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน</b> ·
+      ระบบจริงของ ${sym}: ${sys?.strategy ? `<b>${esc(sys.strategy_name)}</b> ${sys.tf} ${statusBadge(sys.status)}` : "ยังไม่มี"}
+      ${sys?.strategy ? ` <a href="#/chart?symbol=${sym}&tf=${sys.tf}&strategy=${sys.strategy}">← กลับไปดูระบบจริง</a>` : ""}</div></div>`;
+  }
+
+  // ---- main chart (candles + the chosen strategy)
+  let ch = null;
   const draw = async (keepRange) => {
-    const [dd, sigs] = await Promise.all([api(url), api("/api/signals?limit=50")]);
+    const [cd, sigs] = await Promise.all([api(`/api/candles?symbol=${sym}&tf=${tf}&limit=1500&system=false`), api("/api/signals?limit=50")]);
     if (route() !== "chart" || S.chartToken !== token || !$("#mainChart")) return;
     const range = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
     if (ch) { S.charts = S.charts.filter((c) => c !== ch); ch.remove(); }
-    d = dd;
-    ch = makeChart($("#mainChart"), { localization: { priceFormatter: (p) => p.toFixed(d.digits) } });
+    const dg = sp.digits ?? cd.digits;
+    ch = makeChart($("#mainChart"), { localization: { priceFormatter: (p) => p.toFixed(dg) } });
     const cs = ch.addCandlestickSeries({ upColor: "#16c784", downColor: "#ef4444", borderVisible: false, wickUpColor: "#16c784", wickDownColor: "#ef4444",
-      priceFormat: { type: "price", precision: d.digits, minMove: 1 / 10 ** d.digits } });
-    cs.setData(d.candles.map((c) => ({ ...c, time: shiftT(c.time) })));
+      priceFormat: { type: "price", precision: dg, minMove: 1 / 10 ** dg } });
+    cs.setData(cd.candles.map((c) => ({ ...c, time: shiftT(c.time) })));
     const legend = [];
-    Object.entries(d.lines || {}).forEach(([name, pts], i) => {
-      const color = LINE_COLORS[i % 5];
-      const ls = ch.addLineSeries({ color, lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-      ls.setData(pts.map((p) => ({ ...p, time: shiftT(p.time) })));
-      legend.push(`<span><i style="background:${color}"></i>${esc(name)}</span>`);
-    });
-    const open = openPosition(d, sigs.filter((s) => s.symbol === sym && s.tf === tf && s.outcome === "open"));
-    if (open) open.lot = lotLabel(sym, open.entry, open.sl, sys?.risk_pct);
-    const markers = drawTradeLevels(ch, d, open);
+    let open = null;
+    if (overlay) {
+      Object.entries(sp.lines || {}).forEach(([name, vals], i) => {
+        const color = LINE_COLORS[i % 5];
+        const ls = ch.addLineSeries({ color, lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+        ls.setData(vals.map((v, k) => (v === null ? null : { time: shiftT(sp.t[k]), value: v })).filter(Boolean));
+        legend.push(`<span><i style="background:${color}"></i>${esc(name)}</span>`);
+      });
+      const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.outcome === "open") : [];
+      open = live ? openPosition(sp, liveSigs) : (sp.open_trade ? { ...sp.open_trade, from: sp.open_trade.entry_time, pending: false } : null);
+      if (open) open.lot = live ? lotLabel(sym, open.entry, open.sl, sys?.risk_pct) : "ทดลอง";
+      const markers = drawTradeLevels(ch, { candles: cd.candles, trades: sp.trades, digits: dg }, open);
+      markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
+      if (open) legend.push(`<span class="badge open">${open.dir > 0 ? "LONG" : "SHORT"} ${open.lot} · ${fpx(open.entry, dg)}</span>`);
+    }
     S.chartOpen = open;
-    markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
-    if (open) legend.push(`<span class="badge open">${open.dir > 0 ? "LONG" : "SHORT"} ${open.lot} · ${fpx(open.entry, d.digits)}</span>`);
-    const n = d.candles.length;
+    const n = cd.candles.length;
     ch.timeScale().setVisibleLogicalRange(range || { from: Math.max(0, n - 220), to: n + 8 });
-    $("#chLegend").innerHTML = legend.join("") + `<span class="faint">${d.source}</span>`;
-    $("#chTitle").textContent = `${sym} · ${tf} · ${fpx(d.candles[n - 1]?.close, d.digits)}`;
+    $("#chLegend").innerHTML = legend.join("") + `<span class="faint">${esc(cd.source)}</span>`;
+    $("#chTitle").textContent = `${sym} · ${tf} · ${fpx(cd.candles[n - 1]?.close, dg)}`;
   };
   await draw(false);
-  // keep the chart moving: new candles extend the open position's lines until SL / TP / time exit
   const timer = setInterval(() => { if (route() !== "chart" || S.chartToken !== token) return clearInterval(timer); if (!document.hidden) draw(true).catch(() => {}); },
     STATIC ? 300000 : 60000);
-  $("#chInfo").innerHTML = d.system ? `<div class="kv"><span class="k">ระบบ</span><span class="v">${esc(d.system.name)}</span><span class="k">พารามิเตอร์</span><span class="v small">${esc(paramText(d.system.params))}</span>
-      <span class="k">สถานะวิจัย</span><span class="v">${statusBadge(sys?.status)} ${sys?.tf || ""}</span><span class="k">สัญญาณแท่งล่าสุด</span><span class="v">${d.last_signal > 0 ? '<span class="pos">LONG</span>' : d.last_signal < 0 ? '<span class="neg">SHORT</span>' : "ไม่มี"}</span>
-      ${S.chartOpen ? `<span class="k">ออเดอร์ที่เปิดอยู่</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} <b>${S.chartOpen.lot}</b> @ ${fpx(S.chartOpen.entry, d.digits)}
-        · SL <span class="neg">${fpx(S.chartOpen.sl, d.digits)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, d.digits)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}</span>` : ""}</div>
-      ${sys?.tf && sys.tf !== tf ? `<div class="hint" style="margin-top:10px">ระบบจริงของ ${sym} ใช้ TF ${sys.tf} — กราฟนี้แสดงการทดลองบน ${tf}</div>` : ""}`
-    : `<div class="hint">${overlay ? "สินทรัพย์นี้ยังไม่มีระบบจากการวิจัย" : "ปิดการแสดงระบบอยู่"}</div>`;
-  const tr = (d.trades || []).slice(-30).reverse();
-  $("#chTrades").innerHTML = `<table class="tbl"><thead><tr><th>เข้า</th><th>ฝั่ง</th><th class="num">Entry</th><th class="num">Exit</th><th>ออก</th><th class="num">R</th></tr></thead><tbody>
-    ${tr.map((t) => `<tr><td>${fdt(t.entry_time)}</td><td>${t.dir > 0 ? '<span class="pos">L</span>' : '<span class="neg">S</span>'}</td><td class="num">${fpx(t.entry, d.digits)}</td><td class="num">${fpx(t.exit, d.digits)}</td><td>${t.reason}</td><td class="num ${cls(t.r)}">${fr(t.r)}</td></tr>`).join("") || '<tr><td colspan="6" class="muted">–</td></tr>'}</tbody></table>`;
+
+  // ---- equity curve (under the chart, full width)
+  const bal = myBalance() || 5000, risk = effRisk(sys?.risk_pct || 0.25) || 0.25;
+  const modes = [];
+  if (sp.oos?.equity?.length) modes.push(["oos", "Walk-Forward OOS"]);
+  if (sp.equity?.length) modes.push(["bt", "Backtest ทั้งช่วง"]);
+  let eqCh = null;
+  const showEq = (m) => {
+    store.set("eqMode", m);
+    $$("#eqSeg button").forEach((b) => b.classList.toggle("active", b.dataset.m === m));
+    if (eqCh) { S.charts = S.charts.filter((c) => c !== eqCh); eqCh.remove(); eqCh = null; }
+    const pts = m === "oos" ? sp.oos.equity : sp.equity;
+    const st = equityStats(pts, risk, bal);
+    $("#eqKpis").innerHTML = `${kpi("กำไรสุทธิ", `${st.net >= 0 ? "+" : ""}$${fnum(st.net, 0)}`, `${st.netPct >= 0 ? "+" : ""}${fnum(st.netPct, 1)}%`, cls(st.net))}${kpi("เทรดที่ปิดแล้ว", st.n, `${fdt(st.from, true).split(",")[0]} → ${fdt(st.to, true).split(",")[0]}`)}
+      ${kpi("ชนะ", fnum(st.winPct, 1) + "%")}${kpi("Profit factor", fnum(st.pf, 2), "", st.pf >= 1 ? "pos" : "neg")}
+      ${kpi("Max drawdown", `$${fnum(st.maxDdUsd, 0)}`, fnum(st.maxDd, 1) + "%", "neg")}${kpi("เฉลี่ยต่อไม้", fr(st.avgR, 3), "t = " + fnum(st.t, 2), cls(st.avgR))}`;
+    eqCh = equityChart($("#eqChart"), st, bal);
+    $("#eqHint").innerHTML = (m === "oos"
+      ? `<b>Walk-Forward OOS</b> = ผลแบบ “ไม่เคยเห็นข้อมูลมาก่อน”: ทุก 3 เดือนเลือกพารามิเตอร์จาก 12 เดือนก่อนหน้า แล้วเทรดช่วงถัดไปที่ระบบไม่เคยเห็น — <b>ใช้ตัวนี้ตัดสินว่ามี edge จริงไหม</b>`
+      : `<b>Backtest ทั้งช่วง</b> = ใช้พารามิเตอร์ชุดปัจจุบันย้อนทดสอบตั้งแต่ ${fdt(sp.from, true).split(",")[0]} — มักดูดีเกินจริง เพราะพารามิเตอร์ถูกเลือกจากข้อมูลบางส่วนในช่วงนี้เอง ใช้ดูหน้าตาการเทรด ไม่ใช่หลักฐาน`)
+      + ` · คิดแบบทบต้น เริ่ม $${fnum(bal, 0)} เสี่ยง ${risk}% ต่อไม้ (ตามที่ตั้งไว้) · รวมต้นทุน spread + slippage + ค่าคอมแล้ว`;
+  };
+  if (modes.length) {
+    $("#eqSeg").innerHTML = modes.map(([k, l]) => `<button data-m="${k}">${l}</button>`).join("");
+    $("#eqSeg").onclick = (e) => { const b = e.target.closest("[data-m]"); if (b) showEq(b.dataset.m); };
+    const pref = store.get("eqMode", "oos");
+    showEq(modes.some(([k]) => k === pref) ? pref : modes[0][0]);
+  } else {
+    $("#eqKpis").innerHTML = ""; $("#eqChart").outerHTML = `<div class="empty"><div class="big">📉</div>กลยุทธ์นี้ไม่มีเทรดบน ${tf} ในข้อมูลที่มี</div>`;
+  }
+
+  // ---- system info
+  const src = PARAM_SRC[sp.params_source] || PARAM_SRC.default, o = sp.oos?.metrics, m = sp.metrics, dg = sp.digits;
+  $("#chInfo").innerHTML = `<div class="stack" style="gap:12px">
+    <div><div style="font-weight:650">${esc(sp.name)} <span class="muted small">· ${esc(sp.family)}</span></div><div class="small muted" style="margin-top:4px;line-height:1.6">${esc(strat.rationale || "")}</div></div>
+    <div class="kv">
+      <span class="k">บทบาท</span><span class="v">${live ? `${statusBadge(sys?.status)} ระบบจริง` : '<span class="muted">ดูอย่างเดียว (ไม่ส่งแจ้งเตือน)</span>'}</span>
+      <span class="k">พารามิเตอร์</span><span class="v small">${esc(paramText(sp.params))}</span>
+      <span class="k">ที่มาพารามิเตอร์</span><span class="v small">${src[0]} <span class="muted">— ${src[1]}</span></span>
+      ${o ? `<span class="k">Walk-Forward OOS</span><span class="v small">${o.trades} ไม้ · ${fr(o.expectancy, 3)}/ไม้ · t ${fnum(o.t_stat, 2)} · PF ${fnum(o.pf, 2)}</span>` : `<span class="k">Walk-Forward OOS</span><span class="v small muted">ไม่มี (กลยุทธ์ × TF นี้ไม่ได้ถูกวิจัย)</span>`}
+      <span class="k">Backtest ทั้งช่วง</span><span class="v small">${m.trades} ไม้ · ${fr(m.expectancy, 3)}/ไม้ · t ${fnum(m.t_stat, 2)} · Long ${fr(m.long, 2)} / Short ${fr(m.short, 2)}</span>
+      <span class="k">สัญญาณแท่งล่าสุด</span><span class="v">${sp.last_signal > 0 ? '<span class="pos">LONG</span>' : sp.last_signal < 0 ? '<span class="neg">SHORT</span>' : "ไม่มี"}</span>
+      ${S.chartOpen ? `<span class="k">ออเดอร์ที่${live ? "เปิดอยู่" : "ระบบนี้จะถืออยู่ (ทดลอง)"}</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} <b>${S.chartOpen.lot}</b> @ ${fpx(S.chartOpen.entry, dg)}
+        · SL <span class="neg">${fpx(S.chartOpen.sl, dg)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, dg)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}</span>` : ""}
+    </div>
+    ${STATIC ? "" : `<div class="row"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}&params=${encodeURIComponent(JSON.stringify(sp.params))}">🧪 ปรับพารามิเตอร์ใน Lab</a></div>`}
+  </div>`;
+
+  // ---- latest trades
+  const tr = (sp.trades || []).slice(-30).reverse();
+  $("#trCount").textContent = tr.length;
+  $("#chTrades").innerHTML = `<table class="tbl"><thead><tr><th>เข้า</th><th>ฝั่ง</th><th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th><th>ออก</th><th class="num">R</th></tr></thead><tbody>
+    ${tr.map((t) => `<tr><td>${fdt(t.entry_time)}</td><td>${t.dir > 0 ? '<span class="pos">L</span>' : '<span class="neg">S</span>'}</td><td class="num">${fpx(t.entry, dg)}</td><td class="num">${fpx(t.sl, dg)}</td><td class="num">${fpx(t.tp, dg)}</td><td class="num">${fpx(t.exit, dg)}</td><td>${t.reason}</td><td class="num ${cls(t.r)}">${fr(t.r)}</td></tr>`).join("") || '<tr><td colspan="8" class="muted">–</td></tr>'}</tbody></table>`;
 }
 
 // ------------------------------------------------------------------ LAB
@@ -561,11 +663,12 @@ async function renderLab(view) {
       <div class="card"><div class="bd stack">
         <div style="font-size:18px;font-weight:700">🤖 วิเคราะห์อัตโนมัติ — ไม่ต้องตั้งค่าเอง</div>
         <div class="md">${md(`ทุกสินทรัพย์ถูกวิเคราะห์ครบชุดโดยอัตโนมัติ:
-- **Backtest + Walk-Forward** ทุกกลยุทธ์ × H1/H4 × ทุกชุดพารามิเตอร์ (IS 12 เดือน / OOS 3 เดือน)
+- **Backtest + Walk-Forward** ทั้ง ${S.strategies.length} กลยุทธ์ × H1/H4 × ทุกชุดพารามิเตอร์ (IS 12 เดือน / OOS 3 เดือน)
 - **Robustness 8 แบบ** รวมถึงทดสอบหน้าต่าง WF อีก 4 ขนาด (6/2, 9/3, 18/3, 24/6 เดือน)
 - **สุ่มจุดเข้า 300 รอบ** และ **Monte Carlo 5,000 รอบ** → คำนวณความเสี่ยงต่อไม้ให้ DD 95% ไม่เกินเป้า
 - รันเองทุก **วันเสาร์ 09:30 น.** โดยไม่ต้องกดอะไร · ถ้าอยากสั่งทันที: Sign in GitHub → **Run workflow** → research`)}</div>
-        <div class="row"><a class="btn primary" href="#/systems">ดูผลวิเคราะห์ →</a><a class="btn" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที</a></div>
+        <div class="row"><a class="btn primary" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที (ไม่บังคับ)</a><a class="btn" href="#/systems">ดูผลวิเคราะห์ →</a></div>
+        <div class="hint">ต้อง <b>Sign in</b> GitHub ก่อน จึงจะเห็นปุ่ม <b>Run workflow</b> → เลือก research → Run · รอ ~10–20 นาที · ดูวิธีในหน้า <a href="#/guide">คู่มือ</a></div>
         <div class="hint">การทดลองตั้งค่าเอง (Backtest / WF / MC แบบกำหนดพารามิเตอร์) ใช้ได้เมื่อเปิด <code>start_server.bat</code> บนคอม</div>
       </div></div></div>`;
     return;
@@ -578,7 +681,8 @@ async function renderLab(view) {
   const R = S.settings.research;
   view.innerHTML = `<div class="grid" style="grid-template-columns:minmax(0,360px) minmax(0,1fr);align-items:start" id="labGrid">
     <div class="card"><div class="hd"><h3>ตั้งค่าการทดสอบ</h3></div><div class="bd stack" style="gap:12px">
-      <button class="btn primary" id="bAuto">🤖 วิเคราะห์อัตโนมัติ (ปุ่มเดียว)</button>
+      <button class="btn primary" id="bAutoAll">🤖 วิเคราะห์ใหม่ทั้งหมดทันที (ทุกสินทรัพย์)</button>
+      <button class="btn" id="bAuto">🤖 วิเคราะห์อัตโนมัติเฉพาะสินทรัพย์ที่เลือก</button>
       <div class="hint">ระบบเลือกกลยุทธ์ / TF / พารามิเตอร์ / หน้าต่าง WF / Robustness / Monte Carlo / ความเสี่ยงให้เองสำหรับสินทรัพย์ที่เลือก แล้วอัปเดตระบบเทรด · ด้านล่างสำหรับทดลองเอง</div>
       <div class="fgrid" style="grid-template-columns:1fr 1fr">
         <label class="f">สินทรัพย์<select class="inp" id="lSym">${S.symbols.map((x) => `<option ${x.symbol === sym ? "selected" : ""}>${x.symbol}</option>`).join("")}</select></label>
@@ -647,15 +751,16 @@ async function renderLab(view) {
   };
   $("#labTabs").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) show(b.dataset.t); };
   const busy = async (btn, fn) => { const t = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> กำลังคำนวณ…`; try { await fn(); } catch (e) { toast("ผิดพลาด: " + e.message, 4000); } finally { btn.disabled = false; btn.innerHTML = t; } };
-  $("#bAuto").onclick = async (e) => {
-    const sym = $("#lSym").value, btn = e.currentTarget;
-    const r = await api("/api/research/run", { method: "POST", body: { symbols: [sym] } });
+  $("#bAutoAll").onclick = (e) => autoRun(e.currentTarget, null);
+  $("#bAuto").onclick = (e) => autoRun(e.currentTarget, $("#lSym").value);
+  const autoRun = async (btn, sym) => {
+    const r = await api("/api/research/run", { method: "POST", body: { symbols: sym ? [sym] : [] } });
     if (!r.started) return toast("มีการวิเคราะห์กำลังรันอยู่");
     btn.disabled = true;
     const tick = async () => {
       const st = await api("/api/research/state");
       if (st.running) { btn.innerHTML = `<span class="spinner"></span> ${esc(st.progress || "กำลังวิเคราะห์…")}`; return setTimeout(tick, 2000); }
-      S.symbols = await api("/api/symbols"); toast(`วิเคราะห์ ${sym} เสร็จแล้ว`); location.hash = "#/systems";
+      S.symbols = await api("/api/symbols"); toast(`วิเคราะห์ ${sym || "ทุกสินทรัพย์"} เสร็จแล้ว`); location.hash = "#/systems";
     };
     tick();
   };
@@ -930,7 +1035,7 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
 ### 🙋 ส่วนที่คุณทำ
 - **เมื่อมีแจ้งเตือน:** เปิด MT5 แล้วส่งคำสั่งซื้อขายตาม Lot / SL / TP ในข้อความ (ระบบ **ไม่ได้** ส่งออเดอร์ให้เอง)
 - **วันจันทร์ (ถ้าต้องการ):** เปิดคอม พิมพ์บอก Claude ว่า “อัปเดตระบบเทรด” → Claude ตรวจผลจริงเทียบผลวิจัย ปิดระบบที่เริ่มเสีย เขียนบันทึก และส่งขึ้นคลาวด์ให้
-### 🔘 ปุ่ม “สั่งวิเคราะห์ใหม่ทันที” คืออะไร
+### 🔘 ปุ่ม “สั่งวิเคราะห์ใหม่ทันที” คืออะไร (อยู่ในหน้า **Strategy Lab**)
 - เป็น **ทางลัดที่ไม่บังคับ** ใช้เมื่ออยากให้วิเคราะห์ใหม่ก่อนถึงวันเสาร์ เช่น หลังแก้ตั้งค่า
 - กดแล้วจะเปิดหน้า **GitHub Actions** ซึ่งเป็นรายการงานที่คลาวด์ทำไปแล้ว ✅ สีเขียว = สำเร็จ ❌ สีแดง = ล้มเหลว
   - “Scheduled” คือรอบสแกนรายชั่วโมงที่รันเอง
@@ -974,7 +1079,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - ถ้าไม่ตรง บอก Claude ให้แก้ค่า contract ของสินทรัพย์นั้น`],
     ["pages", "5. หน้าต่าง ๆ ในเว็บ", `
 - **📡 สัญญาณ:** สัญญาณที่เข้าได้ตอนนี้, ตารางระบบที่ใช้ในแต่ละสินทรัพย์, ผล forward test, ประวัติสัญญาณ
-- **🧪 ระบบเทรด:** ผลวิเคราะห์ล่าสุดของทั้ง 8 สินทรัพย์
+- **🧪 ระบบเทรด:** ผลวิเคราะห์ล่าสุดของทั้ง 8 สินทรัพย์ (ดูความหมายป้ายในข้อ 7)
   - **ACTIVE** = ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริง
   - **WATCH** = ผลบวกแต่ยังพิสูจน์ไม่พอ → ติดตามเงียบ ๆ ไม่แจ้งเตือน
   - **OFF** = ไม่พบความได้เปรียบ → ไม่เทรด
@@ -982,10 +1087,75 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - **📈 กราฟ:** แท่งเทียน H1/H4/D1 พร้อม indicator ของระบบ, ลูกศรจุดเข้า และวงกลมจุดออกของไม้ในอดีต
   - ออเดอร์ที่ระบบถืออยู่จะมีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อมป้ายราคาและ Lot ด้านขวา
   - เส้นยืดออกไปตามแท่งใหม่จนกว่าจะชน SL/TP หรือหมดเวลา
-- **🔬 Strategy Lab:** บนเว็บออนไลน์จะแสดงสรุปการวิเคราะห์อัตโนมัติ ส่วนการทดลองตั้งพารามิเตอร์เองใช้ได้เมื่อเปิด \`start_server.bat\` บนคอม
+  - **เลือกกลยุทธ์อื่นได้** จากช่องเลือกเหนือกราฟ (★ = ระบบจริง) เพื่อดูหน้าตาและผลของแต่ละกลยุทธ์ — เป็น **โหมดดูอย่างเดียว ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน**
+  - ใต้กราฟเรียงเป็น: **Equity curve** (สลับได้ระหว่าง Walk-Forward OOS กับ Backtest ทั้งช่วง) → **ระบบบนกราฟนี้** → **เทรดล่าสุดของระบบ**
+  - ซูมกราฟด้วยสองนิ้วได้ ส่วนหน้าเว็บจะไม่ซูมตามแล้ว
+- **🔬 Strategy Lab:** มีปุ่ม **สั่งวิเคราะห์ใหม่ทันที** และสรุปการวิเคราะห์อัตโนมัติ ส่วนการทดลองตั้งพารามิเตอร์เองใช้ได้เมื่อเปิด \`start_server.bat\` บนคอม
 - **🧮 เครื่องคำนวณ:** คำนวณ Lot / R:R / SL-TP เองสำหรับเทรดนอกระบบ
 - **⚙️ ตั้งค่า:** ทุน, ความเสี่ยงต่อไม้, ชื่อสัญลักษณ์ MT5, เกณฑ์ที่ใช้ตัดสิน (ดูอย่างเดียว)`],
-    ["price", "6. ราคา, ความสดของข้อมูล และ MT5", `
+    ["method", "6. ระบบทดสอบกลยุทธ์อย่างไร (ทีละขั้น)", `
+เปรียบเหมือน **คัดนักกีฬาเข้าทีมชาติ**: ไม่ได้ดูแค่ผลซ้อม (backtest) แต่ให้ลงแข่งสนามจริงที่ไม่เคยเห็น (walk-forward) แล้วเทียบกับคนที่ “เดาสุ่ม” และลองให้เล่นในสภาพแย่ ๆ (robustness) ก่อนจะเรียกติดทีม
+### ขั้นที่ 1 — เตรียมข้อมูลและกติกาการเทรด
+- ใช้แท่งเทียน H1 (H4 สร้างจาก H1) จาก MT5 / Yahoo / Binance
+- **ตัดสินใจตอนแท่งปิด แล้วเข้าที่ราคาเปิดแท่งถัดไป** — ไม่แอบดูอนาคต (ทดสอบแล้วกับกราฟสุ่มล้วน ผลออกมาใกล้ 0R ทุกกลยุทธ์ แปลว่าไม่มีการแอบดูข้อมูลล่วงหน้า)
+- ทางออกเหมือนกันทุกกลยุทธ์: **SL = k × ATR14**, **TP = R:R × ระยะ SL**, และ **ถือไม่เกิน 120 ชม.**
+- ถ้าแท่งเดียวแตะทั้ง SL และ TP ให้ถือว่า **ชน SL ก่อน** (คิดแบบร้ายไว้ก่อน) และถ้าราคากระโดดข้าม SL จะออกที่ราคาเปิด
+- **หักต้นทุนทุกไม้:** spread + slippage × 2 + ค่าคอม
+- วัดผลเป็น **R** (1R = เงินที่เสี่ยงต่อไม้) จึงเทียบข้ามสินทรัพย์ได้
+### ขั้นที่ 2 — Backtest ทุกชุดพารามิเตอร์ (ชุดเล็ก ๆ)
+- ${S.strategies.length || 10} กลยุทธ์ × H1/H4 แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือกไม่เกิน 16 ชุด
+- ตั้งใจให้ชุดเล็ก เพราะยิ่งลองมากชุด ยิ่งมีโอกาสเจอ “ชุดที่ดีเพราะโชค”
+### ขั้นที่ 3 — Walk-Forward แบบเลื่อนหน้าต่าง (หัวใจของการทดสอบ)
+- **1.** ดูข้อมูล 12 เดือน (In-Sample) แล้วเลือกพารามิเตอร์ที่ t-stat ดีที่สุด
+- **2.** เอาพารามิเตอร์นั้นไปเทรด **3 เดือนถัดไป** ที่ระบบไม่เคยเห็น (Out-of-Sample) โดยห้ามแก้
+- **3.** เลื่อนไป 3 เดือน แล้วทำซ้ำจนสุดข้อมูล
+- **4.** เอาผล OOS ทุกช่วงมาต่อกัน **ใช้ผลนี้เท่านั้นในการตัดสิน** (เหมือนข้อสอบที่ไม่เคยเห็น)
+- ช่วงไหน In-Sample ไม่มีชุดที่เป็นบวก ระบบจะไม่เทรดช่วงนั้น
+### ขั้นที่ 4 — เทียบกับการสุ่มจุดเข้า
+- สุ่มจุดเข้า 300 รอบ โดยใช้ SL/TP/จำนวนไม้/สัดส่วน Long-Short เท่ากัน
+- ต้องชนะการสุ่มอย่างน้อย 90% — ถ้าไม่ชนะ แปลว่ากำไรมาจากตลาดวิ่งทางเดียว ไม่ใช่จากสัญญาณ
+### ขั้นที่ 5 — Robustness 8 แบบ (พยายามทำให้ระบบพัง)
+- หน้าต่าง Walk-Forward ขนาดอื่น 5 แบบ, ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 20 รอบ
+- ฝั่ง Long/Short ไม่มีฝั่งที่ขาดทุนชัด, กำไรสม่ำเสมอรายครึ่งปี, ตัด 5% ไม้ที่ดีที่สุดออกแล้วยังบวก, พารามิเตอร์ข้างเคียงก็กำไร
+### ขั้นที่ 6 — Monte Carlo
+- สุ่มลำดับและเลือกไม้ OOS ซ้ำ 5,000 รอบ เพื่อดูว่า **ถ้าโชคไม่ดี** drawdown จะลึกแค่ไหน
+- ใช้หา Profit factor ที่ระดับแย่ 5% และความเสี่ยงต่อไม้ที่ทำให้ DD 95% ไม่เกินเป้า
+- Monte Carlo **ตรวจ overfitting ไม่ได้** จึงใช้กับผล OOS เท่านั้น
+### ขั้นที่ 7 — เลือกตัวที่ดีที่สุด แล้ว “หักค่าโชค”
+- ทุกสินทรัพย์มีผู้สมัครประมาณ 20 ตัว (กลยุทธ์ × TF) ระบบเลือกตัวที่ OOS t-stat สูงสุด
+- ปัญหา: **ถ้าให้คน 20 คนโยนเหรียญ คนที่ได้หัวมากที่สุดก็ดูเก่งเพราะโชค** จึงต้องตั้งเกณฑ์สูงขึ้นตามจำนวนผู้สมัคร
+- เกณฑ์ “t ปรับตามจำนวนระบบที่เทียบ” ใช้ Šidák correction: 8 ผู้สมัคร ≈ t 2.5 · 20 ผู้สมัคร ≈ t 2.8 (ใกล้เคียงข้อเสนอ t > 3 ของ Harvey, Liu & Zhu)
+### ขั้นที่ 8 — ตัดสินสถานะ
+- **ACTIVE:** ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริง
+- **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ติดตามผลจริงเงียบ ๆ ไม่แจ้งเตือน
+- **OFF:** ไม่พบ edge → ไม่เทรด
+- หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF`],
+    ["watch", "7. ป้าย ACTIVE / WATCH / OFF คืออะไร", `
+เปรียบเหมือน **นักฟุตบอลในทีม**:
+- **ACTIVE (ตัวจริง)** — ผ่านการคัดเลือกทุกด่าน ลงเล่นจริง → ระบบส่งแจ้งเตือนให้คุณเปิดออเดอร์
+- **WATCH (ตัวสำรองที่ฟอร์มดี)** — ผล Out-of-Sample เป็นบวก แต่หลักฐานยังไม่พอ เช่น t-stat ต่ำกว่าเกณฑ์ หรือ Monte Carlo ยังไม่มั่นใจ
+  - ระบบยังสแกนหาสัญญาณและ **บันทึกผลจริง (forward test)** ไว้ทุกไม้ แต่ **ไม่ส่งแจ้งเตือน** (เปิดได้ในตั้งค่า แต่ไม่แนะนำ)
+  - ถ้าผลจริงสะสมดี การวิเคราะห์รอบถัดไปอาจเลื่อนเป็น ACTIVE เอง
+  - **ไม่ควรเทรดด้วยเงินจริง** ใช้ดูเพื่อเรียนรู้หรือเทรด demo
+- **OFF (ไม่ติดทีม)** — ไม่พบความได้เปรียบที่แยกออกจากโชคได้ → ไม่เทรด
+- กดการ์ดในหน้า **ระบบเทรด** จะเห็นว่าเกณฑ์ไหน ✓ ผ่าน ✗ ไม่ผ่าน`],
+    ["trust", "8. วิธีนี้น่าเชื่อถือแค่ไหน และอ้างอิงจากไหน", `
+### วิธีที่ใช้มาจากงานวิจัยและตำราที่มืออาชีพใช้ (ไม่ได้คิดขึ้นเอง)
+- **Walk-Forward Analysis และ WF Efficiency:** Robert Pardo, *The Evaluation and Optimization of Trading Strategies* (Wiley, 2008) — [Wiley](https://www.wiley-vch.de/en/areas-interest/finance-economics-law/the-evaluation-and-optimization-of-trading-strategies-978-0-470-12801-5)
+- **เทียบกับการสุ่ม / data-mining bias:** David Aronson, *Evidence-Based Technical Analysis* (Wiley, 2006) — [StockCharts](https://store.stockcharts.com/products/evidence-based-technical-analysis-applying-the-scientific-method-and-statistical-inference-to-trading-signals)
+- **หักค่าโชคเมื่อเลือกจากหลายระบบ:** Bailey & López de Prado, *The Deflated Sharpe Ratio* (2014) — [SSRN](https://papers.ssrn.com/abstract=2460551) และ Harvey, Liu & Zhu, *…and the Cross-Section of Expected Returns* (2016) — [NBER](https://nber.org/papers/w20592)
+- **เหตุผลที่กลยุทธ์ตามแนวโน้มอาจมี edge:** Moskowitz, Ooi & Pedersen, *Time Series Momentum* (Journal of Financial Economics, 2012) — [SSRN](https://papers.ssrn.com/abstract=2089463)
+- **วัดผลเป็น R และ Monte Carlo ของลำดับเทรด:** แนวทางของ Van K. Tharp และ Kevin Davey (*Building Winning Algorithmic Trading Systems*, 2014)
+### สิ่งที่ทำถูกต้องแล้ว
+- ไม่แอบดูอนาคต (ตรวจกับกราฟสุ่มแล้ว), หักต้นทุน, ชน SL ก่อนเมื่อไม่แน่ใจ, ตัดสินจาก OOS เท่านั้น, ชุดพารามิเตอร์เล็ก
+### ข้อจำกัดที่ต้องรู้ (ตรงไปตรงมา)
+- **ข้อมูลฟรีสั้น:** Yahoo ให้ H1 ย้อนหลังแค่ ~2 ปี → OOS ของ FX/ทอง/ดัชนีมีแค่ ~1–1.5 ปี ยังน้อยเกินจะมั่นใจมาก (เปิด MT5 แล้ววิเคราะห์บนคอมจะได้ข้อมูลยาวกว่า)
+- **ราคา futures ไม่ใช่ CFD:** ทอง/ดัชนีจาก Yahoo เป็นสัญญาล่วงหน้าแบบต่อเนื่อง มีช่วงเปลี่ยนสัญญาที่ราคากระโดดเล็กน้อย
+- **Šidák ถือว่าผู้สมัครเป็นอิสระต่อกัน** ซึ่งจริง ๆ กลยุทธ์คล้ายกันหลายตัว เกณฑ์จึงค่อนข้างเข้ม (เข้มดีกว่าหลวม)
+- **Monte Carlo สมมติว่าแต่ละไม้ไม่เกี่ยวกัน** ช่วงตลาดเปลี่ยนนิสัยยาว ๆ อาจแย่กว่าที่ MC แสดง
+- **ไม่มีวิธีไหนพิสูจน์ได้ว่าจะกำไรในอนาคต** — การทดสอบนี้ทำได้แค่ “คัดระบบที่น่าจะเป็นโชคออก” ผลจริง (forward test) คือบทพิสูจน์สุดท้าย
+- เว็บนี้เป็นเครื่องมือวิจัย ไม่ใช่คำแนะนำการลงทุน`],
+    ["price", "9. ราคา, ความสดของข้อมูล และ MT5", `
 - **ไม่ต้องเปิด MT5 เพื่อให้ระบบทำงาน** คลาวด์ดึงราคาฟรีเอง:
   - Yahoo สำหรับ FX, ทอง และดัชนี
   - Binance สำหรับ BTC และ ETH
@@ -996,7 +1166,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - **ทำไมราคาบนเว็บต่างจาก MT5:** ทองและดัชนีจาก Yahoo เป็นราคา futures ซึ่งต่างจาก CFD ของโบรกประมาณ 0.1–0.5%
   - สิ่งที่ใช้ได้ตรงคือ **ระยะ** SL/TP (pips/จุด) เพราะปุ่มปรับตามราคา MT5 คงระยะไว้
 - **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง (ไม่บังคับ ใช้ตอนวิเคราะห์เชิงลึกกับ Claude)`],
-    ["monday", "7. วันจันทร์กับ Claude", `
+    ["monday", "10. วันจันทร์กับ Claude", `
 - เปิดคอม → เปิด Claude ในโฟลเดอร์ \`D:\\Backtest\` → พิมพ์ เช่น “อัปเดตระบบเทรด” หรือ “ทุนเปลี่ยนเป็น 6000”
 - Claude จะ:
   - ดึงผลล่าสุดจากคลาวด์
@@ -1005,7 +1175,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - เขียนบันทึก (แสดงในหน้า **ระบบเทรด**)
   - ส่งขึ้นคลาวด์ให้เสร็จในวันนั้น
 - กติกาที่ Claude ต้องทำตาม: **ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ**, ตัดสินจากผล Out-of-Sample เท่านั้น, ถือไม่เกิน 5 วัน`],
-    ["faq", "8. คำถามที่พบบ่อย / ข้อควรรู้", `
+    ["faq", "11. คำถามที่พบบ่อย / ข้อควรรู้", `
 - **ทำไมไม่มีสัญญาณเลยหลายวัน?** ส่งแจ้งเตือนเฉพาะระบบ ACTIVE และเฉพาะตอนไม่มีออเดอร์ค้าง ถ้า ACTIVE มีน้อย สัญญาณก็น้อย ซึ่งดีกว่าเทรดระบบที่ไม่ผ่านการทดสอบ
 - **กดปุ่มวิเคราะห์แล้วเจอหน้า GitHub ไม่มีปุ่ม Run workflow?** ต้องกด **Sign in** มุมขวาบนของ GitHub ก่อน → เมนูซ้ายเลือก **TradingLab** → ปุ่ม **Run workflow** → เลือก \`research\` → Run
 - **ไม่มีแจ้งเตือนเด้ง?** ตรวจว่าแอป ntfy subscribe topic ถูกตัว และอนุญาตการแจ้งเตือนในมือถือ ดูได้ที่ GitHub Actions ว่ารอบล่าสุดเป็น ✅
@@ -1019,7 +1189,7 @@ async function renderGuide(view) {
   const ch = manualChapters();
   view.innerHTML = `<div class="stack">
     <div class="card"><div class="hd"><h3>📘 คู่มือการใช้งาน TradingLab</h3></div><div class="bd stack" style="gap:10px">
-      <div class="hint">อ่านข้อ 1–4 ก่อนเริ่มใช้ ที่เหลืออ่านเมื่อสงสัย · ตัวเลขในคู่มือคำนวณจากทุนและความเสี่ยงที่ตั้งไว้ในเครื่องนี้</div>
+      <div class="hint">อ่านข้อ 1–4 ก่อนเริ่มใช้ · ข้อ 6–8 อธิบายวิธีทดสอบกลยุทธ์และความน่าเชื่อถือ · · ตัวเลขในคู่มือคำนวณจากทุนและความเสี่ยงที่ตั้งไว้ในเครื่องนี้</div>
       <div class="chips">${ch.map(([id, title]) => `<button class="chip" data-go="${id}">${esc(title)}</button>`).join("")}</div></div></div>
     ${ch.map(([id, title, body]) => `<div class="card" id="man-${id}"><div class="hd"><h3>${esc(title)}</h3></div><div class="bd md">${md(body)}</div></div>`).join("")}
   </div>`;
@@ -1027,7 +1197,23 @@ async function renderGuide(view) {
 }
 
 // ------------------------------------------------------------------ boot
+// iPad / iPhone: pinch-zoom is for charts only. A pinch that starts outside a chart (sidebar, cards, the
+// bar between panels) is swallowed so the whole web app never zooms; charts handle their own pinch.
+function lockPageZoom() {
+  const inChart = (e) => !!(e.target && e.target.closest && e.target.closest(".chart"));
+  ["gesturestart", "gesturechange", "gestureend"].forEach((t) =>
+    document.addEventListener(t, (e) => { if (!inChart(e)) e.preventDefault(); }, { passive: false }));
+  document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 && !inChart(e)) e.preventDefault(); }, { passive: false });
+  let lastTap = 0;  // double-tap zoom on older iOS that ignores touch-action
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300 && !inChart(e) && !e.target.closest("input,select,textarea,button,a,label")) e.preventDefault();
+    lastTap = now;
+  }, { passive: false });
+}
+
 async function boot() {
+  lockPageZoom();
   const theme = store.get("theme", "dark");
   document.documentElement.dataset.theme = theme;
   $("#themeBtn").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; store.set("theme", t); navigate(); };

@@ -118,6 +118,13 @@ def candles(symbol: str, tf: str = "H1", limit: int = 1500, strategy: str | None
     return ok(charts.candles(symbol, tf, limit, cfg, system))
 
 
+@app.get("/api/system")
+def system(symbol: str, tf: str = "H1", strategy: str = "", params: str | None = None, limit: int = 1500):
+    """One strategy on the chart page (view-only: never changes the live system or alerts)."""
+    _check(symbol, tf, strategy)
+    return ok(charts.system_payload(symbol, tf, strategy, json.loads(params) if params else None, limit))
+
+
 # ----------------------------------------------------------------------------- research tools
 @app.post("/api/backtest")
 def backtest(body: dict = Body(...)):

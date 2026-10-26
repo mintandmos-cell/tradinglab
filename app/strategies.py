@@ -59,6 +59,70 @@ def _bb_reversion(df, p):
     return long_.astype(int) - short.astype(int), {"BB Upper": up, "BB Mid": mid, "BB Lower": dn}
 
 
+def _tsmom(df, p):
+    """Sign of the N-bar return flips: a new time-series-momentum position."""
+    c = df.close.to_numpy()
+    roc = c / ta.shift(c, int(p["lookback"])) - 1
+    pr = ta.shift(roc)
+    return ((roc > 0) & (pr <= 0)).astype(int) - ((roc < 0) & (pr >= 0)).astype(int), {}
+
+
+def _adx_trend(df, p):
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    pdi, mdi, adx = ta.dmi(h, l, c, 14)
+    strong = adx > p["adx_min"]
+    return (_cross_up(pdi, mdi) & strong).astype(int) - (_cross_up(mdi, pdi) & strong).astype(int), {}
+
+
+def _squeeze(df, p):
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    n = int(p["bb_len"])
+    mid, up, dn = ta.bollinger(c, n, 2.0)
+    _, ku, kd = ta.keltner(h, l, c, n, p["kc_mult"])
+    on = (up < ku) & (dn > kd)                      # Bollinger inside Keltner = volatility compressed
+    fired = ta.shift(on.astype(float)) == 1
+    fired &= ~on                                    # compression just released
+    return (fired & (c > up)).astype(int) - (fired & (c < dn)).astype(int), {"BB Upper": up, "BB Lower": dn, "KC Upper": ku, "KC Lower": kd}
+
+
+def _session(df, p):
+    """Break of the Asian-session range (00:00 UTC -> range_end) during the following 5 hours, first break per day."""
+    idx = df.index
+    hour = idx.hour.to_numpy()
+    day = idx.normalize()
+    re = int(p["range_end"])
+    in_rng = hour < re
+    rh = pd.Series(np.where(in_rng, df.high.to_numpy(), np.nan), index=idx).groupby(day).transform("max").to_numpy()
+    rl = pd.Series(np.where(in_rng, df.low.to_numpy(), np.nan), index=idx).groupby(day).transform("min").to_numpy()
+    c = df.close.to_numpy()
+    win = (hour >= re) & (hour < re + 5)
+    raw = np.where(win & (c > rh), 1, np.where(win & (c < rl), -1, 0))
+    first = pd.Series(raw != 0, index=idx).groupby(day).cumsum().to_numpy() == 1
+    sig = np.where(first & (raw != 0), raw, 0)
+    return sig, {"Asia High": np.where(hour >= re, rh, np.nan), "Asia Low": np.where(hour >= re, rl, np.nan)}
+
+
+def _ema_pullback(df, p):
+    o, c, h, l = df.open.to_numpy(), df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    f, s = ta.ema(c, int(p["fast"])), ta.ema(c, int(p["slow"]))
+    up = (f > s) & (c > s)
+    dn = (f < s) & (c < s)
+    long_ = up & (l <= f) & (c > f) & (c > o)       # dipped to the fast EMA and closed back above it, bullish bar
+    short = dn & (h >= f) & (c < f) & (c < o)
+    return long_.astype(int) - short.astype(int), {f"EMA{int(p['fast'])}": f, f"EMA{int(p['slow'])}": s}
+
+
+def _range_fade(df, p):
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    mid, ku, kd = ta.keltner(h, l, c, 20, p["kc_mult"])
+    _, _, adx = ta.dmi(h, l, c, 14)
+    calm = adx < p["adx_max"]
+    pc = ta.shift(c)
+    long_ = calm & (c < kd) & (pc >= ta.shift(kd))
+    short = calm & (c > ku) & (pc <= ta.shift(ku))
+    return long_.astype(int) - short.astype(int), {"KC Upper": ku, "KC Mid": mid, "KC Lower": kd}
+
+
 STRATEGIES: dict[str, dict] = {
     "donchian_trend": {
         "name": "Donchian Breakout + EMA200",
@@ -94,6 +158,57 @@ STRATEGIES: dict[str, dict] = {
         "params": [{"key": "bb_len", "label": "BB Length", "type": "int", "default": 20, "min": 5, "max": 100, "step": 1},
                    {"key": "bb_k", "label": "BB Std (k)", "type": "float", "default": 2.0, "min": 1, "max": 4, "step": 0.1}],
         "grid": {"bb_len": [20], "bb_k": [2.0, 2.5], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    "tsmom": {
+        "name": "Time-Series Momentum",
+        "family": "Trend following",
+        "rationale": "ผลตอบแทนย้อนหลัง N แท่งเปลี่ยนเครื่องหมาย = แนวโน้มเปลี่ยนทิศ — Moskowitz, Ooi & Pedersen (2012) พบ time-series momentum ใน 58 ตลาด (FX, ดัชนี, สินค้าโภคภัณฑ์, พันธบัตร)",
+        "fn": _tsmom,
+        "params": [{"key": "lookback", "label": "Lookback (แท่ง)", "type": "int", "default": 120, "min": 10, "max": 500, "step": 1}],
+        "grid": {"lookback": [60, 120, 240], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    "adx_trend": {
+        "name": "ADX + DI Crossover",
+        "family": "Trend following",
+        "rationale": "เข้าตามแนวโน้มเฉพาะเมื่อแนวโน้มแรงจริง (ADX สูง) และ +DI/−DI ตัดกัน — J. Welles Wilder (1978) ตัดช่วงตลาดไซด์เวย์ที่ระบบตามแนวโน้มมักเสียเงิน",
+        "fn": _adx_trend,
+        "params": [{"key": "adx_min", "label": "ADX ขั้นต่ำ", "type": "float", "default": 20, "min": 10, "max": 40, "step": 1}],
+        "grid": {"adx_min": [20, 25], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    "squeeze_breakout": {
+        "name": "Volatility Squeeze Breakout",
+        "family": "Volatility breakout",
+        "rationale": "ความผันผวนมักเกาะกลุ่ม (volatility clustering): ช่วงบีบตัว (Bollinger อยู่ในกรอบ Keltner) มักตามด้วยการขยายตัว เข้าตามทิศที่ราคาหลุดกรอบ — แนวคิด TTM Squeeze (John Carter)",
+        "fn": _squeeze,
+        "params": [{"key": "bb_len", "label": "BB/KC Length", "type": "int", "default": 20, "min": 10, "max": 60, "step": 1},
+                   {"key": "kc_mult", "label": "Keltner (x ATR)", "type": "float", "default": 1.5, "min": 1, "max": 3, "step": 0.1}],
+        "grid": {"bb_len": [20], "kc_mult": [1.5, 2.0], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    "session_breakout": {
+        "name": "Asian Range Breakout",
+        "family": "Session / liquidity",
+        "rationale": "ช่วงเอเชียสภาพคล่องต่ำ ราคามักอยู่ในกรอบแคบ เมื่อตลาดลอนดอนเปิด (สภาพคล่องเข้ามามาก) การทะลุกรอบเอเชียมักไปต่อ — กลยุทธ์ session breakout ที่นิยมใน FX/ทอง (ใช้ได้ดีที่สุดบน H1)",
+        "fn": _session,
+        "params": [{"key": "range_end", "label": "กรอบเอเชียสิ้นสุด (ชม. UTC)", "type": "int", "default": 7, "min": 4, "max": 9, "step": 1}],
+        "grid": {"range_end": [6, 7], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    "ema_pullback": {
+        "name": "EMA Pullback in Trend",
+        "family": "Pullback",
+        "rationale": "ในแนวโน้มที่ชัด (EMA เร็วอยู่ฝั่งเดียวกับ EMA ช้า) ราคาย่อมาแตะ EMA เร็วแล้วปิดกลับทิศเดิม = จังหวะเข้าที่ราคาดีกว่าการไล่ breakout — แนวคิดเทรดตามแนวโน้มแบบรอย่อ (Linda Raschke / Al Brooks)",
+        "fn": _ema_pullback,
+        "params": [{"key": "fast", "label": "EMA เร็ว", "type": "int", "default": 20, "min": 5, "max": 100, "step": 1},
+                   {"key": "slow", "label": "EMA ช้า", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"fast": [20, 50], "slow": [200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    "range_fade": {
+        "name": "Keltner Fade (no-trend regime)",
+        "family": "Mean reversion",
+        "rationale": "สวนการยืดตัวเฉพาะตอนตลาดไม่มีแนวโน้ม (ADX ต่ำ): ราคาหลุดกรอบ Keltner แล้วมักกลับเข้าหาค่าเฉลี่ย — แยก regime ก่อน เพราะ mean reversion เสียหนักในช่วงเทรนด์แรง",
+        "fn": _range_fade,
+        "params": [{"key": "kc_mult", "label": "Keltner (x ATR20)", "type": "float", "default": 2.0, "min": 1, "max": 4, "step": 0.1},
+                   {"key": "adx_max", "label": "ADX สูงสุด (ไม่มีเทรนด์)", "type": "float", "default": 20, "min": 10, "max": 35, "step": 1}],
+        "grid": {"kc_mult": [1.5, 2.0], "adx_max": [20, 25], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
     },
 }
 

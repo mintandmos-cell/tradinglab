@@ -13,16 +13,19 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
 - Sizing: every signal risks the fixed `risk_per_trade_pct` (0.25%, user's choice) of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
-  The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes.
+  The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
+  (chapters 6–8 explain the testing method step by step, ACTIVE/WATCH/OFF, references and limitations).
+- UI rules from the user: the page must not pinch-zoom on iPad (only charts zoom); the "re-run research now" button lives only in Strategy Lab;
+  the chart page order is chart → equity curve → system info → latest trades, and its strategy picker is view-only.
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout
 - `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance. H1 cached in `data/cache`, H4/D1 resampled.
 - `app/strategies.py` — strategy library (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
-- `app/research.py` — per-symbol pipeline → `data/research/latest.json` (+ `history/`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`).
+- `app/research.py` — per-symbol pipeline → `data/research/latest.json` (+ `history/`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Every candidate keeps its compact OOS trades (`oos_eq`) for the chart page.
 - `app/scanner.py` — signals on closed bars, forward tracking with the same rules, ntfy/Telegram push.
-- `app/charts.py`, `app/export.py` (static site → `site/`), `app/cloud.py` (Actions entry), `app/server.py` + `web/` (same front-end; `window.TL_STATIC` switches it to static JSON).
+- `app/charts.py` (`system_payload`: any strategy on any chart, view-only — chart page picker + equity curve; static build writes `site/data/sys/{SYM}_{TF}_{strategy}.json`), `app/export.py` (static site → `site/`), `app/cloud.py` (Actions entry), `app/server.py` + `web/` (same front-end; `window.TL_STATIC` switches it to static JSON).
 
 ## Monday session ("อัปเดตระบบ", "เก็บข้อมูลวิเคราะห์แล้วปรับระบบ", …) — finish within the day
 1. `git pull --rebase` (gets the bot's signals + Saturday research). If `data/signals.json` conflicts, take the remote version.
@@ -38,6 +41,7 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
 7. Report to the user in a few lines; do not claim profitability the data does not show.
 
 ## Improving the strategy library — rules
+- Library: 10 strategies (Oct 2026: +tsmom, adx_trend, squeeze_breakout, session_breakout, ema_pullback, range_fade) → 104 combos per TF, 208 per symbol.
 - New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos. Every addition raises the trial count; mention it.
 - Judge only on walk-forward OOS + random benchmark + robustness + MC of OOS trades. Never tune on OOS results, never re-run folds until something passes.
 - Never lower `research.gates` or raise `max_hold_hours` above 120 to manufacture signals.

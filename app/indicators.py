@@ -49,3 +49,23 @@ def shift(x: np.ndarray, k: int = 1) -> np.ndarray:
     out = np.full_like(x, np.nan, dtype=float)
     out[k:] = x[:-k]
     return out
+
+
+def dmi(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 14):
+    """Wilder's directional movement: returns (+DI, -DI, ADX)."""
+    up = h - np.r_[np.nan, h[:-1]]
+    dn = np.r_[np.nan, l[:-1]] - l
+    pdm = np.where((up > dn) & (up > 0), up, 0.0)
+    mdm = np.where((dn > up) & (dn > 0), dn, 0.0)
+    a = atr(h, l, c, n)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pdi = 100 * rma(pdm, n) / a
+        mdi = 100 * rma(mdm, n) / a
+        dx = 100 * np.abs(pdi - mdi) / (pdi + mdi)
+    return pdi, mdi, rma(dx, n)
+
+
+def keltner(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 20, mult: float = 1.5):
+    mid = ema(c, n)
+    a = atr(h, l, c, n)
+    return mid, mid + mult * a, mid - mult * a

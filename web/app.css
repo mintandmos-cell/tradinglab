@@ -15,6 +15,9 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; -webkit-text-size-adjust: 100%; }
 body { min-height: 100vh; }
+/* iPad / iPhone: the page itself never zooms (pinch or double-tap); only charts take pinch / drag gestures */
+html, body { touch-action: pan-x pan-y; }
+@media (pointer: coarse) { .inp, select.inp, textarea.inp, input[type="date"].inp { font-size: 16px; } }
 a { color: var(--accent2); text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 .mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }

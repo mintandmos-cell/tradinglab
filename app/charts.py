@@ -10,7 +10,8 @@ import pandas as pd
 from . import data, research
 from .config import symbol_spec
 from .engine import run
-from .strategies import STRATEGIES
+from .metrics import summarize
+from .strategies import STRATEGIES, normalize
 
 
 def clean(o):
@@ -69,4 +70,69 @@ def candles(symbol: str, tf: str, limit: int = 1500, cfg: dict | None = None, sy
             out["open_trade"] = {"entry_time": int(pd.Timestamp(ot["entry_time"]).timestamp()), "dir": ot["dir"],
                                  "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d),
                                  "close_by": int(pd.Timestamp(ot["close_by"]).timestamp())}
+    return out
+
+
+REASON = {"SL": 0, "TP": 1, "Time": 2}
+
+
+def system_params(symbol: str, tf: str, strategy: str, lat: dict | None = None) -> tuple[dict, str, dict | None]:
+    """Which parameters to show for a strategy on the chart page, and where they come from:
+    live  = the researched system itself (what the alerts trade)
+    wf    = the latest walk-forward choice for that strategy x TF (a research candidate, not traded)
+    default = the library defaults (no research for that strategy x TF, e.g. D1)."""
+    r = (lat if lat is not None else research.latest()).get("symbols", {}).get(symbol) or {}
+    if r.get("strategy") == strategy and r.get("tf") == tf and r.get("params"):
+        cand = next((c for c in r.get("candidates", []) if c["strategy"] == strategy and c["tf"] == tf), None)
+        return normalize(strategy, r["params"]), "live", cand
+    cand = next((c for c in r.get("candidates", []) if c["strategy"] == strategy and c["tf"] == tf), None)
+    if cand and cand.get("current_params"):
+        return normalize(strategy, cand["current_params"]), "wf", cand
+    return normalize(strategy, None), "default", cand
+
+
+def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = None, limit: int = 1500,
+                   lat: dict | None = None) -> dict:
+    """One strategy on one chart: indicator lines for the visible candles, every trade of the full history
+    (equity curve), the detailed recent trades (markers / table), the position still running, and the
+    walk-forward OOS trades from the research when that strategy x TF was a candidate.
+    Viewing never changes the live system — the scanner only reads research/latest.json."""
+    spec = symbol_spec(symbol)
+    d = spec["digits"]
+    if params is None:
+        params, src, cand = system_params(symbol, tf, strategy, lat)
+    else:
+        params, src, cand = normalize(strategy, params), "custom", None
+    live_sys = (lat if lat is not None else research.latest()).get("symbols", {}).get(symbol) or {}
+    closed = data.drop_unclosed(data.get_bars(symbol, tf, closed_only=False), tf)
+    res = run(closed, strategy, params, spec, tf, with_lines=True)
+    t = data.to_unix(closed.index)
+    cut = t[-limit] if len(t) > limit else t[0]
+    tr = res["trades"]
+    r = [x["r"] for x in tr]
+    yrs = data.years_of(closed)
+    m = summarize(r, yrs, 1.0, bars=[x["bars"] for x in tr], cost_r=[x["cost_r"] for x in tr])
+    m["long"] = summarize([x["r"] for x in tr if x["dir"] > 0], yrs)["expectancy"]
+    m["short"] = summarize([x["r"] for x in tr if x["dir"] < 0], yrs)["expectancy"]
+    eq = [[int(pd.Timestamp(x["exit_time"]).timestamp()), round(float(x["r"]), 3)] for x in tr]
+    recent = [x for x in tr if pd.Timestamp(x["exit_time"]).timestamp() >= cut]
+    out = {
+        "symbol": symbol, "tf": tf, "strategy": strategy, "name": STRATEGIES[strategy]["name"],
+        "family": STRATEGIES[strategy]["family"], "params": params, "params_source": src,
+        "is_live": src == "live", "live": {k: live_sys.get(k) for k in ("status", "strategy", "tf", "risk_pct")},
+        "digits": d, "from": closed.index[0].isoformat() if len(closed) else None, "years": round(yrs, 2),
+        "t": [int(x) for x in t[-limit:]],
+        "lines": {k: [None if not np.isfinite(v) else round(float(v), d + 1) for v in arr[-limit:]] for k, arr in res["lines"].items()},
+        "metrics": m, "equity": eq,
+        "trades": [trade_out(x, d) for x in recent[-200:]],
+        "last_signal": res["last_signal"], "open_trade": None, "oos": None,
+    }
+    ot = res["open_trade"]
+    if ot:
+        out["open_trade"] = {"entry_time": int(pd.Timestamp(ot["entry_time"]).timestamp()), "dir": ot["dir"],
+                             "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d),
+                             "close_by": int(pd.Timestamp(ot["close_by"]).timestamp())}
+    if cand and cand.get("oos_eq"):
+        out["oos"] = {"equity": cand["oos_eq"], "metrics": cand["oos"], "years": cand.get("oos_years"),
+                      "wfe": cand.get("wfe"), "plateau": cand.get("plateau")}
     return out

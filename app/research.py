@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 from datetime import datetime, timezone
+from statistics import NormalDist
 
 from . import data
 from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, symbol_spec, write_json
@@ -29,12 +30,25 @@ STATE = {"running": False, "progress": "", "started": None, "finished": None, "e
 _run_lock = threading.Lock()
 
 
-def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict) -> list[dict]:
+def adjusted_t(n_candidates: int, alpha: float = 0.05) -> float:
+    """t needed when the best of n candidates is picked on OOS results (Sidak correction, one-sided).
+
+    Picking the best of many systems inflates its t-stat by luck alone (data-mining bias; Aronson 2006,
+    Harvey-Liu-Zhu 2016, Bailey & Lopez de Prado 2014). Sidak assumes independent candidates; ours are
+    correlated, so this threshold is on the strict side."""
+    n = max(int(n_candidates), 1)
+    p = 1 - (1 - alpha) ** (1 / n)
+    return round(NormalDist().inv_cdf(1 - p), 2)
+
+
+def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: int = 1) -> list[dict]:
     o = best["oos"]
+    t_need = adjusted_t(n_cand) if g.get("multiple_testing", True) else g["min_t"]
     checks = [
         ("OOS trades", o["trades"], g["min_oos_trades"], o["trades"] >= g["min_oos_trades"]),
         ("OOS expectancy (R)", o["expectancy"], g["min_expectancy"], o["expectancy"] >= g["min_expectancy"]),
         ("OOS t-stat", o["t_stat"], g["min_t"], o["t_stat"] >= g["min_t"]),
+        (f"t ปรับตามจำนวนระบบที่เทียบ ({n_cand})", o["t_stat"], t_need, o["t_stat"] >= t_need),
         ("MC PF @95%", mc.get("pf_p5"), g["min_mc_pf_p5"], (mc.get("pf_p5") or 0) >= g["min_mc_pf_p5"]),
         ("ชนะการสุ่มจุดเข้า (percentile)", rb["percentile"] if rb else None, g["min_random_pct"],
          bool(rb) and rb["percentile"] >= g["min_random_pct"]),
@@ -60,6 +74,9 @@ def research_symbol(sym: str, settings: dict | None = None) -> dict:
             cand = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
                                         "param_switches", "distinct_params", "current_params", "current_is_t")}
             cand["name"] = STRATEGIES[sid]["name"]
+            # compact OOS trades (exit time, R) of every candidate: the chart page's walk-forward equity curve
+            cand["oos_eq"] = [[int(t), round(float(x["r"]), 3)] for t, x in
+                              zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])]
             candidates.append(cand)
             score = wf["oos"]["t_stat"] if wf["oos"]["trades"] >= 10 else -99
             if best is None or score > best["_score"]:
@@ -74,7 +91,8 @@ def research_symbol(sym: str, settings: dict | None = None) -> dict:
     mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000) if len(r) >= 5 else {}
     STATE["progress"] = f"{sym} robustness"
     rob = robustness(best_df, best, spec, best["tf"], cfg)
-    gates = _gates(best, rb, {"pf_p5": mc_full.get("pf_p5")}, rob, cfg["gates"])
+    n_cand = sum(1 for c in candidates if c["oos"]["trades"] >= 10)
+    gates = _gates(best, rb, {"pf_p5": mc_full.get("pf_p5")}, rob, cfg["gates"], n_cand)
     o = best["oos"]
     if all(g["pass"] for g in gates) and best["current_params"]:
         status = "ACTIVE"
@@ -99,7 +117,8 @@ def research_symbol(sym: str, settings: dict | None = None) -> dict:
         "param_switches": best["param_switches"], "folds": best["folds"],
         "random_benchmark": rb, "mc_1y": mc, "mc_pf_p5": mc_full.get("pf_p5"), "robustness": rob, "gates": gates,
         "failed": reasons,
-        "trials": int(sum(c["n_combos"] for c in candidates)), "candidates": candidates,
+        "trials": int(sum(c["n_combos"] for c in candidates)), "n_candidates": n_cand,
+        "t_needed": adjusted_t(n_cand), "candidates": candidates,
         "oos_r": [round(float(x), 4) for x in r],
         "oos_equity": equity_points(times, r, 1.0, 10000.0),
     }

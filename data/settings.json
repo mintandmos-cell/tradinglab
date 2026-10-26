@@ -80,7 +80,8 @@
    "min_t": 2,
    "min_mc_pf_p5": 1,
    "min_random_pct": 90,
-   "min_plateau": 0.4
+   "min_plateau": 0.4,
+   "multiple_testing": true
   }
  },
  "alerts": {

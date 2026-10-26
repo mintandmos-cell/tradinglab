@@ -65,7 +65,8 @@ DEFAULT_SETTINGS = {
         "schedule_hour_bkk": 10,
         "gates": {"min_oos_trades": 30, "min_expectancy": 0.05, "min_t": 2.0,
                   "min_mc_pf_p5": 1.0, "min_random_pct": 90.0, "min_plateau": 0.4,
-                  "min_robust_score": 60.0},
+                  "min_robust_score": 60.0,
+                  "multiple_testing": True},   # OOS t must also beat the Sidak-adjusted threshold for the number of candidates compared
     },
     "alerts": {"active": True, "watch": False},
     "force_off": [],                    # symbols vetoed by the user / AI review regardless of research
