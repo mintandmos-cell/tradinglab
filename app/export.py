@@ -17,7 +17,7 @@ from .strategies import public_list
 log = logging.getLogger("tradinglab.export")
 CLOUD_STATE = DATA_DIR / "cloud_state.json"
 # settings the browser may show; never secrets or the account balance
-PUBLIC_SETTINGS = ("default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "research", "alerts", "force_off")
+PUBLIC_SETTINGS = ("risk_per_trade_pct", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "research", "alerts", "force_off")
 
 
 def _dump(path, obj) -> None:
@@ -39,7 +39,7 @@ def build(repo: str = "", chart_limit: int = 1200) -> None:
     lat = research.latest()
     cfg = {"static": True, "built": datetime.now(timezone.utc).isoformat(), "repo": repo,
            "last_scan": state.get("last_scan"), "scan_error": state.get("last_error"),
-           "research_generated": lat.get("generated")}
+           "research_generated": lat.get("generated"), "account_balance": settings["account_balance"]}
     (SITE_DIR / "config.js").write_text("window.TL_STATIC = " + json.dumps(cfg) + ";", encoding="utf-8")
     _dump(d / "settings.json", {k: settings[k] for k in PUBLIC_SETTINGS})
     _dump(d / "symbols.json", research.symbol_table(settings))

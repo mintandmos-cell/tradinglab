@@ -11,6 +11,9 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
   - push to `main` touching app/web/research/settings: rebuild the site only.
   - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
+- Sizing: every signal risks the fixed `risk_per_trade_pct` (0.25%, user's choice) of `account_balance` (5000 USD; cloud = variable
+  `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
+  The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes.
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout

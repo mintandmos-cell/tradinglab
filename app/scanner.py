@@ -53,8 +53,11 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     sl_dist = float(p["sl_atr"]) * res["atr_last"]
     sl, tp = entry - d * sl_dist, entry + d * float(p["rr"]) * sl_dist
     info = data.mt5_symbol_info(sym)
-    risk_pct = float(cfg.get("risk_pct") or 0) or settings["default_risk_pct"] / 2
-    size = lots_for(sym, entry, sl, float(settings["account_balance"]), risk_pct, info, settings)
+    risk_pct = (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
+                or settings["default_risk_pct"] / 2)
+    balance = float(settings["account_balance"])
+    size = lots_for(sym, entry, sl, balance, risk_pct, info, settings)
+    min_lot_risk = round(0.01 * sl_dist * size.get("value_per_point_per_lot", 0), 2)  # what the broker's minimum lot would risk
     bar_t = df.index[-1]
     tfm = TIMEFRAMES[cfg["tf"]]
     return {
@@ -70,6 +73,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "sl_pips": round(sl_dist / spec["pip"], 1), "tp_pips": round(sl_dist * float(p["rr"]) / spec["pip"], 1),
         "rr": float(p["rr"]), "risk_pct": risk_pct, "lots": size["lots"], "risk_usd": size["actual_risk_usd"],
         "reward_usd": round(size["actual_risk_usd"] * float(p["rr"]), 2), "below_min_lot": size["below_min_lot"],
+        "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk,
+        "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
         "max_hold_h": p["max_hold_h"], "close_by": (bar_t + pd.Timedelta(minutes=tfm) + pd.Timedelta(hours=p["max_hold_h"])).isoformat(),
         "price_source": data.source_for(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
         "outcome": "open", "outcome_r": None, "exit_time": None, "user_status": "new",
@@ -134,15 +139,29 @@ def scan_once() -> list[dict]:
     for s in new:
         if s["system_status"] not in allow:
             continue
-        spec = symbol_spec(s["symbol"], settings)
-        d = spec["digits"]
-        title = f"{'🟢 BUY' if s['dir'] > 0 else '🔴 SELL'} {s['mt5_symbol']} {s['tf']} — {s['lots']} lot"
-        msg = (f"Entry ~{_fmt(s['entry'], d)} | SL {_fmt(s['sl'], d)} ({s['sl_pips']} pips) | TP {_fmt(s['tp'], d)} "
-               f"| R:R 1:{s['rr']} | เสี่ยง ${s['risk_usd']} ({s['risk_pct']}%)\n{s['strategy_name']} · ระบบ {s['system_status']}")
+        title, msg = alert_text(s, symbol_spec(s["symbol"], settings)["digits"])
         notify.send(title, msg, priority=5 if s["system_status"] == "ACTIVE" else 3,
                     tags=["green_circle" if s["dir"] > 0 else "red_circle"])
     STATE.update(last_scan=datetime.now(timezone.utc).isoformat(), scans=STATE["scans"] + 1)
     return new
+
+
+def alert_text(s: dict, d: int) -> tuple[str, str]:
+    """Push title + body: lot first, then the levels to type into MT5."""
+    side = "🟢 BUY" if s["dir"] > 0 else "🔴 SELL"
+    if s["below_min_lot"]:
+        title = f"{side} {s['mt5_symbol']} {s['tf']} — lot ต่ำกว่า 0.01"
+        lot_line = (f"⚠️ Lot ที่คำนวณได้ {s['raw_lots']} ต่ำกว่าขั้นต่ำ 0.01 · ถ้าเปิด 0.01 lot จะเสี่ยง "
+                    f"${s['min_lot_risk_usd']} ({s['min_lot_risk_pct']}% ของทุน) มากกว่าที่ตั้งไว้ {s['risk_pct']}%")
+    else:
+        title = f"{side} {s['mt5_symbol']} {s['tf']} — เปิด {s['lots']:.2f} lot"
+        lot_line = f"📦 LOT {s['lots']:.2f} · เสี่ยง ${s['risk_usd']} ({s['risk_pct']}% ของทุน ${s['balance']:,.0f})"
+    reward = f"${s['reward_usd']}" if not s["below_min_lot"] else f"${round(s['min_lot_risk_usd'] * s['rr'], 2)} (ที่ 0.01 lot)"
+    close_by = datetime.fromisoformat(s["close_by"]).astimezone(BKK).strftime("%d/%m %H:%M")
+    msg = (f"{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
+           f"TP {_fmt(s['tp'], d)} ({s['tp_pips']} pips) · R:R 1:{s['rr']} · กำไรเป้า {reward}\n"
+           f"ปิดภายใน {close_by} น. · {s['strategy_name']} · ระบบ {s['system_status']}")
+    return title, msg
 
 
 def forward_summary() -> dict:

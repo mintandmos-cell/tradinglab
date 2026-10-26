@@ -46,8 +46,9 @@ SYMBOLS: dict[str, dict] = {
 }
 
 DEFAULT_SETTINGS = {
-    "account_balance": 10000.0,
+    "account_balance": 5000.0,
     "account_currency": "USD",
+    "risk_per_trade_pct": 0.25,         # fixed risk per signal (0 = use each system's Monte Carlo risk)
     "default_risk_pct": 0.5,
     "max_risk_pct": 1.0,
     "target_max_dd_pct": 10.0,          # Monte Carlo 95th-percentile drawdown the sizing must respect

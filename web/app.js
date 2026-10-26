@@ -22,7 +22,7 @@ function toast(msg, ms = 2600) {
 // config.js sets window.TL_STATIC on the cloud build: no server, the "API" is pre-built JSON + browser maths.
 const STATIC = window.TL_STATIC || null;
 const local = {  // per-device personal settings in static mode
-  get() { return { account_balance: 10000, risk_cap_pct: null, mt5_symbol_map: {}, ...store.get("personal", {}) }; },
+  get() { return { account_balance: STATIC?.account_balance || 5000, risk_pct: null, mt5_symbol_map: {}, ...store.get("personal", {}) }; },
   set(v) { store.set("personal", { ...local.get(), ...v }); },
 };
 function repoUrl(path = "") {
@@ -44,12 +44,18 @@ function sizeLocal(sym, entry, sl, riskPct, balance, tp) {
   const lots = Math.floor(raw / 0.01 + 1e-9) * 0.01;
   const out = { lots: lots >= 0.01 ? +lots.toFixed(2) : 0, raw_lots: +raw.toFixed(4), risk_usd: +riskUsd.toFixed(2),
     actual_risk_usd: +(lots * dist * vpu).toFixed(2), value_per_point_per_lot: vpu, below_min_lot: lots < 0.01,
-    sl_pips: +(dist / sp.pip).toFixed(1), mt5: null };
+    sl_pips: +(dist / sp.pip).toFixed(1), min_lot_risk_usd: +(0.01 * dist * vpu).toFixed(2), mt5: null };
   if (tp) Object.assign(out, { rr: dist ? +(Math.abs(tp - entry) / dist).toFixed(2) : null, tp_pips: +(Math.abs(tp - entry) / sp.pip).toFixed(1),
     reward_usd: +(out.lots * Math.abs(tp - entry) * vpu).toFixed(2) });
   return out;
 }
-const effRisk = (r) => { const cap = local.get().risk_cap_pct; return cap ? Math.min(+r || 0, +cap) : +r || 0; };
+// risk % per trade: this device's choice (cloud site) → the shared fixed risk → the system's Monte Carlo risk
+const effRisk = (r) => +((STATIC && local.get().risk_pct) || S.settings?.risk_per_trade_pct || r) || 0;
+const myBalance = () => +(STATIC ? local.get().account_balance : S.settings?.account_balance) || 0;
+function lotLabel(sym, entry, sl, sysRisk) {  // lots for an open position on the chart, same maths as the signal cards
+  const z = sizeLocal(sym, entry, sl, effRisk(sysRisk), myBalance());
+  return z.below_min_lot ? "<0.01 lot" : `${z.lots.toFixed(2)} lot`;
+}
 
 async function staticGet(file, text = false) {
   const res = await fetch(`data/${file}?v=${Math.floor(Date.now() / 120000)}`, { cache: "no-cache" });  // the cloud rebuilds hourly
@@ -64,7 +70,7 @@ async function staticApi(path, opts = {}) {
     research: { running: false }, research_generated: STATIC.research_generated, schedule: "weekly" };
   if (p === "/api/symbols") return (await staticGet("symbols.json")).map((x) => ({ ...x, mt5_symbol: P.mt5_symbol_map[x.symbol] || x.mt5_symbol }));
   if (p === "/api/strategies") return staticGet("strategies.json");
-  if (p === "/api/settings" && !post) return { ...(await staticGet("settings.json")), account_balance: P.account_balance, risk_cap_pct: P.risk_cap_pct, notify: {}, static: true };
+  if (p === "/api/settings" && !post) return { ...(await staticGet("settings.json")), account_balance: P.account_balance, my_risk_pct: P.risk_pct, notify: {}, static: true };
   if (p === "/api/settings" && post) { local.set(body); return staticApi("/api/settings"); }
   if (p === "/api/research") return staticGet("research.json");
   if (p === "/api/research/notes") return staticGet("notes.md", true);
@@ -82,7 +88,8 @@ async function staticApi(path, opts = {}) {
     return sigs.slice(0, +(qp.limit || 200)).map((s) => {
       const risk = effRisk(s.risk_pct), z = sizeLocal(s.symbol, s.entry, s.sl, risk, P.account_balance, s.tp);
       return { ...s, ...(marks[s.id] || {}), mt5_symbol: P.mt5_symbol_map[s.symbol] || s.mt5_symbol, risk_pct: risk,
-        lots: z.lots, risk_usd: z.actual_risk_usd, reward_usd: z.reward_usd, below_min_lot: z.below_min_lot };
+        lots: z.lots, raw_lots: z.raw_lots, risk_usd: z.actual_risk_usd, reward_usd: z.reward_usd, below_min_lot: z.below_min_lot,
+        balance: P.account_balance, min_lot_risk_usd: z.min_lot_risk_usd, min_lot_risk_pct: +(100 * z.min_lot_risk_usd / P.account_balance).toFixed(2) };
     });
   }
   throw new Error("ฟังก์ชันนี้ใช้ได้เมื่อรันบนคอม (start_server.bat) เท่านั้น");
@@ -255,7 +262,8 @@ function signalCard(s, compact = false) {
       <div><div class="lbl">R:R</div><div class="mono">1 : ${fnum(s.rr, 2)}</div></div>
       <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">$${fnum(s.reward_usd, 2)}</div></div>
     </div>
-    ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ต่ำกว่า 0.01 — ทุนหรือความเสี่ยงต่ำเกินไปสำหรับ SL นี้ ควรข้ามไม้นี้</div></div>` : ""}
+    ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ 0.01 —
+      ถ้าเปิด 0.01 lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
     <div class="adj">
       <label class="f" style="flex:1">ราคาจริงใน MT5 ตอนเข้า<input class="inp num" type="number" step="any" placeholder="${fpx(s.entry, d)}"></label>
       <button class="btn sm primary" data-a="recalc">คำนวณใหม่</button>
@@ -349,8 +357,9 @@ async function renderSystems(view) {
     <div class="card"><div class="bd row" style="gap:16px">
       <div class="kpis" style="flex:1;min-width:280px">${kpi("ACTIVE", counts.ACTIVE, "แจ้งเตือนจริง", "pos")}${kpi("WATCH", counts.WATCH, "forward test")}${kpi("OFF", counts.OFF, "ไม่มี edge", "neg")}${kpi("วิจัยล่าสุด", res.generated ? ago(res.generated) : "ยังไม่เคย", res.generated ? fdt(res.generated, true) : "")}${kpi("รอบอัปเดต", S.settings?.research?.schedule || "–", "IS " + (S.settings?.research?.is_months || "-") + "m / OOS " + (S.settings?.research?.oos_months || "-") + "m")}</div>
       <div class="stack" style="gap:8px">${STATIC
-        ? `<a class="btn primary" href="${actionsUrl()}" target="_blank" rel="noopener">🤖 วิเคราะห์อัตโนมัติใหม่ทั้งหมด</a>
-           <span class="hint">เปิด GitHub → กด <b>Run workflow</b> (เลือก research) · ใช้เวลา ~5–10 นาที<br>รันเองอัตโนมัติทุกเสาร์ 09:30 น.</span>`
+        ? `<span class="hint"><b>✅ วิเคราะห์ใหม่เองอัตโนมัติทุกวันเสาร์ 09:30 น.</b> — ไม่ต้องกดอะไร<br>สแกนหาสัญญาณเองทุกชั่วโมง</span>
+           <a class="btn" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที (ไม่บังคับ)</a>
+           <span class="hint">ต้อง <b>Sign in</b> GitHub ก่อน จึงจะเห็นปุ่ม <b>Run workflow</b> → เลือก research → Run · รอ ~5–10 นาที · ดูวิธีในหน้า <a href="#/guide">คู่มือ</a></span>`
         : `<button class="btn primary" id="runResearch" ${st.running ? "disabled" : ""}>${st.running ? `<span class="spinner"></span> กำลังวิจัย…` : "🤖 วิเคราะห์อัตโนมัติใหม่ทั้งหมด"}</button>
            <span class="hint" id="resProg">${st.running ? esc(st.progress) : "WF + Robustness + Monte Carlo · ~2–4 นาที"}</span>`}</div>
     </div></div>
@@ -464,11 +473,11 @@ function drawTradeLevels(ch, d, open) {
     const a = Math.min(idx(open.from), n - 1), pts = [];
     for (let i = a; i < n; i++) pts.push(times[i]);
     for (let j = 1; j <= 6; j++) pts.push(times[n - 1] + j * step);
-    const lv = [["ENTRY", open.entry, "#60a5fa", 2], ["SL", open.sl, "#ef4444", 0], ["TP", open.tp, "#16c784", 0]];
-    lv.forEach(([title, v, color, style]) => line(color, style, 2, `${title} ${fpx(v, d.digits)}`).setData(pts.map((t) => ({ time: shiftT(t), value: v }))));
+    const lv = [["ENTRY", open.entry, "#60a5fa", 2, ` · ${open.lot}`], ["SL", open.sl, "#ef4444", 0, ""], ["TP", open.tp, "#16c784", 0, ""]];
+    lv.forEach(([title, v, color, style, extra]) => line(color, style, 2, `${title} ${fpx(v, d.digits)}${extra}`).setData(pts.map((t) => ({ time: shiftT(t), value: v }))));
     const side = open.dir > 0 ? "BUY" : "SELL";
     markers.push({ time: shiftT(times[a]), position: open.dir > 0 ? "belowBar" : "aboveBar", color: open.dir > 0 ? "#16c784" : "#ef4444",
-      shape: open.dir > 0 ? "arrowUp" : "arrowDown", text: open.pending ? `สัญญาณ ${side}` : `${side} @ ${fpx(open.entry, d.digits)}` });
+      shape: open.dir > 0 ? "arrowUp" : "arrowDown", text: `${open.pending ? "สัญญาณ " : ""}${side} ${open.lot} @ ${fpx(open.entry, d.digits)}` });
   }
   return markers;
 }
@@ -500,7 +509,7 @@ async function renderChart(view) {
   let ch = null, d = null;
   const draw = async (keepRange) => {
     const [dd, sigs] = await Promise.all([api(url), api("/api/signals?limit=50")]);
-    if (route() !== "chart" || S.chartToken !== token) return;
+    if (route() !== "chart" || S.chartToken !== token || !$("#mainChart")) return;
     const range = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
     if (ch) { S.charts = S.charts.filter((c) => c !== ch); ch.remove(); }
     d = dd;
@@ -516,10 +525,11 @@ async function renderChart(view) {
       legend.push(`<span><i style="background:${color}"></i>${esc(name)}</span>`);
     });
     const open = openPosition(d, sigs.filter((s) => s.symbol === sym && s.tf === tf && s.outcome === "open"));
+    if (open) open.lot = lotLabel(sym, open.entry, open.sl, sys?.risk_pct);
     const markers = drawTradeLevels(ch, d, open);
     S.chartOpen = open;
     markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
-    if (open) legend.push(`<span class="badge open">${open.dir > 0 ? "LONG" : "SHORT"} เปิดอยู่ · ${fpx(open.entry, d.digits)}</span>`);
+    if (open) legend.push(`<span class="badge open">${open.dir > 0 ? "LONG" : "SHORT"} ${open.lot} · ${fpx(open.entry, d.digits)}</span>`);
     const n = d.candles.length;
     ch.timeScale().setVisibleLogicalRange(range || { from: Math.max(0, n - 220), to: n + 8 });
     $("#chLegend").innerHTML = legend.join("") + `<span class="faint">${d.source}</span>`;
@@ -531,7 +541,7 @@ async function renderChart(view) {
     STATIC ? 300000 : 60000);
   $("#chInfo").innerHTML = d.system ? `<div class="kv"><span class="k">ระบบ</span><span class="v">${esc(d.system.name)}</span><span class="k">พารามิเตอร์</span><span class="v small">${esc(paramText(d.system.params))}</span>
       <span class="k">สถานะวิจัย</span><span class="v">${statusBadge(sys?.status)} ${sys?.tf || ""}</span><span class="k">สัญญาณแท่งล่าสุด</span><span class="v">${d.last_signal > 0 ? '<span class="pos">LONG</span>' : d.last_signal < 0 ? '<span class="neg">SHORT</span>' : "ไม่มี"}</span>
-      ${S.chartOpen ? `<span class="k">ออเดอร์ที่เปิดอยู่</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} ${fpx(S.chartOpen.entry, d.digits)}
+      ${S.chartOpen ? `<span class="k">ออเดอร์ที่เปิดอยู่</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} <b>${S.chartOpen.lot}</b> @ ${fpx(S.chartOpen.entry, d.digits)}
         · SL <span class="neg">${fpx(S.chartOpen.sl, d.digits)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, d.digits)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}</span>` : ""}</div>
       ${sys?.tf && sys.tf !== tf ? `<div class="hint" style="margin-top:10px">ระบบจริงของ ${sym} ใช้ TF ${sys.tf} — กราฟนี้แสดงการทดลองบน ${tf}</div>` : ""}`
     : `<div class="hint">${overlay ? "สินทรัพย์นี้ยังไม่มีระบบจากการวิจัย" : "ปิดการแสดงระบบอยู่"}</div>`;
@@ -554,8 +564,8 @@ async function renderLab(view) {
 - **Backtest + Walk-Forward** ทุกกลยุทธ์ × H1/H4 × ทุกชุดพารามิเตอร์ (IS 12 เดือน / OOS 3 เดือน)
 - **Robustness 8 แบบ** รวมถึงทดสอบหน้าต่าง WF อีก 4 ขนาด (6/2, 9/3, 18/3, 24/6 เดือน)
 - **สุ่มจุดเข้า 300 รอบ** และ **Monte Carlo 5,000 รอบ** → คำนวณความเสี่ยงต่อไม้ให้ DD 95% ไม่เกินเป้า
-- รันเองทุก **วันเสาร์ 09:30 น.** หรือกดปุ่มด้านล่างเมื่อไหร่ก็ได้ (เปิด GitHub → **Run workflow** → research)`)}</div>
-        <div class="row"><a class="btn primary" href="${actionsUrl()}" target="_blank" rel="noopener">🤖 วิเคราะห์ใหม่ตอนนี้</a><a class="btn" href="#/systems">ดูผลวิเคราะห์ →</a></div>
+- รันเองทุก **วันเสาร์ 09:30 น.** โดยไม่ต้องกดอะไร · ถ้าอยากสั่งทันที: Sign in GitHub → **Run workflow** → research`)}</div>
+        <div class="row"><a class="btn primary" href="#/systems">ดูผลวิเคราะห์ →</a><a class="btn" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที</a></div>
         <div class="hint">การทดลองตั้งค่าเอง (Backtest / WF / MC แบบกำหนดพารามิเตอร์) ใช้ได้เมื่อเปิด <code>start_server.bat</code> บนคอม</div>
       </div></div></div>`;
     return;
@@ -788,9 +798,10 @@ async function renderSettingsStatic(view) {
       <div class="card"><div class="hd"><h3>บัญชีของคุณ (บันทึกในเครื่องนี้)</h3></div><div class="bd stack" style="gap:12px">
         <div class="fgrid" style="grid-template-columns:1fr 1fr">
           <label class="f">ทุนในบัญชี (USD)<input class="inp num" type="number" id="pBal" value="${P.account_balance}"></label>
-          <label class="f">จำกัด Risk สูงสุด % ต่อไม้ (ว่าง = ตามระบบ)<input class="inp num" type="number" step="0.05" id="pCap" value="${P.risk_cap_pct ?? ""}"></label>
+          <label class="f">ความเสี่ยงต่อไม้ (% ของทุน)<input class="inp num" type="number" step="0.05" id="pRisk" value="${P.risk_pct || s.risk_per_trade_pct || ""}"></label>
         </div>
-        <div class="hint">Lot ในการ์ดสัญญาณคำนวณใหม่จากทุนนี้ทุกครั้ง · ความเสี่ยงของแต่ละระบบมาจาก Monte Carlo (สูงสุด ${s.max_risk_pct}% สำหรับ ACTIVE)</div>
+        <div class="hint">Lot บนการ์ดสัญญาณและบนกราฟคำนวณให้อัตโนมัติจากค่านี้ — ตอนนี้ ${fnum(P.account_balance, 0)} USD × ${P.risk_pct || s.risk_per_trade_pct}% = เสี่ยงไม้ละ <b>$${fnum(P.account_balance * (P.risk_pct || s.risk_per_trade_pct) / 100, 2)}</b> (ถ้าชน SL)
+          · ข้อความแจ้งเตือนบนมือถือใช้ทุน ${fnum(STATIC.account_balance || 5000, 0)} USD และ ${s.risk_per_trade_pct}% ตามที่ตั้งไว้บนคลาวด์</div>
         <div class="formsec">ชื่อสัญลักษณ์ใน MT5 ของโบรกเกอร์คุณ</div>
         <div class="fgrid" style="grid-template-columns:repeat(4,minmax(0,1fr))">${S.symbols.map((x) => `<label class="f">${x.symbol}<input class="inp" data-map="${x.symbol}" value="${esc(P.mt5_symbol_map[x.symbol] || s.mt5_symbol_map[x.symbol] || x.symbol)}"></label>`).join("")}</div>
         <div class="row" style="justify-content:flex-end"><button class="btn primary" id="pSave">💾 บันทึก</button></div>
@@ -808,10 +819,10 @@ async function renderSettingsStatic(view) {
       ${s.force_off?.length ? `<div class="hint">ปิดโดย AI/ผู้ใช้: ${s.force_off.join(", ")}</div>` : ""}
     </div></div></div>`;
   $("#pSave").onclick = () => {
-    const cap = parseFloat($("#pCap").value);
-    local.set({ account_balance: parseFloat($("#pBal").value) || 10000, risk_cap_pct: Number.isNaN(cap) ? null : cap,
+    const risk = parseFloat($("#pRisk").value);
+    local.set({ account_balance: parseFloat($("#pBal").value) || 5000, risk_pct: risk > 0 ? risk : null,
       mt5_symbol_map: Object.fromEntries($$("[data-map]", view).map((i) => [i.dataset.map, i.value.trim()])) });
-    toast("บันทึกในเครื่องนี้แล้ว");
+    toast("บันทึกในเครื่องนี้แล้ว"); navigate();
   };
 }
 
@@ -824,6 +835,7 @@ async function renderSettings(view) {
     <div class="grid g2" style="align-items:start">
       <div class="card"><div class="hd"><h3>บัญชีและความเสี่ยง</h3></div><div class="bd fgrid" style="grid-template-columns:1fr 1fr">
         <label class="f">ทุนในบัญชี (USD)<input class="inp num" type="number" data-k="account_balance" value="${s.account_balance}"></label>
+        <label class="f">ความเสี่ยงต่อไม้ % (คงที่ทุกสัญญาณ · 0 = ตาม Monte Carlo)<input class="inp num" type="number" step="0.05" data-k="risk_per_trade_pct" value="${s.risk_per_trade_pct ?? 0}"></label>
         <label class="f">Risk ตั้งต้น % (ระบบ WATCH ใช้ครึ่งหนึ่ง)<input class="inp num" type="number" step="0.05" data-k="default_risk_pct" value="${s.default_risk_pct}"></label>
         <label class="f">Risk สูงสุด % ต่อไม้<input class="inp num" type="number" step="0.05" data-k="max_risk_pct" value="${s.max_risk_pct}"></label>
         <label class="f">DD เป้าหมาย % (MC 95%)<input class="inp num" type="number" data-k="target_max_dd_pct" value="${s.target_max_dd_pct}"></label>
@@ -902,29 +914,116 @@ async function renderSettings(view) {
 }
 
 // ------------------------------------------------------------------ GUIDE
+// The user manual: one card per chapter, with a table of contents at the top.
+function manualChapters() {
+  const bal = myBalance() || 5000, risk = effRisk(0.25), riskUsd = bal * risk / 100;
+  const lotsFor = (dist, vpu) => Math.floor(riskUsd / (dist * vpu) / 0.01 + 1e-9) * 0.01;
+  const ex = (name, slText, dist, vpu) => { const l = lotsFor(dist, vpu);
+    return `- **${name}** SL ${slText} → ${fnum(riskUsd, 2)} ÷ (${slText} × มูลค่าต่อ lot) = ${l >= 0.01 ? `**${l.toFixed(2)} lot**` : `ต่ำกว่า 0.01 → ถ้าเปิด 0.01 lot จะเสี่ยง $${fnum(0.01 * dist * vpu, 2)} (${fnum(100 * 0.01 * dist * vpu / bal, 2)}%)`}`; };
+  return [
+    ["overview", "1. ภาพรวม: อะไรทำเอง อะไรคุณต้องทำ", `
+TradingLab มี 3 ส่วนที่ทำงานแยกกัน และ **คอมของคุณไม่ต้องเปิดไว้**:
+### 🤖 ส่วนที่ทำงานเองทั้งหมด (บน GitHub ฟรี)
+- **ทุกชั่วโมง (นาทีที่ ~4–20):** ดึงราคาล่าสุด → ตรวจว่าระบบ ACTIVE มีสัญญาณใหม่ไหม → ถ้ามี ส่งแจ้งเตือนเข้ามือถือพร้อม **Lot / Entry / SL / TP** → อัปเดตเว็บนี้ (กราฟ เส้น Entry/SL/TP, ผล forward test)
+- **ทุกวันเสาร์ 09:30 น.:** วิเคราะห์ใหม่ทั้งหมดทุกสินทรัพย์ (Backtest + Walk-Forward + Robustness 8 แบบ + Monte Carlo) แล้วเลือกระบบ / Timeframe / พารามิเตอร์ใหม่ให้เอง ตลาด FX ปิดวันเสาร์ จึงไม่กระทบการเทรด
+- ทุกพารามิเตอร์ของการวิเคราะห์ (ช่วง IS/OOS, ชุดค่าที่ทดสอบ, เกณฑ์ผ่าน) **ตั้งไว้แล้ว ไม่ต้องปรับเอง**
+### 🙋 ส่วนที่คุณทำ
+- **เมื่อมีแจ้งเตือน:** เปิด MT5 แล้วส่งคำสั่งซื้อขายตาม Lot / SL / TP ในข้อความ (ระบบ **ไม่ได้** ส่งออเดอร์ให้เอง)
+- **วันจันทร์ (ถ้าต้องการ):** เปิดคอม พิมพ์บอก Claude ว่า “อัปเดตระบบเทรด” → Claude ตรวจผลจริงเทียบผลวิจัย ปิดระบบที่เริ่มเสีย เขียนบันทึก และส่งขึ้นคลาวด์ให้
+### 🔘 ปุ่ม “สั่งวิเคราะห์ใหม่ทันที” คืออะไร
+- เป็น **ทางลัดที่ไม่บังคับ** ใช้เมื่ออยากให้วิเคราะห์ใหม่ก่อนถึงวันเสาร์ เช่น หลังแก้ตั้งค่า
+- กดแล้วจะเปิดหน้า **GitHub Actions** ซึ่งเป็นรายการงานที่คลาวด์ทำไปแล้ว ✅ สีเขียว = สำเร็จ ❌ สีแดง = ล้มเหลว
+  - “Scheduled” คือรอบสแกนรายชั่วโมงที่รันเอง
+  - “Commit … pushed by …” คือรอบที่สร้างเว็บใหม่หลังมีการแก้โค้ด
+- ถ้าไม่กดเลย ระบบก็ยังทำงานครบตามตารางข้างบน`],
+    ["setup", "2. ตั้งค่าครั้งแรก (ทำครั้งเดียวต่อเครื่อง)", `
+- **ติดตั้งเป็นแอปบนมือถือ/iPad:** Safari → ปุ่มแชร์ → **เพิ่มไปยังหน้าจอโฮม** · Android Chrome → ⋮ → **ติดตั้งแอป**
+- **หน้า ตั้งค่า:** ใส่ **ทุน (USD)** และ **ความเสี่ยงต่อไม้ %** แล้วกด **บันทึก** เว็บจะจำค่าไว้ในเครื่องนั้น (มือถือ, iPad, คอม ต้องตั้งแยกกัน)
+- **ชื่อสัญลักษณ์ใน MT5:** แก้ให้ตรงกับโบรกเกอร์ เช่น Exness อาจเป็น \`XAUUSDm\` และ NAS100 = \`USTEC\` ชื่อนี้จะแสดงบนการ์ดสัญญาณ
+- **แจ้งเตือน:** ติดตั้งแอป **ntfy** (App Store / Play Store ฟรี ไม่ต้องสมัคร) → กด **+** → ใส่ชื่อ topic ที่ตั้งเป็น \`NTFY_TOPIC\` ใน GitHub → Subscribe
+  - บน iPhone ต้องอนุญาตการแจ้งเตือนของแอป ntfy ด้วย
+- **ทุนในข้อความแจ้งเตือน:** ข้อความที่เด้งใช้ทุนและความเสี่ยงที่ตั้งบนคลาวด์ (ตอนนี้ ${fnum(STATIC?.account_balance || bal, 0)} USD × ${S.settings?.risk_per_trade_pct ?? risk}%)
+  - ถ้าทุนเปลี่ยนมาก แก้ได้ที่ GitHub → Settings → Secrets and variables → Actions → Variables → \`ACCOUNT_BALANCE\`
+  - หรือบอก Claude ในวันจันทร์`],
+    ["signal", "3. เมื่อมีสัญญาณ: เปิดออเดอร์ทีละขั้น", `
+- **1.** มือถือเด้งแจ้งเตือน เช่น “🟢 BUY USTEC H1 — เปิด 0.12 lot” ในข้อความมี Lot, Entry, SL, TP, R:R, กำไรเป้า และเวลา “ปิดภายใน”
+- **2.** เปิดเว็บ หน้า **สัญญาณ** → การ์ดสีเขียวคือ LONG/BUY สีแดงคือ SHORT/SELL
+- **3.** เปิด **MT5** → สินทรัพย์เดียวกัน → New Order แบบ **Market Execution**
+- **4.** ถ้าราคาใน MT5 ต่างจาก Entry ในการ์ด (ปกติต่างเล็กน้อย):
+  - กด **🎯 ปรับตามราคา MT5** → ใส่ราคาที่จะเข้าจริง → **คำนวณใหม่**
+  - เว็บจะเลื่อน SL/TP ให้ระยะเท่าเดิม และคำนวณ Lot ใหม่
+- **5.** ใส่ **Volume = Lot**, **Stop Loss**, **Take Profit** ตามการ์ด → กด Buy/Sell
+- **6.** กลับมากด **✓ เปิดแล้ว** หรือ **ข้าม** เพื่อบันทึก
+- **7.** ปล่อยให้ออเดอร์ชน SL หรือ TP เอง ถ้าถึงเวลา **ปิดภายใน** แล้วยังไม่ชน ให้ปิดเองด้วยมือ (ระบบถือไม่เกิน ~5 วัน)
+### กติกาเวลาเข้า
+- สัญญาณเกิดตอน **แท่งเทียนปิด** แล้วเข้าที่ราคาเปิดของแท่งถัดไป
+- การ์ดบอก **“เข้าได้ถึง”** ถ้าเลยเวลานี้ ราคามักวิ่งไปไกลแล้ว ไม่ควรไล่ราคา
+- **📋 คัดลอก** ใช้ส่งรายละเอียดออเดอร์ไปจดหรือแชทได้`],
+    ["lot", "4. Lot size คำนวณอย่างไร", `
+- สูตร: **Lot = (ทุน × ความเสี่ยง%) ÷ (ระยะ SL × มูลค่าต่อ 1 lot ต่อ 1 หน่วยราคา)** แล้วปัดลงทีละ 0.01
+- ตอนนี้: ${fnum(bal, 0)} USD × ${risk}% = เสี่ยงไม้ละ **$${fnum(riskUsd, 2)}** ถ้าชน SL (ถ้าชน TP ได้ $${fnum(riskUsd, 2)} × R:R)
+- **ตัวอย่าง:**
+${ex("EURUSD", "0.0030 (30 pips)", 0.003, 100000)}
+${ex("NAS100", "100 จุด", 100, 1)}
+${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระบบทอง H4
+- **คำนวณให้อัตโนมัติทุกที่:** ข้อความแจ้งเตือน, การ์ดสัญญาณ, ป้าย **ENTRY … · x.xx lot** บนกราฟ และเครื่องคำนวณ
+- **ถ้า Lot ต่ำกว่า 0.01:** โบรกส่วนใหญ่เปิดได้ขั้นต่ำ 0.01 lot ระบบจะเตือนว่าถ้าเปิด 0.01 จะเสี่ยงกี่ % คุณเลือกเองได้ว่าจะข้ามหรือรับความเสี่ยงที่สูงกว่า
+  - ทองคำ (SL กว้าง) มักเจอกรณีนี้กับทุน 5,000 USD ที่ 0.25%
+- **ข้อควรตรวจ 1 ครั้ง:** ขนาดสัญญาของโบรกอาจต่างจากค่ามาตรฐาน เช่น USTEC บางโบรก 1 lot = $1 หรือ $10 ต่อจุด
+  - วิธีตรวจ: ใน MT5 ตั้ง SL ตามการ์ด แล้วดูว่าขาดทุนถ้าชน SL ≈ $${fnum(riskUsd, 2)} หรือไม่
+  - ถ้าไม่ตรง บอก Claude ให้แก้ค่า contract ของสินทรัพย์นั้น`],
+    ["pages", "5. หน้าต่าง ๆ ในเว็บ", `
+- **📡 สัญญาณ:** สัญญาณที่เข้าได้ตอนนี้, ตารางระบบที่ใช้ในแต่ละสินทรัพย์, ผล forward test, ประวัติสัญญาณ
+- **🧪 ระบบเทรด:** ผลวิเคราะห์ล่าสุดของทั้ง 8 สินทรัพย์
+  - **ACTIVE** = ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริง
+  - **WATCH** = ผลบวกแต่ยังพิสูจน์ไม่พอ → ติดตามเงียบ ๆ ไม่แจ้งเตือน
+  - **OFF** = ไม่พบความได้เปรียบ → ไม่เทรด
+  - กดการ์ดเพื่อดูรายละเอียด: เกณฑ์ที่ผ่าน/ไม่ผ่าน, Robustness 8 ข้อ, Walk-Forward แต่ละช่วง, Monte Carlo และ **บันทึกจาก AI**
+- **📈 กราฟ:** แท่งเทียน H1/H4/D1 พร้อม indicator ของระบบ, ลูกศรจุดเข้า และวงกลมจุดออกของไม้ในอดีต
+  - ออเดอร์ที่ระบบถืออยู่จะมีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อมป้ายราคาและ Lot ด้านขวา
+  - เส้นยืดออกไปตามแท่งใหม่จนกว่าจะชน SL/TP หรือหมดเวลา
+- **🔬 Strategy Lab:** บนเว็บออนไลน์จะแสดงสรุปการวิเคราะห์อัตโนมัติ ส่วนการทดลองตั้งพารามิเตอร์เองใช้ได้เมื่อเปิด \`start_server.bat\` บนคอม
+- **🧮 เครื่องคำนวณ:** คำนวณ Lot / R:R / SL-TP เองสำหรับเทรดนอกระบบ
+- **⚙️ ตั้งค่า:** ทุน, ความเสี่ยงต่อไม้, ชื่อสัญลักษณ์ MT5, เกณฑ์ที่ใช้ตัดสิน (ดูอย่างเดียว)`],
+    ["price", "6. ราคา, ความสดของข้อมูล และ MT5", `
+- **ไม่ต้องเปิด MT5 เพื่อให้ระบบทำงาน** คลาวด์ดึงราคาฟรีเอง:
+  - Yahoo สำหรับ FX, ทอง และดัชนี
+  - Binance สำหรับ BTC และ ETH
+- MT5 ใช้แค่ตอนที่ **คุณส่งออเดอร์** (ในมือถือหรือคอมก็ได้)
+- **เว็บไม่ใช่ราคา real-time:** ข้อมูลอัปเดตชั่วโมงละครั้งหลังแท่งเทียน H1 ปิด และ GitHub อาจช้าไป 5–20 นาที
+  - ระบบตัดสินใจจากแท่งที่ **ปิดแล้ว** (H1/H4) เท่านั้น จึงไม่ต้องการราคาทุกวินาที
+  - ราคาจริงตอนเข้าให้ดูใน MT5 แล้วใช้ปุ่ม **ปรับตามราคา MT5**
+- **ทำไมราคาบนเว็บต่างจาก MT5:** ทองและดัชนีจาก Yahoo เป็นราคา futures ซึ่งต่างจาก CFD ของโบรกประมาณ 0.1–0.5%
+  - สิ่งที่ใช้ได้ตรงคือ **ระยะ** SL/TP (pips/จุด) เพราะปุ่มปรับตามราคา MT5 คงระยะไว้
+- **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง (ไม่บังคับ ใช้ตอนวิเคราะห์เชิงลึกกับ Claude)`],
+    ["monday", "7. วันจันทร์กับ Claude", `
+- เปิดคอม → เปิด Claude ในโฟลเดอร์ \`D:\\Backtest\` → พิมพ์ เช่น “อัปเดตระบบเทรด” หรือ “ทุนเปลี่ยนเป็น 6000”
+- Claude จะ:
+  - ดึงผลล่าสุดจากคลาวด์
+  - เทียบผลจริง (forward test) กับผลวิจัย
+  - ปิดระบบที่ผลจริงแย่กว่าช่วงที่ Monte Carlo คาดไว้
+  - เขียนบันทึก (แสดงในหน้า **ระบบเทรด**)
+  - ส่งขึ้นคลาวด์ให้เสร็จในวันนั้น
+- กติกาที่ Claude ต้องทำตาม: **ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ**, ตัดสินจากผล Out-of-Sample เท่านั้น, ถือไม่เกิน 5 วัน`],
+    ["faq", "8. คำถามที่พบบ่อย / ข้อควรรู้", `
+- **ทำไมไม่มีสัญญาณเลยหลายวัน?** ส่งแจ้งเตือนเฉพาะระบบ ACTIVE และเฉพาะตอนไม่มีออเดอร์ค้าง ถ้า ACTIVE มีน้อย สัญญาณก็น้อย ซึ่งดีกว่าเทรดระบบที่ไม่ผ่านการทดสอบ
+- **กดปุ่มวิเคราะห์แล้วเจอหน้า GitHub ไม่มีปุ่ม Run workflow?** ต้องกด **Sign in** มุมขวาบนของ GitHub ก่อน → เมนูซ้ายเลือก **TradingLab** → ปุ่ม **Run workflow** → เลือก \`research\` → Run
+- **ไม่มีแจ้งเตือนเด้ง?** ตรวจว่าแอป ntfy subscribe topic ถูกตัว และอนุญาตการแจ้งเตือนในมือถือ ดูได้ที่ GitHub Actions ว่ารอบล่าสุดเป็น ✅
+- **ความเสี่ยงต่อไม้ควรเท่าไร?** ระบบใช้ค่าที่คุณตั้ง (${risk}%) สำหรับทุกสัญญาณ Monte Carlo ในหน้าระบบเทรดแสดงว่า drawdown แย่ ๆ อาจลึกแค่ไหน ใช้ประกอบการตัดสินใจของคุณเอง
+- ผลวิจัยมาจากอดีต **ไม่รับประกันอนาคต** — แนะนำเริ่มด้วยบัญชี demo หรือความเสี่ยงต่ำ จนกว่าผล forward test จะยืนยัน
+- เว็บนี้เป็นเครื่องมือวิจัย **ไม่ใช่คำแนะนำการลงทุน** การตัดสินใจเทรดเป็นของคุณ`],
+  ];
+}
+
 async function renderGuide(view) {
-  const topic = S.settings?.notify?.ntfy_topic || "";
-  view.innerHTML = `<div class="grid g2" style="align-items:start">
-    <div class="card"><div class="hd"><h3>ขั้นตอนเทรดตามสัญญาณ</h3></div><div class="bd md">${md(`
-- **มีแจ้งเตือนบนมือถือ** → แตะเพื่อเปิดหน้า **สัญญาณ**
-- ดู **สินทรัพย์ · TF · LONG/SHORT · LOT · SL · TP** ในการ์ด
-- เปิด **MT5** → ถ้าราคาเปลี่ยนไปจาก Entry ให้กด **ปรับตามราคา MT5** แล้วใส่ราคาจริง (ระยะ SL/TP เท่าเดิม Lot คำนวณใหม่)
-- เปิดออเดอร์ Market ตาม Lot พร้อมตั้ง SL/TP ทันที แล้วกด **เปิดแล้ว** (หรือ **ข้าม**)
-- ปิดออเดอร์ด้วยมือถ้าเลยเวลา **ปิดภายใน** (ระบบถือไม่เกิน ~5 วัน)
-- ทุกสัญญาณถูกติดตามผลอัตโนมัติ (forward test) เพื่อเทียบกับผลวิจัย`)}</div></div>
-    <div class="card"><div class="hd"><h3>ใช้งานที่ไหนก็ได้ (ไม่ต้องเปิดคอม)</h3></div><div class="bd md">${md(`
-- เว็บนี้อยู่บน **GitHub Pages** — เปิดได้ตลอดจากมือถือ / iPad / คอม ทุกที่${STATIC ? ` (ตอนนี้คุณกำลังใช้เวอร์ชันออนไลน์)` : ""}
-- **GitHub Actions** สแกนราคาทุกชั่วโมง ติดตามผล forward test และส่งแจ้งเตือนเข้า **ntfy** เอง โดยไม่ต้องเปิดคอม
-- **ทำเป็นแอป:** Safari → แชร์ → **เพิ่มไปยังหน้าจอโฮม** · Android Chrome → ⋮ → **ติดตั้งแอป**
-- เวอร์ชันบนคอม (\`start_server.bat\`) ยังใช้ได้ สำหรับทดลองตั้งค่าเองใน Lab และดึงราคาจาก **MT5** โดยตรง${!STATIC && topic ? ` · ntfy topic ของเครื่องนี้: \`${topic}\`` : ""}`)}</div></div>
-    <div class="card"><div class="hd"><h3>AI (Claude) ช่วยปรับปรุงระบบอย่างไร</h3></div><div class="bd md">${md(`
-- **ทุกเสาร์ 09:30 น.** คลาวด์วิเคราะห์ใหม่ทั้งหมดเอง (WF + Robustness + Monte Carlo) แล้วเลือกระบบ/TF/พารามิเตอร์/ความเสี่ยงของแต่ละสินทรัพย์ด้วยกฎตายตัว
-- **วันจันทร์** เปิดคอมแล้วพิมพ์บอก Claude เช่น “อัปเดตระบบเทรด” → Claude ดึงผลล่าสุด ตรวจ forward test เขียนบันทึก (แสดงในหน้า ระบบเทรด) ปรับระบบถ้าจำเป็น แล้วส่งขึ้นคลาวด์ให้เสร็จในวันนั้น
-- กติกาที่ AI ต้องทำตาม: ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ, นับจำนวนชุดที่ทดสอบ, ตัดสินด้วย OOS เท่านั้น`)}</div></div>
-    <div class="card"><div class="hd"><h3>ข้อควรรู้</h3></div><div class="bd md">${md(`
-- **ข้อมูลฟรี** (Yahoo) ของทอง/ดัชนีเป็นสัญญา futures — ระดับราคาต่างจาก CFD เล็กน้อย จึงต้องใช้ **ระยะ SL/TP** และปุ่มปรับตามราคา MT5
-- ผลวิจัยมาจากอดีต **ไม่รับประกันอนาคต** — เริ่มด้วยบัญชี demo หรือความเสี่ยงต่ำ จนกว่า forward test จะยืนยันผล
-- ระบบนี้เป็นเครื่องมือวิจัย ไม่ใช่คำแนะนำการลงทุน`)}</div></div></div>`;
+  const ch = manualChapters();
+  view.innerHTML = `<div class="stack">
+    <div class="card"><div class="hd"><h3>📘 คู่มือการใช้งาน TradingLab</h3></div><div class="bd stack" style="gap:10px">
+      <div class="hint">อ่านข้อ 1–4 ก่อนเริ่มใช้ ที่เหลืออ่านเมื่อสงสัย · ตัวเลขในคู่มือคำนวณจากทุนและความเสี่ยงที่ตั้งไว้ในเครื่องนี้</div>
+      <div class="chips">${ch.map(([id, title]) => `<button class="chip" data-go="${id}">${esc(title)}</button>`).join("")}</div></div></div>
+    ${ch.map(([id, title, body]) => `<div class="card" id="man-${id}"><div class="hd"><h3>${esc(title)}</h3></div><div class="bd md">${md(body)}</div></div>`).join("")}
+  </div>`;
+  $$("[data-go]", view).forEach((b) => b.onclick = () => $(`#man-${b.dataset.go}`).scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 // ------------------------------------------------------------------ boot
