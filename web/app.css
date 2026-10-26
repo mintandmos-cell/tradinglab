@@ -210,3 +210,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   .kpi .v { font-size: 17px; }
   .hide-sm { display: none !important; }
 }
+
+/* ---------- new-version bar ---------- */
+#updateBar:empty { display: none; }
+.update-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 12px 22px 0; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid rgba(22,199,132,.4); background: var(--long-bg); font-size: 13px; }
+.update-bar .btn { margin-left: auto; }
+@media (max-width: 760px) { .update-bar { margin: 10px 16px 0; } }

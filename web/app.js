@@ -57,8 +57,9 @@ function lotLabel(sym, entry, sl, sysRisk) {  // lots for an open position on th
   return z.below_min_lot ? "<0.01 lot" : `${z.lots.toFixed(2)} lot`;
 }
 
+const LOAD_T = Date.now();  // every page load (and the 🔄 button) fetches fresh data
 async function staticGet(file, text = false) {
-  const res = await fetch(`data/${file}?v=${Math.floor(Date.now() / 120000)}`, { cache: "no-cache" });  // the cloud rebuilds hourly
+  const res = await fetch(`data/${file}?v=${LOAD_T}`, { cache: "no-store" });  // the cloud rebuilds hourly
   if (!res.ok) throw new Error(`${file}: ${res.status}`);
   return text ? res.text() : res.json();
 }
@@ -1181,6 +1182,8 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - ส่งขึ้นคลาวด์ให้เสร็จในวันนั้น
 - กติกาที่ Claude ต้องทำตาม: **ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ**, ตัดสินจากผล Out-of-Sample เท่านั้น, ถือไม่เกิน 5 วัน และปิดทุกออเดอร์คืนวันศุกร์ 20:00 น.`],
     ["faq", "11. คำถามที่พบบ่อย / ข้อควรรู้", `
+- **เว็บมีเวอร์ชันใหม่ หรือข้อมูลใหม่:** จะมีแถบสีเขียว “🆕 มีเว็บเวอร์ชันใหม่” หรือแถบสีฟ้า “มีข้อมูลใหม่” ขึ้นด้านบน → กด **อัปเดตเลย** / **โหลดข้อมูลใหม่**
+  - ปุ่ม **🔄 รีเฟรชทั้งหมด** มุมขวาบน ใช้ได้ทุกเมื่อ (เหมาะกับแอปบน iPad ที่ไม่มีปุ่มรีโหลด) ค่าที่ตั้งไว้ในเครื่อง เช่น ทุน จะไม่หาย
 - **ทำไมไม่มีสัญญาณเลยหลายวัน?** ส่งแจ้งเตือนเฉพาะระบบ ACTIVE และเฉพาะตอนไม่มีออเดอร์ค้าง ถ้า ACTIVE มีน้อย สัญญาณก็น้อย ซึ่งดีกว่าเทรดระบบที่ไม่ผ่านการทดสอบ
 - **กดปุ่มวิเคราะห์แล้วเจอหน้า GitHub ไม่มีปุ่ม Run workflow?** ต้องกด **Sign in** มุมขวาบนของ GitHub ก่อน → เมนูซ้ายเลือก **TradingLab** → ปุ่ม **Run workflow** → เลือก \`research\` → Run
 - **ไม่มีแจ้งเตือนเด้ง?** ตรวจว่าแอป ntfy subscribe topic ถูกตัว และอนุญาตการแจ้งเตือนในมือถือ ดูได้ที่ GitHub Actions ว่ารอบล่าสุดเป็น ✅
@@ -1199,6 +1202,29 @@ async function renderGuide(view) {
     ${ch.map(([id, title, body]) => `<div class="card" id="man-${id}"><div class="hd"><h3>${esc(title)}</h3></div><div class="bd md">${md(body)}</div></div>`).join("")}
   </div>`;
   $$("[data-go]", view).forEach((b) => b.onclick = () => $(`#man-${b.dataset.go}`).scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+// ------------------------------------------------------------------ updates & full refresh
+// The cloud writes version.json on every build: `version` changes only when the web app itself changes
+// (code / layout), `last_scan` / `research` change with new data. A new version shows a bar with an update button.
+async function hardRefresh() {
+  toast("กำลังโหลดใหม่ทั้งหมด…", 1500);
+  try { if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch { /* no cache storage */ }
+  const u = new URL(location.href); u.searchParams.set("r", Date.now());
+  location.replace(u.toString());
+}
+async function checkUpdate() {
+  if (!STATIC) return;
+  try {
+    const v = await (await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" })).json();
+    const bar = $("#updateBar");
+    if (v.version && STATIC.version && v.version !== STATIC.version) {
+      bar.innerHTML = `<div class="update-bar"><span>🆕 <b>มีเว็บเวอร์ชันใหม่</b> (อัปเดต ${fdt(v.built)}) — กดอัปเดตเพื่อใช้ฟีเจอร์ล่าสุด</span><button class="btn sm primary" id="doUpdate">อัปเดตเลย</button></div>`;
+    } else if ((v.last_scan && v.last_scan !== STATIC.last_scan) || (v.research && v.research !== STATIC.research_generated)) {
+      bar.innerHTML = `<div class="update-bar" style="border-color:rgba(59,130,246,.4);background:var(--accent-bg)"><span>🔄 มีข้อมูลใหม่${v.research !== STATIC.research_generated ? " (ผลวิเคราะห์ระบบใหม่)" : ""} · สแกนล่าสุด ${fdt(v.last_scan)}</span><button class="btn sm" id="doUpdate">โหลดข้อมูลใหม่</button></div>`;
+    } else { bar.innerHTML = ""; return; }
+    $("#doUpdate").onclick = hardRefresh;
+  } catch { /* offline: try again later */ }
 }
 
 // ------------------------------------------------------------------ boot
@@ -1221,6 +1247,7 @@ async function boot() {
   lockPageZoom();
   const theme = store.get("theme", "dark");
   document.documentElement.dataset.theme = theme;
+  $("#refreshBtn").onclick = hardRefresh;
   $("#themeBtn").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; store.set("theme", t); navigate(); };
   try {
     [S.symbols, S.strategies, S.settings] = await Promise.all([api("/api/symbols"), api("/api/strategies"), api("/api/settings")]);
@@ -1228,7 +1255,11 @@ async function boot() {
   await refreshStatus();
   window.addEventListener("hashchange", navigate);
   navigate();
-  if (STATIC) return;  // the cloud build changes once an hour; the reload button / chart timer pick it up
+  if (STATIC) {  // the cloud build changes once an hour: check for a new web version / new data every 3 minutes and on return to the app
+    checkUpdate(); setInterval(checkUpdate, 180000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
+    return;
+  }
   setInterval(refreshStatus, 30000);
   setInterval(async () => {
     if (route() !== "signals" || document.hidden) return;

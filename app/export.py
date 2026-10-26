@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import shutil
@@ -39,16 +40,23 @@ def build(repo: str = "", chart_limit: int = 1200) -> None:
         shutil.rmtree(SITE_DIR)
     web = ROOT / "web"
     shutil.copytree(web, SITE_DIR / "static")
-    shutil.copy(web / "index.html", SITE_DIR / "index.html")
+    # version = hash of the web app itself (not the data): changes only when code / layout changes
+    version = hashlib.sha1(b"".join((web / f).read_bytes() for f in ("index.html", "app.js", "app.css"))).hexdigest()[:10]
+    html = (web / "index.html").read_text(encoding="utf-8")
+    html = html.replace('static/app.css"', f'static/app.css?v={version}"').replace('static/app.js"', f'static/app.js?v={version}"')
+    html = html.replace('src="config.js"', f'src="config.js?t={int(datetime.now(timezone.utc).timestamp())}"')
+    (SITE_DIR / "index.html").write_text(html, encoding="utf-8")
     shutil.copy(web / "manifest.webmanifest", SITE_DIR / "manifest.webmanifest")
     (SITE_DIR / ".nojekyll").write_text("")
     d = SITE_DIR / "data"
     state = read_json(CLOUD_STATE, {})
     lat = research.latest()
-    cfg = {"static": True, "built": datetime.now(timezone.utc).isoformat(), "repo": repo,
+    cfg = {"static": True, "version": version, "built": datetime.now(timezone.utc).isoformat(), "repo": repo,
            "last_scan": state.get("last_scan"), "scan_error": state.get("last_error"),
            "research_generated": lat.get("generated"), "account_balance": settings["account_balance"]}
     (SITE_DIR / "config.js").write_text("window.TL_STATIC = " + json.dumps(cfg) + ";", encoding="utf-8")
+    (SITE_DIR / "version.json").write_text(json.dumps({"version": version, "built": cfg["built"], "last_scan": cfg["last_scan"],
+                                                       "research": cfg["research_generated"]}), encoding="utf-8")
     _dump(d / "settings.json", {k: settings[k] for k in PUBLIC_SETTINGS})
     _dump(d / "symbols.json", research.symbol_table(settings))
     _dump(d / "strategies.json", public_list())
