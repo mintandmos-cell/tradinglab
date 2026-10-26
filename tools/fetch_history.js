@@ -24,6 +24,13 @@ async function year(instrument, y) {
   });
 }
 
+const LOG = [];
+const say = (level, msg) => {   // console + GitHub annotation + data/history/fetch_log.txt (job logs are not always readable)
+  const line = `${new Date().toISOString()} ${level} ${msg}`;
+  LOG.push(line); console.log(line);
+  if (level !== "info") console.log(`::${level === "error" ? "error" : "warning"}::${msg.slice(0, 900)}`);
+};
+
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const want = process.argv.slice(2).map((s) => s.toUpperCase());
@@ -35,18 +42,19 @@ async function year(instrument, y) {
       for (let y = START_YEAR; y <= new Date().getUTCFullYear(); y++) {
         const r = await year(MAP[sym], y);
         rows.push(...r);
-        console.log(`${sym} ${y}: ${r.length} bars`);
+        say("info", `${sym} ${y}: ${r.length} bars`);
       }
     } catch (e) {
       failed++;
-      console.error(`${sym} failed: ${e.message}`);
+      say("error", `${sym} failed after ${rows.length} bars: ${e && (e.stack || e.message || e)}`.replace(/\n/g, " | "));
       continue;   // keep the previous file for this symbol
     }
-    if (rows.length < 1000) { failed++; console.error(`${sym}: only ${rows.length} bars, file not written`); continue; }
+    if (rows.length < 1000) { failed++; say("error", `${sym}: only ${rows.length} bars, file not written`); continue; }
     rows.sort((a, b) => a[0] - b[0]);
     const csv = "time,open,high,low,close\n" + rows.map((r) => [Math.round(r[0] / 1000), r[1], r[2], r[3], r[4]].join(",")).join("\n") + "\n";
     fs.writeFileSync(path.join(OUT, `${sym}_H1.csv.gz`), zlib.gzipSync(csv, { level: 9 }));
-    console.log(`${sym}: ${rows.length} bars ${new Date(rows[0][0]).toISOString()} -> ${new Date(rows[rows.length - 1][0]).toISOString()}`);
+    say("warning", `${sym}: ${rows.length} bars ${new Date(rows[0][0]).toISOString()} -> ${new Date(rows[rows.length - 1][0]).toISOString()}`);
   }
+  fs.writeFileSync(path.join(OUT, "fetch_log.txt"), LOG.join("\n") + "\n");
   if (failed === syms.length) process.exit(1);
 })();
