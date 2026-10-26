@@ -72,6 +72,9 @@
   "oos_months": 3,
   "min_is_trades": 20,
   "max_hold_hours": 120,
+  "exit_opposite_signal": true,
+  "exit_max_hold": false,
+  "exit_friday_close": false,
   "schedule": "weekly",
   "schedule_hour_bkk": 10,
   "gates": {

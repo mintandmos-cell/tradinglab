@@ -6,8 +6,11 @@ Rules (identical in backtest, walk-forward, forward-tracking and live signals):
   * SL = entry -/+ sl_atr * ATR14(i);  TP = entry +/- rr * that distance
   * if one bar touches both SL and TP, SL is assumed first (conservative)
   * gaps through SL fill at the bar open; exit by time at the close of the last allowed bar
-  * weekly flat: every position is closed by Friday 20:00 Bangkok (13:00 UTC) — at the close of the last bar
-    that ends by then — and no new position opens from that moment until the market reopens (Sunday 22:00 UTC)
+  * exits are set in settings research.exit_* (user's choice, Oct 2026: TP / SL / opposite signal only):
+      exit_opposite_signal  an opposite signal on bar j closes the trade at bar j+1 open ("Rev"); the new
+                            opposite trade enters at that same open (stop-and-reverse)
+      exit_max_hold         time exit after max_hold_h ("Time")              — off
+      exit_friday_close     flat by Friday 20:00 Bangkok, no entries until Sunday 22:00 UTC ("Fri") — off
 """
 from __future__ import annotations
 
@@ -17,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from . import indicators as ta
-from .config import TIMEFRAMES
+from .config import TIMEFRAMES, load_settings
 from .strategies import signals
 
 
@@ -57,23 +60,42 @@ def week_guard(index: pd.DatetimeIndex, tf: str):
     return last, blocked, cut
 
 
+def exit_rules() -> dict:
+    r = load_settings()["research"]
+    return {"opposite": bool(r.get("exit_opposite_signal", True)), "max_hold": bool(r.get("exit_max_hold", False)),
+            "friday": bool(r.get("exit_friday_close", False))}
+
+
+NO_LIMIT = 10 ** 9
+
+
 def cost_price(spec: dict) -> float:
     return float(spec.get("spread", 0)) + 2 * float(spec.get("slippage", 0)) + float(spec.get("commission", 0))
 
 
-def hold_bars(params: dict, tf: str) -> int:
+def hold_bars(params: dict, tf: str, rules: dict | None = None) -> int:
+    if not (rules or exit_rules())["max_hold"]:
+        return NO_LIMIT
     return max(1, int(params["max_hold_h"] * 60 // TIMEFRAMES[tf]))
 
 
-def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost: float, last: int | None = None):
+def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost: float, last: int | None = None,
+             opp=None):
     """Simulate one trade entered at bar e open. Returns (exit_idx, exit_px, reason, entry, sl, tp) or None if still open.
-    last = last bar the trade may hold (weekly Friday close); reason "Fri" when that closes it."""
+    last = last bar the trade may hold (Friday close, when enabled) -> "Fri";
+    opp  = the strategy's signal array: the first opposite signal at bar j exits at bar j+1 open -> "Rev"."""
     n = len(o)
     entry = o[e] + d * cost
     sl = entry - d * sl_dist
     tp = entry + d * rr * sl_dist
     fri = last is not None and last + 1 < e + H
     end = min(e + H, n, last + 1) if fri else min(e + H, n)
+    j_opp = None
+    if opp is not None:
+        hits = np.flatnonzero(opp[e:end] == -d)
+        if len(hits):
+            j_opp = e + int(hits[0])
+            end = j_opp + 1                       # SL / TP can still hit up to and including the signal bar
     hh, ll, oo = h[e:end], l[e:end], o[e:end]
     if d > 0:
         sl_hit, tp_hit = ll <= sl, hh >= tp
@@ -87,6 +109,8 @@ def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost
         return k, (oo[i_sl] if gap and i_sl > 0 else sl), "SL", entry, sl, tp
     if i_tp is not None:
         return e + i_tp, tp, "TP", entry, sl, tp
+    if j_opp is not None:
+        return (j_opp + 1, o[j_opp + 1], "Rev", entry, sl, tp) if j_opp + 1 < n else None
     if fri and last < n:
         return last, c[last], "Fri", entry, sl, tp
     if e + H <= n:
@@ -101,32 +125,45 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     a = ta.atr(h, l, c, 14)
     sig, lines = signals(strategy_id, df, params)
-    cost, H, rr = cost_price(spec), hold_bars(params, tf), float(params["rr"])
+    rules = exit_rules()
+    cost, H, rr = cost_price(spec), hold_bars(params, tf, rules), float(params["rr"])
     times = df.index
-    wlast, wblock, wcut = week_guard(times, tf)
-    trades, open_trade, last_exit = [], None, -1
+    n = len(o)
+    if rules["friday"]:
+        wlast, wblock, wcut = week_guard(times, tf)
+    else:
+        wlast, wblock, wcut = None, np.zeros(n, bool), None
+    opp = sig if rules["opposite"] else None
+    trades, open_trade, free_from = [], None, 0
     for i in np.flatnonzero(sig):
-        if i <= last_exit or not np.isfinite(a[i]) or a[i] <= 0:
+        if not np.isfinite(a[i]) or a[i] <= 0:
             continue
         e = i + 1 + delay
-        if e >= len(o):
+        if e < free_from:                         # still in the previous trade
+            continue
+        if e >= n:
             break
         if wblock[e]:
             continue
         d = int(sig[i])
         sl_dist = float(params["sl_atr"]) * a[i]
-        res = simulate(o, h, l, c, e, d, sl_dist, rr, H, cost, int(wlast[e]))
+        res = simulate(o, h, l, c, e, d, sl_dist, rr, H, cost, int(wlast[e]) if wlast is not None else None, opp)
         if res is None:
             entry = o[e] + d * cost
+            close_by = times[e] + pd.Timedelta(minutes=TIMEFRAMES[tf] * H) if rules["max_hold"] else None
+            if wcut is not None:
+                close_by = min(close_by, wcut[e]) if close_by is not None else wcut[e]
             open_trade = {"signal_i": int(i), "entry_i": e, "entry_time": times[e], "dir": d,
                           "entry": entry, "sl_dist": sl_dist, "sl": entry - d * sl_dist, "tp": entry + d * rr * sl_dist,
-                          "close_by": min(times[e] + pd.Timedelta(minutes=TIMEFRAMES[tf] * H), wcut[e])}
+                          "close_by": close_by,
+                          # an opposite signal on the last closed bar: close this one and reverse at the next open
+                          "reverse_pending": bool(opp is not None and n and sig[-1] == -d and n - 1 >= e)}
             break
         k, px, reason, entry, sl, tp = res
         trades.append({"signal_i": int(i), "entry_i": e, "exit_i": int(k), "entry_time": times[e], "exit_time": times[k],
                        "dir": d, "entry": entry, "sl": sl, "tp": tp, "exit": float(px), "reason": reason,
-                       "r": d * (px - entry) / sl_dist, "bars": int(k - e + 1), "cost_r": cost / sl_dist})
-        last_exit = k
+                       "r": d * (px - entry) / sl_dist, "bars": int(k - e + (0 if reason == "Rev" else 1)), "cost_r": cost / sl_dist})
+        free_from = k if reason == "Rev" else k + 1   # a reversal re-enters at the same open it exits on
     out = {"trades": trades, "open_trade": open_trade, "last_signal": int(sig[-1]) if len(sig) else 0,
            "atr_last": float(a[-1]) if len(a) else math.nan}
     if with_lines:

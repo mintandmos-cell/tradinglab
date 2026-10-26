@@ -61,7 +61,10 @@ DEFAULT_SETTINGS = {
         "timeframes": ["H1", "H4"],
         "is_months": 12, "oos_months": 3,
         "min_is_trades": 20,
-        "max_hold_hours": 120,           # never hold beyond ~5 trading days
+        "max_hold_hours": 120,           # only used when exit_max_hold is on
+        "exit_opposite_signal": True,    # user's rule (Oct 2026): exits = TP / SL / opposite signal only
+        "exit_max_hold": False,
+        "exit_friday_close": False,
         "schedule": "weekly",            # daily | weekly | monthly | off
         "schedule_hour_bkk": 10,
         "gates": {"min_oos_trades": 30, "min_expectancy": 0.05, "min_t": 2.0,

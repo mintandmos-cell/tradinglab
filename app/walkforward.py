@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 
 from . import indicators as ta
-from .engine import cost_price, hold_bars, run, simulate, week_guard
+from .engine import cost_price, exit_rules, hold_bars, run, simulate, week_guard
+from .strategies import signals as strat_signals
 from .metrics import summarize
 from .strategies import grid
 
@@ -112,7 +113,12 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
     a = ta.atr(h, l, c, 14)
     idx = df.index
     cost = cost_price(spec)
-    wlast, wblock, _ = week_guard(idx, tf)
+    rules = exit_rules()
+    if rules["friday"]:
+        wlast, wblock, _ = week_guard(idx, tf)
+    else:
+        wlast, wblock = None, np.zeros(len(idx), bool)
+    sig_cache: dict = {}   # random entries leave on the same exits as the system, incl. its opposite signals
     rng = np.random.default_rng(seed)
     p_long = np.mean([t["dir"] > 0 for t in trades])
     per_fold = {}
@@ -128,13 +134,18 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
         for f in per_fold.values():
             if f["hi"] <= f["lo"]:
                 continue
-            H = hold_bars(f["p"], tf)
+            H = hold_bars(f["p"], tf, rules)
+            key = tuple(sorted(f["p"].items()))
+            if rules["opposite"] and key not in sig_cache:
+                sig_cache[key] = strat_signals(wf["strategy"], df, f["p"])[0]
+            opp = sig_cache.get(key)
             for i in rng.integers(f["lo"], f["hi"], size=f["n"]):
                 if not np.isfinite(a[i]) or a[i] <= 0 or wblock[i + 1]:
                     continue
                 d = 1 if rng.random() < p_long else -1
                 sl_dist = f["p"]["sl_atr"] * a[i]
-                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost, int(wlast[i + 1]))
+                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost,
+                               int(wlast[i + 1]) if wlast is not None else None, opp)
                 if res:
                     rs.append(d * (res[1] - res[3]) / sl_dist)
         means[s] = np.mean(rs) if rs else 0.0

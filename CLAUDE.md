@@ -2,7 +2,7 @@
 
 The user (Thai, trades manually in MetaTrader 5) asked Claude to keep the trading systems in this
 project up to date for USDJPY, EURUSD, GBPUSD, XAUUSD, NAS100, US500, BTCUSD, ETHUSD, using
-walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long and short. Reply to the user in Thai.
+walk-forward, robustness tests and Monte Carlo, long and short (exits: see below). Reply to the user in Thai.
 
 ## How it runs (no PC needed)
 - GitHub repo (this folder) + **GitHub Actions** `.github/workflows/tradinglab.yml`:
@@ -11,9 +11,9 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
   - push to `main` touching app/web/research/settings: rebuild the site only.
   - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
-- Weekly flat (user's rule): every position closes by **Friday 20:00 Bangkok (13:00 UTC)**, at the close of the last bar ending by then;
-  no new entries from then until Sunday 22:00 UTC. `engine.week_guard` / `friday_cutoff` apply it in backtest, WF, random benchmark,
-  forward tracking and the signal `close_by`; exit reason "Fri".
+- Exits (user's rule, 26 Oct 2026): **only TP, SL or an opposite signal** (exit at the next bar's open and reverse, reason "Rev").
+  No time limit and no Friday close — `research.exit_max_hold` / `exit_friday_close` stay false unless the user asks again
+  (the code for both is kept: `engine.week_guard` / `friday_cutoff`). A reversal signal carries `reverse_of` and tells the user to close the old order.
 - Sizing: every signal risks the fixed `risk_per_trade_pct` (0.25%, user's choice) of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
   The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
@@ -49,7 +49,7 @@ walk-forward, robustness tests and Monte Carlo, holding time ≤ 1 week, long an
   per symbol, so the multiple-testing gate asks OOS t ≥ ~3.0. More strategies make passing harder, not easier — say so when the user asks for more.
 - New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos. Every addition raises the trial count; mention it.
 - Judge only on walk-forward OOS + random benchmark + robustness + MC of OOS trades. Never tune on OOS results, never re-run folds until something passes.
-- Never lower `research.gates` or raise `max_hold_hours` above 120 to manufacture signals.
+- Never lower `research.gates` or change exit rules on your own to manufacture signals.
 - Keep costs realistic (spread + slippage + commission per symbol in `app/config.py` / `symbol_overrides`).
 - After code changes: `python -m app.research XAUUSD`, `python -m app.export`, and check the pages (local server and `site/` via a static server).
 - Nothing here is investment advice; the user executes trades themself.

@@ -17,7 +17,7 @@ from . import indicators as ta
 EXIT_PARAMS = [
     {"key": "sl_atr", "label": "SL (x ATR14)", "type": "float", "default": 2.0, "min": 0.5, "max": 6, "step": 0.1},
     {"key": "rr", "label": "TP (x ระยะ SL = R:R)", "type": "float", "default": 2.0, "min": 0.5, "max": 6, "step": 0.1},
-    {"key": "max_hold_h", "label": "ถือสูงสุด (ชั่วโมง)", "type": "int", "default": 120, "min": 4, "max": 120, "step": 1},
+    {"key": "max_hold_h", "label": "ถือสูงสุด (ชม.) — ใช้เมื่อเปิดกฎจำกัดเวลา", "type": "int", "default": 120, "min": 4, "max": 120, "step": 1},
 ]
 
 

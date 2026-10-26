@@ -132,9 +132,9 @@ function ago(iso) {
 }
 const specOf = (sym) => S.symbols.find((x) => x.symbol === sym) || { digits: 5, pip: 0.0001 };
 const stratName = (id) => (S.strategies.find((s) => s.id === id) || {}).name || id;
-const paramText = (p) => (p ? Object.entries(p).filter(([k]) => k !== "max_hold_h").map(([k, v]) => `${k}=${v}`).join(" · ") + (p.max_hold_h ? ` · hold≤${p.max_hold_h}h` : "") : "–");
+const paramText = (p) => (p ? Object.entries(p).filter(([k]) => k !== "max_hold_h").map(([k, v]) => `${k}=${v}`).join(" · ") : "–");
 const kpi = (k, v, s = "", c = "") => `<div class="kpi"><div class="k">${k}</div><div class="v ${c}">${v}</div>${s ? `<div class="s">${s}</div>` : ""}</div>`;
-const reasonTh = (r) => ({ Fri: "ปิดศุกร์", Time: "หมดเวลา" }[r] || r);
+const reasonTh = (r) => ({ Fri: "ปิดศุกร์", Time: "หมดเวลา", Rev: "กลับทิศ" }[r] || r);
 const statusBadge = (s) => `<span class="badge ${esc(s)}">${esc(s || "–")}</span>`;
 function qs() { const q = location.hash.split("?")[1] || ""; return Object.fromEntries(new URLSearchParams(q)); }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
@@ -247,14 +247,14 @@ function signalCard(s, compact = false) {
   const sp = specOf(s.symbol), d = sp.digits;
   const expired = new Date(s.valid_until) < new Date();
   const done = s.outcome !== "open" || ["taken", "skipped"].includes(s.user_status);
-  const outcome = s.outcome !== "open" ? `<span class="badge ${s.outcome}">${s.outcome === "time" ? reasonTh(s.exit_reason || "Time") : { win: "TP", loss: "SL" }[s.outcome]} ${fr(s.outcome_r)}</span>` : `<span class="badge open">${expired ? "กำลังติดตาม" : "รอเข้า"}</span>`;
+  const outcome = s.outcome !== "open" ? `<span class="badge ${s.outcome}">${s.exit_reason && !["SL", "TP"].includes(s.exit_reason) ? reasonTh(s.exit_reason) : { win: "TP", loss: "SL", time: "หมดเวลา" }[s.outcome]} ${fr(s.outcome_r)}</span>` : `<span class="badge open">${expired ? "กำลังติดตาม" : "รอเข้า"}</span>`;
   return `<div class="card sig ${s.dir < 0 ? "short" : ""} ${done ? "done" : ""}" data-id="${esc(s.id)}">
     <div class="top">
       <span class="side">${s.side}</span>
       <div><div class="sym">${esc(s.mt5_symbol)}</div><div class="meta">${s.tf} · ${esc(s.strategy_name || stratName(s.strategy))}</div></div>
       <div style="margin-left:auto;text-align:right" class="row">${statusBadge(s.system_status)} ${outcome}</div>
     </div>
-    <div class="meta" style="padding:0 16px 8px 18px">สัญญาณ ${fdt(s.bar_time)} · ${expired ? "เลยเวลาเข้าแล้ว" : "เข้าได้ถึง " + fdt(s.valid_until)} · ปิดภายใน ${fdt(s.close_by)}</div>
+    <div class="meta" style="padding:0 16px 8px 18px">สัญญาณ ${fdt(s.bar_time)} · ${expired ? "เลยเวลาเข้าแล้ว" : "เข้าได้ถึง " + fdt(s.valid_until)} · ${s.close_by ? "ปิดภายใน " + fdt(s.close_by) : "ถือจนชน TP / SL หรือมีสัญญาณกลับทิศ"}</div>${s.reverse_of ? `<div class="banner" style="margin:0 16px 10px 18px"><span class="ic">🔁</span><div><b>สัญญาณกลับทิศ:</b> ปิดออเดอร์ ${s.reverse_of} เดิมของระบบนี้ก่อน แล้วจึงเปิดไม้นี้</div></div>` : ""}
     <div class="levels">
       <div class="lv"><div class="k">ENTRY ≈</div><div class="v" data-f="entry">${fpx(s.entry, d)}</div><div class="s">${s.price_source}</div></div>
       <div class="lv sl"><div class="k">STOP LOSS</div><div class="v" data-f="sl">${fpx(s.sl, d)}</div><div class="s">${fnum(s.sl_pips, 1)} pips</div></div>
@@ -342,7 +342,7 @@ async function renderSignals(view) {
     <div class="card"><div class="hd"><h3>ประวัติสัญญาณ</h3><span class="badge">${closed.length}</span></div>
       <div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>TF</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
       ${closed.length ? closed.map((s) => `<tr><td>${fdt(s.bar_time)}</td><td><b>${s.symbol}</b></td><td>${statusBadge(s.side)}</td><td>${s.tf}</td><td class="small">${esc(s.strategy_name || "")} ${statusBadge(s.system_status)}</td>
-        <td class="num">${fnum(s.lots, 2)}</td><td><span class="badge ${s.outcome}">${s.outcome === "time" ? reasonTh(s.exit_reason || "Time") : { win: "TP", loss: "SL" }[s.outcome]}</span></td><td class="num ${cls(s.outcome_r)}">${fr(s.outcome_r)}</td><td>${s.user_status === "new" ? '<span class="faint">–</span>' : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิด" : "ข้าม"}</span>`}</td></tr>`).join("")
+        <td class="num">${fnum(s.lots, 2)}</td><td><span class="badge ${s.outcome}">${s.exit_reason && !["SL", "TP"].includes(s.exit_reason) ? reasonTh(s.exit_reason) : { win: "TP", loss: "SL", time: "หมดเวลา" }[s.outcome]}</span></td><td class="num ${cls(s.outcome_r)}">${fr(s.outcome_r)}</td><td>${s.user_status === "new" ? '<span class="faint">–</span>' : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิด" : "ข้าม"}</span>`}</td></tr>`).join("")
         : `<tr><td colspan="9" class="muted" style="text-align:center;padding:22px">ยังไม่มีประวัติ</td></tr>`}</tbody></table></div></div>
   </div>`;
   bindSignalCards(view, sigs);
@@ -642,7 +642,7 @@ async function renderChart(view) {
       <span class="k">Backtest ทั้งช่วง</span><span class="v small">${m.trades} ไม้ · ${fr(m.expectancy, 3)}/ไม้ · t ${fnum(m.t_stat, 2)} · Long ${fr(m.long, 2)} / Short ${fr(m.short, 2)}</span>
       <span class="k">สัญญาณแท่งล่าสุด</span><span class="v">${sp.last_signal > 0 ? '<span class="pos">LONG</span>' : sp.last_signal < 0 ? '<span class="neg">SHORT</span>' : "ไม่มี"}</span>
       ${S.chartOpen ? `<span class="k">ออเดอร์ที่${live ? "เปิดอยู่" : "ระบบนี้จะถืออยู่ (ทดลอง)"}</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} <b>${S.chartOpen.lot}</b> @ ${fpx(S.chartOpen.entry, dg)}
-        · SL <span class="neg">${fpx(S.chartOpen.sl, dg)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, dg)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}</span>` : ""}
+        · SL <span class="neg">${fpx(S.chartOpen.sl, dg)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, dg)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}${S.chartOpen.reverse_pending ? ` · <span class="warn">มีสัญญาณกลับทิศ → ปิดที่แท่งถัดไป</span>` : ""}</span>` : ""}
     </div>
     ${STATIC ? "" : `<div class="row"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}&params=${encodeURIComponent(JSON.stringify(sp.params))}">🧪 ปรับพารามิเตอร์ใน Lab</a></div>`}
   </div>`;
@@ -920,7 +920,7 @@ async function renderSettingsStatic(view) {
 - ทดสอบได้ที่ GitHub → Actions → **Run workflow** (scan)`)}</div></div>
     </div>
     <div class="card"><div class="hd"><h3>การวิเคราะห์อัตโนมัติ (ระบบจัดการเอง)</h3><div class="right"><a class="btn sm" href="${actionsUrl()}" target="_blank" rel="noopener">GitHub Actions ↗</a></div></div><div class="bd stack">
-      <div class="kpis">${kpi("วิเคราะห์ใหม่", "ทุกเสาร์", "09:30 น. + ปุ่มเดียว")}${kpi("Walk-Forward", `${s.research.is_months}/${s.research.oos_months} m`, "+ ทดสอบอีก 4 หน้าต่าง")}${kpi("TF", s.research.timeframes.join(" / "))}${kpi("ถือสูงสุด", s.research.max_hold_hours + " ชม.", "ปิดทุกออเดอร์ ศุกร์ 20:00 น.")}${kpi("DD เป้าหมาย", s.target_max_dd_pct + "%", "MC 95%")}</div>
+      <div class="kpis">${kpi("วิเคราะห์ใหม่", "ทุกเสาร์", "09:30 น. + ปุ่มเดียว")}${kpi("Walk-Forward", `${s.research.is_months}/${s.research.oos_months} m`, "+ ทดสอบอีก 4 หน้าต่าง")}${kpi("TF", s.research.timeframes.join(" / "))}${kpi("ปิดออเดอร์เมื่อ", "TP / SL / กลับทิศ", "ไม่จำกัดเวลาถือ")}${kpi("DD เป้าหมาย", s.target_max_dd_pct + "%", "MC 95%")}</div>
       <div class="formsec">เกณฑ์ ACTIVE (ห้ามลดเพื่อให้มีสัญญาณ)</div>
       <div class="gates">${[["OOS ไม้", G.min_oos_trades], ["Expectancy", G.min_expectancy + "R"], ["t-stat", G.min_t], ["MC PF@95%", G.min_mc_pf_p5], ["ชนะสุ่ม", G.min_random_pct + "%"], ["Plateau", G.min_plateau], ["Robustness", G.min_robust_score]].map(([k, v]) => `<span class="gate p">${k} ≥ ${v}</span>`).join("")}</div>
       ${s.force_off?.length ? `<div class="hint">ปิดโดย AI/ผู้ใช้: ${s.force_off.join(", ")}</div>` : ""}
@@ -963,7 +963,6 @@ async function renderSettings(view) {
         <div class="fgrid" style="grid-template-columns:1fr 1fr 1fr">
           <label class="f">รอบอัปเดตระบบ<select class="inp" data-k="research.schedule">${["daily", "weekly", "monthly", "off"].map((x) => `<option ${R.schedule === x ? "selected" : ""} value="${x}">${{ daily: "ทุกวัน", weekly: "ทุกสัปดาห์ (เสาร์)", monthly: "ทุกเดือน", off: "ปิด" }[x]}</option>`).join("")}</select></label>
           <label class="f">เวลา (ชม. ไทย)<input class="inp num" type="number" data-k="research.schedule_hour_bkk" value="${R.schedule_hour_bkk}"></label>
-          <label class="f">ถือสูงสุด (ชม.)<input class="inp num" type="number" max="120" data-k="research.max_hold_hours" value="${R.max_hold_hours}"></label>
           <label class="f">IS (เดือน)<input class="inp num" type="number" data-k="research.is_months" value="${R.is_months}"></label>
           <label class="f">OOS (เดือน)<input class="inp num" type="number" data-k="research.oos_months" value="${R.oos_months}"></label>
           <label class="f">IS ขั้นต่ำ (ไม้)<input class="inp num" type="number" data-k="research.min_is_trades" value="${R.min_is_trades}"></label>
@@ -1053,7 +1052,7 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
   - ถ้าทุนเปลี่ยนมาก แก้ได้ที่ GitHub → Settings → Secrets and variables → Actions → Variables → \`ACCOUNT_BALANCE\`
   - หรือบอก Claude ในวันจันทร์`],
     ["signal", "3. เมื่อมีสัญญาณ: เปิดออเดอร์ทีละขั้น", `
-- **1.** มือถือเด้งแจ้งเตือน เช่น “🟢 BUY USTEC H1 — เปิด 0.12 lot” ในข้อความมี Lot, Entry, SL, TP, R:R, กำไรเป้า และเวลา “ปิดภายใน”
+- **1.** มือถือเด้งแจ้งเตือน เช่น “🟢 BUY USTEC H1 — เปิด 0.12 lot” ในข้อความมี Lot, Entry, SL และ TP, R:R, กำไรเป้า
 - **2.** เปิดเว็บ หน้า **สัญญาณ** → การ์ดสีเขียวคือ LONG/BUY สีแดงคือ SHORT/SELL
 - **3.** เปิด **MT5** → สินทรัพย์เดียวกัน → New Order แบบ **Market Execution**
 - **4.** ถ้าราคาใน MT5 ต่างจาก Entry ในการ์ด (ปกติต่างเล็กน้อย):
@@ -1061,9 +1060,8 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
   - เว็บจะเลื่อน SL/TP ให้ระยะเท่าเดิม และคำนวณ Lot ใหม่
 - **5.** ใส่ **Volume = Lot**, **Stop Loss**, **Take Profit** ตามการ์ด → กด Buy/Sell
 - **6.** กลับมากด **✓ เปิดแล้ว** หรือ **ข้าม** เพื่อบันทึก
-- **7.** ปล่อยให้ออเดอร์ชน SL หรือ TP เอง ถ้าถึงเวลา **ปิดภายใน** แล้วยังไม่ชน ให้ปิดเองด้วยมือ
-- **8.** **ทุกคืนวันศุกร์ 20:00 น. (เวลาไทย) ปิดทุกออเดอร์ที่ยังค้าง** ไม่ถือข้ามสุดสัปดาห์ — เวลา “ปิดภายใน” บนการ์ดคิดกฎนี้ให้แล้ว
-  - ตั้งแต่ศุกร์ 20:00 น. ถึงเช้าวันจันทร์ (ตลาดเปิด) ระบบจะไม่ส่งสัญญาณใหม่
+- **7.** ปล่อยให้ออเดอร์ชน **SL** หรือ **TP** เอง ระบบไม่มีกำหนดเวลาปิด
+- **8.** ถ้ามีแจ้งเตือน **🔁 สัญญาณกลับทิศ** ของสินทรัพย์เดียวกัน: **ปิดออเดอร์เดิมทันที** แล้วเปิดไม้ใหม่ตามการ์ด (ระบบทดสอบด้วยกติกานี้)
 ### กติกาเวลาเข้า
 - สัญญาณเกิดตอน **แท่งเทียนปิด** แล้วเข้าที่ราคาเปิดของแท่งถัดไป
 - การ์ดบอก **“เข้าได้ถึง”** ถ้าเลยเวลานี้ ราคามักวิ่งไปไกลแล้ว ไม่ควรไล่ราคา
@@ -1102,7 +1100,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 ### ขั้นที่ 1 — เตรียมข้อมูลและกติกาการเทรด
 - ใช้แท่งเทียน H1 (H4 สร้างจาก H1) จาก MT5 / Yahoo / Binance
 - **ตัดสินใจตอนแท่งปิด แล้วเข้าที่ราคาเปิดแท่งถัดไป** — ไม่แอบดูอนาคต (ทดสอบแล้วกับกราฟสุ่มล้วน ผลออกมาใกล้ 0R ทุกกลยุทธ์ แปลว่าไม่มีการแอบดูข้อมูลล่วงหน้า)
-- ทางออกเหมือนกันทุกกลยุทธ์: **SL = k × ATR14**, **TP = R:R × ระยะ SL**, **ถือไม่เกิน 120 ชม.** และ **ปิดทุกออเดอร์คืนวันศุกร์ 20:00 น. เวลาไทย** (ไม่เปิดไม้ใหม่จนตลาดเปิดเช้าวันจันทร์)
+- ทางออกเหมือนกันทุกกลยุทธ์ มีแค่ 3 แบบ: **ชน SL (= k × ATR14)**, **ชน TP (= R:R × ระยะ SL)** หรือ **มีสัญญาณตรงข้าม** → ปิดที่ราคาเปิดแท่งถัดไปแล้วกลับทิศ · ไม่จำกัดเวลาถือ
   - Backtest, Walk-Forward, การสุ่มจุดเข้า และ forward test ใช้กฎนี้เหมือนกันทั้งหมด
 - ถ้าแท่งเดียวแตะทั้ง SL และ TP ให้ถือว่า **ชน SL ก่อน** (คิดแบบร้ายไว้ก่อน) และถ้าราคากระโดดข้าม SL จะออกที่ราคาเปิด
 - **หักต้นทุนทุกไม้:** spread + slippage × 2 + ค่าคอม
@@ -1180,7 +1178,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - ปิดระบบที่ผลจริงแย่กว่าช่วงที่ Monte Carlo คาดไว้
   - เขียนบันทึก (แสดงในหน้า **ระบบเทรด**)
   - ส่งขึ้นคลาวด์ให้เสร็จในวันนั้น
-- กติกาที่ Claude ต้องทำตาม: **ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ**, ตัดสินจากผล Out-of-Sample เท่านั้น, ถือไม่เกิน 5 วัน และปิดทุกออเดอร์คืนวันศุกร์ 20:00 น.`],
+- กติกาที่ Claude ต้องทำตาม: **ไม่ลดเกณฑ์เพื่อให้มีสัญญาณ**, ตัดสินจากผล Out-of-Sample เท่านั้น, ปิดออเดอร์ด้วย TP / SL / สัญญาณกลับทิศเท่านั้น`],
     ["faq", "11. คำถามที่พบบ่อย / ข้อควรรู้", `
 - **เว็บมีเวอร์ชันใหม่ หรือข้อมูลใหม่:** จะมีแถบสีเขียว “🆕 มีเว็บเวอร์ชันใหม่” หรือแถบสีฟ้า “มีข้อมูลใหม่” ขึ้นด้านบน → กด **อัปเดตเลย** / **โหลดข้อมูลใหม่**
   - ปุ่ม **🔄 รีเฟรชทั้งหมด** มุมขวาบน ใช้ได้ทุกเมื่อ (เหมาะกับแอปบน iPad ที่ไม่มีปุ่มรีโหลด) ค่าที่ตั้งไว้ในเครื่อง เช่น ทุน จะไม่หาย
