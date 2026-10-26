@@ -58,7 +58,7 @@ DEFAULT_SETTINGS = {
     "mt5_symbol_map": {k: k for k in SYMBOLS} | {"NAS100": "USTEC"},
     "symbol_overrides": {},             # per-symbol contract/spread/commission edits from the UI
     "research": {
-        "timeframes": ["H1", "H4"],
+        "timeframes": ["H1", "H4", "D1"],
         "is_months": 12, "oos_months": 3,
         "min_is_trades": 20,
         "max_hold_hours": 120,           # only used when exit_max_hold is on

@@ -104,3 +104,89 @@ def supertrend(h: np.ndarray, l: np.ndarray, c: np.ndarray, n: int = 10, mult: f
         d[i] = 1 if (prev < 0 and c[i] > fu[i]) else -1 if (prev > 0 and c[i] < fl[i]) else prev
         line[i] = fl[i] if d[i] > 0 else fu[i]
     return line, d
+
+
+def wma(x: np.ndarray, n: int) -> np.ndarray:
+    """Linearly weighted moving average (causal); NaN inputs propagate to the windows that contain them."""
+    n = max(int(n), 1)
+    w = np.arange(1, n + 1, dtype=float)
+    xx = np.nan_to_num(x)
+    out = np.convolve(xx, w[::-1], "full")[: len(x)] / w.sum()
+    bad = pd.Series(np.isnan(x).astype(float)).rolling(n, min_periods=1).max().to_numpy() > 0
+    out[bad] = np.nan
+    out[: n - 1] = np.nan
+    return out
+
+
+def kama(c: np.ndarray, n: int = 10, fast: int = 2, slow: int = 30) -> np.ndarray:
+    """Kaufman Adaptive Moving Average."""
+    change = np.abs(c - shift(c, n))
+    vol = pd.Series(np.abs(np.diff(c, prepend=np.nan))).rolling(n, min_periods=n).sum().to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        er = np.where(vol > 0, change / vol, 0.0)
+    sc = (er * (2 / (fast + 1) - 2 / (slow + 1)) + 2 / (slow + 1)) ** 2
+    out = np.full(len(c), np.nan)
+    for i in range(n, len(c)):
+        prev = out[i - 1] if np.isfinite(out[i - 1]) else c[i - 1]
+        out[i] = prev + sc[i] * (c[i] - prev) if np.isfinite(sc[i]) else prev
+    return out
+
+
+def psar(h: np.ndarray, l: np.ndarray, step: float = 0.02, max_step: float = 0.2):
+    """Wilder's Parabolic SAR: returns (sar, direction +1/-1)."""
+    n = len(h)
+    sar, d = np.full(n, np.nan), np.zeros(n)
+    if n < 3:
+        return sar, d
+    up, af, ep, s = True, step, h[0], l[0]
+    for i in range(1, n):
+        s = s + af * (ep - s)
+        if up:
+            s = min(s, l[i - 1], l[i - 2] if i > 1 else l[i - 1])
+            if l[i] < s:
+                up, s, ep, af = False, ep, l[i], step
+            elif h[i] > ep:
+                ep, af = h[i], min(af + step, max_step)
+        else:
+            s = max(s, h[i - 1], h[i - 2] if i > 1 else h[i - 1])
+            if h[i] > s:
+                up, s, ep, af = True, ep, h[i], step
+            elif l[i] < ep:
+                ep, af = l[i], min(af + step, max_step)
+        sar[i], d[i] = s, 1 if up else -1
+    return sar, d
+
+
+def cci(h, l, c, n: int = 20) -> np.ndarray:
+    tp = (h + l + c) / 3
+    out = np.full(len(c), np.nan)
+    if len(c) < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(tp, n)
+    m = w.mean(axis=1)
+    md = np.abs(w - m[:, None]).mean(axis=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out[n - 1:] = (tp[n - 1:] - m) / (0.015 * md)
+    return out
+
+
+def rolling_sum(x: np.ndarray, n: int) -> np.ndarray:
+    return pd.Series(x).rolling(n, min_periods=n).sum().to_numpy()
+
+
+def linreg_slope(x: np.ndarray, n: int) -> np.ndarray:
+    t = np.arange(len(x), dtype=float)
+    sx, stx = rolling_sum(x, n), rolling_sum(t * x, n)
+    st, st2 = rolling_sum(t, n), rolling_sum(t * t, n)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return (n * stx - st * sx) / (n * st2 - st * st)
+
+
+def heikin_ashi(o, h, l, c):
+    hc = (o + h + l + c) / 4
+    ho = np.empty(len(c))
+    if len(c):
+        ho[0] = (o[0] + c[0]) / 2
+        for i in range(1, len(c)):
+            ho[i] = (ho[i - 1] + hc[i - 1]) / 2
+    return ho, np.maximum.reduce([h, ho, hc]), np.minimum.reduce([l, ho, hc]), hc

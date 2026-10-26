@@ -27,7 +27,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Long history: `data/history/{SYM}_H1.csv.gz` (from `export_mt5_history.bat` on the PC; Dukascopy blocks GitHub runners — `tools/fetch_history.js`
   / workflow History kept for manual retry) is joined with Yahoo bars by `with_history` (ratio-scaled at the overlap). A push touching
   `data/history/` makes the cloud run the full research.
-- `app/strategies.py` — strategy library (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
+- `app/strategies.py` — strategy library (50) (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
 - `app/research.py` — per-symbol pipeline → `data/research/latest.json` (+ `history/`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Every candidate keeps its compact OOS trades (`oos_eq`) for the chart page.
 - `app/scanner.py` — signals on closed bars, forward tracking with the same rules, ntfy/Telegram push.
@@ -47,9 +47,10 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 7. Report to the user in a few lines; do not claim profitability the data does not show.
 
 ## Improving the strategy library — rules
-- Library: 20 strategies (Oct 2026: +tsmom, adx_trend, squeeze_breakout, session_breakout, ema_pullback, range_fade; then +macd_trend, supertrend,
-  rsi_momentum, ichimoku_tk, inside_bar, pin_bar, stoch_pullback, zscore_reversion, prev_day_breakout, aroon_trend) → 188 combos per TF, 40 candidates
-  per symbol, so the multiple-testing gate asks OOS t ≥ ~3.0. More strategies make passing harder, not easier — say so when the user asks for more.
+- Library: 50 strategies (Oct 2026: 4 → 10 → 20 → 50, user's request) × H1 / H4 / D1 = 150 candidates per symbol; 428 combos per TF.
+  The multiple-testing gate then asks OOS t ≥ ~3.4. More strategies make passing harder, not easier — say so when the user asks for more.
+  `python -m tests.check_strategies` must pass for every strategy (no look-ahead: future price changes never alter past signals;
+  random-walk mean R ≈ 0; every grid combo runs). Volume-based indicators are avoided (Yahoo FX volume is empty).
 - New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos. Every addition raises the trial count; mention it.
 - Judge only on walk-forward OOS + random benchmark + robustness + MC of OOS trades. Never tune on OOS results, never re-run folds until something passes.
 - Never lower `research.gates` or change exit rules on your own to manufacture signals.

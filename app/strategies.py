@@ -218,6 +218,332 @@ def _aroon(df, p):
     return (_cross_up(up, dn) & (up >= 70)).astype(int) - (_cross_up(dn, up) & (dn >= 70)).astype(int), {}
 
 
+
+# ----------------------------------------------------------------------------- library extension (Oct 2026, +30)
+def _ohlc(df):
+    return df.open.to_numpy(), df.high.to_numpy(), df.low.to_numpy(), df.close.to_numpy()
+
+
+def _sig(long_, short):
+    return np.nan_to_num(np.asarray(long_, float)).astype(bool).astype(int) - np.nan_to_num(np.asarray(short, float)).astype(bool).astype(int)
+
+
+def _bar_hours(df) -> float:
+    if len(df) < 3:
+        return 1.0
+    d = pd.Series(df.index[-200:]).diff().dropna().median()
+    return float(d.total_seconds() / 3600) if pd.notna(d) else 1.0
+
+
+def _hma(df, p):
+    c = df.close.to_numpy()
+    n = int(p["hma_len"])
+    hma = ta.wma(2 * ta.wma(c, n // 2) - ta.wma(c, n), int(np.sqrt(n)))
+    d = np.sign(hma - ta.shift(hma))
+    pd_ = ta.shift(d)
+    return _sig((d > 0) & (pd_ < 0), (d < 0) & (pd_ > 0)), {f"HMA{n}": hma}
+
+
+def _kama(df, p):
+    c = df.close.to_numpy()
+    k = ta.kama(c, int(p["er_len"]))
+    return _sig(_cross_up(c, k), _cross_up(k, c)), {"KAMA": k}
+
+
+def _tema(df, p):
+    c = df.close.to_numpy()
+    def tema(n):
+        e1 = ta.ema(c, n); e2 = ta.ema(np.nan_to_num(e1), n); e3 = ta.ema(np.nan_to_num(e2), n)
+        out = np.array(3 * e1 - 3 * e2 + e3)
+        out[: 3 * n] = np.nan
+        return out
+    f, s = tema(int(p["fast"])), tema(int(p["slow"]))
+    return _sig(_cross_up(f, s), _cross_up(s, f)), {f"TEMA{int(p['fast'])}": f, f"TEMA{int(p['slow'])}": s}
+
+
+def _vortex(df, p):
+    o, h, l, c = _ohlc(df)
+    n = int(p["vi_len"])
+    vp, vm = np.abs(h - ta.shift(l)), np.abs(l - ta.shift(h))
+    tr = np.fmax(h - l, np.fmax(np.abs(h - ta.shift(c)), np.abs(l - ta.shift(c))))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        vip, vim = ta.rolling_sum(vp, n) / ta.rolling_sum(tr, n), ta.rolling_sum(vm, n) / ta.rolling_sum(tr, n)
+    return _sig(_cross_up(vip, vim), _cross_up(vim, vip)), {}
+
+
+def _cci_trend(df, p):
+    o, h, l, c = _ohlc(df)
+    x, lv = ta.cci(h, l, c, 20), p["cci_level"]
+    return _sig(_cross_up(x, np.full_like(x, lv)), _cross_up(np.full_like(x, -lv), x)), {}
+
+
+def _trix(df, p):
+    c = df.close.to_numpy()
+    n = int(p["trix_len"])
+    e3 = np.array(ta.ema(np.nan_to_num(ta.ema(np.nan_to_num(ta.ema(c, n)), n)), n))
+    e3[: 3 * n] = np.nan
+    tx = 100 * (e3 / ta.shift(e3) - 1)
+    sg = np.where(np.isnan(tx), np.nan, ta.ema(np.nan_to_num(tx), 9))
+    return _sig(_cross_up(tx, sg) & (tx < 0), _cross_up(sg, tx) & (tx > 0)), {}
+
+
+def _psar(df, p):
+    o, h, l, c = _ohlc(df)
+    sar, d = ta.psar(h, l, p["psar_step"], 0.2)
+    trend = ta.ema(c, 200)
+    pd_ = ta.shift(d)
+    return _sig((d > 0) & (pd_ < 0) & (c > trend), (d < 0) & (pd_ > 0) & (c < trend)), {"PSAR": sar, "EMA200": trend}
+
+
+def _keltner_breakout(df, p):
+    o, h, l, c = _ohlc(df)
+    mid, ku, kd = ta.keltner(h, l, c, 20, p["kc_mult"])
+    trend = ta.ema(c, 200)
+    return _sig(_cross_up(c, ku) & (c > trend), _cross_up(kd, c) & (c < trend)), {"KC Upper": ku, "KC Lower": kd, "EMA200": trend}
+
+
+def _bb_breakout(df, p):
+    c = df.close.to_numpy()
+    mid, up, dn = ta.bollinger(c, 20, p["bb_k"])
+    bw = (up - dn) / mid
+    expanding = bw > ta.sma(bw, 50)
+    return _sig(_cross_up(c, up) & expanding, _cross_up(dn, c) & expanding), {"BB Upper": up, "BB Mid": mid, "BB Lower": dn}
+
+
+def _linreg(df, p):
+    c = df.close.to_numpy()
+    s = ta.linreg_slope(c, int(p["lr_len"]))
+    ps = ta.shift(s)
+    return _sig((s > 0) & (ps <= 0), (s < 0) & (ps >= 0)), {}
+
+
+def _elder_impulse(df, p):
+    c = df.close.to_numpy()
+    e13 = ta.ema(c, 13)
+    m = ta.ema(c, 12) - ta.ema(c, 26)
+    hist = m - np.where(np.isnan(m), np.nan, ta.ema(np.nan_to_num(m), 9))
+    green = (e13 > ta.shift(e13)) & (hist > ta.shift(hist))
+    red = (e13 < ta.shift(e13)) & (hist < ta.shift(hist))
+    trend = ta.ema(c, int(p["trend_len"]))
+    return _sig(green & ~(ta.shift(green.astype(float)) == 1) & (c > trend), red & ~(ta.shift(red.astype(float)) == 1) & (c < trend)), {"EMA13": e13}
+
+
+def _ema_align(df, p):
+    c = df.close.to_numpy()
+    f, m, s = ta.ema(c, 20), ta.ema(c, int(p["mid"])), ta.ema(c, 200)
+    up = (f > m) & (m > s)
+    dn = (f < m) & (m < s)
+    return _sig(up & ~(ta.shift(up.astype(float)) == 1), dn & ~(ta.shift(dn.astype(float)) == 1)), {"EMA20": f, f"EMA{int(p['mid'])}": m, "EMA200": s}
+
+
+def _heikin(df, p):
+    o, h, l, c = _ohlc(df)
+    ho, hh, hl, hc = ta.heikin_ashi(o, h, l, c)
+    tol = 1e-9 * np.abs(hc)
+    bull = (hc > ho) & (np.abs(ho - hl) <= tol)      # strong green: no lower shadow
+    bear = (hc < ho) & (np.abs(hh - ho) <= tol)
+    prev_bull, prev_bear = ta.shift(bull.astype(float)) == 1, ta.shift(bear.astype(float)) == 1
+    trend = ta.ema(c, int(p["trend_len"]))
+    return _sig(bull & ~prev_bull & (c > trend), bear & ~prev_bear & (c < trend)), {f"EMA{int(p['trend_len'])}": trend}
+
+
+def _awesome(df, p):
+    o, h, l, c = _ohlc(df)
+    med = (h + l) / 2
+    ao = ta.sma(med, 5) - ta.sma(med, 34)
+    trend = ta.ema(c, int(p["trend_len"]))
+    z = np.zeros_like(ao)
+    return _sig(_cross_up(ao, z) & (c > trend), _cross_up(z, ao) & (c < trend)), {f"EMA{int(p['trend_len'])}": trend}
+
+
+def _ultimate(df, p):
+    o, h, l, c = _ohlc(df)
+    pc = ta.shift(c)
+    bp = c - np.fmin(l, pc)
+    tr = np.fmax(h, pc) - np.fmin(l, pc)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        a = [ta.rolling_sum(bp, n) / ta.rolling_sum(tr, n) for n in (7, 14, 28)]
+    uo = 100 * (4 * a[0] + 2 * a[1] + a[2]) / 7
+    lv, trend = p["uo_level"], ta.ema(c, 200)
+    return _sig(_cross_up(uo, np.full_like(uo, lv)) & (c > trend), _cross_up(np.full_like(uo, 100 - lv), uo) & (c < trend)), {"EMA200": trend}
+
+
+def _cci_reversion(df, p):
+    o, h, l, c = _ohlc(df)
+    x = ta.cci(h, l, c, 20)
+    lo5, hi5 = ta.lowest(x, 5), ta.highest(x, 5)
+    lv = p["cci_extreme"]
+    return _sig(_cross_up(x, np.full_like(x, -100.0)) & (lo5 < -lv), _cross_up(np.full_like(x, 100.0), x) & (hi5 > lv)), {}
+
+
+def _keltner_pullback(df, p):
+    o, h, l, c = _ohlc(df)
+    mid, ku, kd = ta.keltner(h, l, c, 20, p["kc_mult"])
+    e50, e200 = ta.ema(c, 50), ta.ema(c, 200)
+    return _sig((e50 > e200) & (l <= kd) & (c > kd), (e50 < e200) & (h >= ku) & (c < ku)), {"KC Upper": ku, "KC Lower": kd, "EMA200": e200}
+
+
+def _three_bar(df, p):
+    c = df.close.to_numpy()
+    n = int(p["n_bars"])
+    d = np.diff(c, prepend=np.nan)
+    downs = pd.Series((d < 0).astype(float)).rolling(n, min_periods=n).sum().to_numpy()
+    ups = pd.Series((d > 0).astype(float)).rolling(n, min_periods=n).sum().to_numpy()
+    sma = ta.sma(c, 200)
+    return _sig((ta.shift(downs) == n) & (d > 0) & (c > sma), (ta.shift(ups) == n) & (d < 0) & (c < sma)), {"SMA200": sma}
+
+
+def _nr_breakout(df, p):
+    o, h, l, c = _ohlc(df)
+    n = int(p["nr_len"])
+    r = h - l
+    nr = (r == ta.lowest(r, n))                       # narrowest bar of the last n
+    prev_nr = ta.shift(nr.astype(float)) == 1
+    return _sig(prev_nr & (c > ta.shift(h)), prev_nr & (c < ta.shift(l))), {}
+
+
+def _engulfing(df, p):
+    o, h, l, c = _ohlc(df)
+    po, pc = ta.shift(o), ta.shift(c)
+    n = int(p["lookback"])
+    at_low = np.fmin(l, ta.shift(l)) <= ta.lowest(l, n)
+    at_high = np.fmax(h, ta.shift(h)) >= ta.highest(h, n)
+    bull = (c > o) & (pc < po) & (c >= po) & (o <= pc) & at_low
+    bear = (c < o) & (pc > po) & (c <= po) & (o >= pc) & at_high
+    return _sig(bull, bear), {}
+
+
+def _donchian_fade(df, p):
+    o, h, l, c = _ohlc(df)
+    n = int(p["lookback"])
+    lo, hi = ta.shift(ta.lowest(l, n)), ta.shift(ta.highest(h, n))
+    _, _, adx = ta.dmi(h, l, c, 14)
+    calm = adx < 20
+    return _sig(calm & (l <= lo) & (c > lo), calm & (h >= hi) & (c < hi)), {"Range High": hi, "Range Low": lo}
+
+
+def _rsi_div(df, p):
+    o, h, l, c = _ohlc(df)
+    n = int(p["lookback"])
+    r = ta.rsi(c, 14)
+    out_l, out_s = np.zeros(len(c), bool), np.zeros(len(c), bool)
+    m = n - 3
+    if len(c) > n + 1 and m >= 3:
+        wl = np.lib.stride_tricks.sliding_window_view(np.nan_to_num(l, nan=np.inf), m)     # window s .. s+m-1
+        wh = np.lib.stride_tricks.sliding_window_view(np.nan_to_num(h, nan=-np.inf), m)
+        i = np.arange(n - 1, len(c))                  # bar i uses the earlier low inside [i-n+1, i-3]
+        s = i - n + 1
+        jl = s + np.argmin(wl[s], axis=1)
+        jh = s + np.argmax(wh[s], axis=1)
+        new_low = l[i] <= ta.lowest(l, n)[i]
+        new_high = h[i] >= ta.highest(h, n)[i]
+        out_l[i] = new_low & (r[i] > r[jl] + 2) & (c[i] > o[i])
+        out_s[i] = new_high & (r[i] < r[jh] - 2) & (c[i] < o[i])
+    return _sig(out_l, out_s), {}
+
+
+def _turn_of_month(df, p):
+    idx = df.index
+    day = idx.normalize()
+    k = int(p["days_before"])
+    me = (day + pd.offsets.BMonthEnd(0)) - pd.offsets.BDay(k)   # k business days before the month's last business day
+    first_bar = np.r_[True, day[1:] != day[:-1]]
+    return _sig(first_bar & (day == me.normalize()), np.zeros(len(idx), bool)), {}
+
+
+def _london_fade(df, p):
+    o, h, l, c = _ohlc(df)
+    idx = df.index
+    hrs = _bar_hours(df)
+    end_h = ((idx.hour.to_numpy() + hrs) % 24).round().astype(int)
+    day = idx.normalize()
+    first_h = 7 - hrs + 1                              # the bar that contains 07:00 UTC (London open)
+    in_ldn = idx.hour.to_numpy() >= first_h
+    open7 = pd.Series(np.where(in_ldn, o, np.nan), index=idx).groupby(day).transform("first").to_numpy()
+    a = ta.atr(h, l, c, 14)
+    at_fix = (end_h == 16) & (hrs < 24)
+    move = c - open7
+    k = p["move_atr"] * a * np.sqrt(8 / max(hrs, 1))
+    return _sig(at_fix & (move < -k), at_fix & (move > k)), {}
+
+
+def _ny_open(df, p):
+    idx = df.index
+    hour = idx.hour.to_numpy()
+    day = idx.normalize()
+    nb = int(p["range_bars"])
+    in_rng = (hour >= 13) & (hour < 13 + nb)
+    rh = pd.Series(np.where(in_rng, df.high.to_numpy(), np.nan), index=idx).groupby(day).transform("max").to_numpy()
+    rl = pd.Series(np.where(in_rng, df.low.to_numpy(), np.nan), index=idx).groupby(day).transform("min").to_numpy()
+    c = df.close.to_numpy()
+    win = (hour >= 13 + nb) & (hour < 20)
+    raw = np.where(win & (c > rh), 1, np.where(win & (c < rl), -1, 0))
+    first = pd.Series(raw != 0, index=idx).groupby(day).cumsum().to_numpy() == 1
+    return np.where(first, raw, 0), {"NY range High": np.where(win, rh, np.nan), "NY range Low": np.where(win, rl, np.nan)}
+
+
+def _weekly(df, p):
+    idx = df.index
+    wk = idx.normalize() - pd.to_timedelta(idx.dayofweek, unit="D")
+    wh, wl = df.high.groupby(wk).max(), df.low.groupby(wk).min()
+    pwh = wh.shift(1).reindex(wk).to_numpy()
+    pwl = wl.shift(1).reindex(wk).to_numpy()
+    c = df.close.to_numpy()
+    trend = ta.ema(c, int(p["trend_len"]))
+    pc = ta.shift(c)
+    raw = np.where((c > pwh) & (pc <= pwh) & (c > trend), 1, np.where((c < pwl) & (pc >= pwl) & (c < trend), -1, 0))
+    first = pd.Series(raw != 0, index=idx).groupby(wk).cumsum().to_numpy() == 1
+    return np.where(first, raw, 0), {"Prev-week High": pwh, "Prev-week Low": pwl}
+
+
+def _pivot(df, p):
+    idx = df.index
+    day = idx.normalize()
+    g = df.groupby(day)
+    H, L, C = g.high.max().shift(1), g.low.min().shift(1), g.close.last().shift(1)
+    P = (H + L + C) / 3
+    s1 = (2 * P - H).reindex(day).to_numpy()
+    r1 = (2 * P - L).reindex(day).to_numpy()
+    o, h, l, c = _ohlc(df)
+    trend = ta.ema(c, int(p["trend_len"]))
+    return _sig((l <= s1) & (c > s1) & (c > trend), (h >= r1) & (c < r1) & (c < trend)), {"Pivot S1": s1, "Pivot R1": r1}
+
+
+def _fractal(df, p):
+    o, h, l, c = _ohlc(df)
+    h2 = ta.shift(h, 2)                               # the middle bar of the 5 that end at the current bar
+    up = (h2 > ta.shift(h, 3)) & (h2 > ta.shift(h, 4)) & (h2 > ta.shift(h, 1)) & (h2 > h)
+    l2 = ta.shift(l, 2)
+    dn = (l2 < ta.shift(l, 3)) & (l2 < ta.shift(l, 4)) & (l2 < ta.shift(l, 1)) & (l2 < l)
+    upl = pd.Series(np.where(up, h2, np.nan)).ffill().to_numpy()
+    dnl = pd.Series(np.where(dn, l2, np.nan)).ffill().to_numpy()
+    trend = ta.ema(c, int(p["trend_len"]))
+    return _sig(_cross_up(c, upl) & (c > trend), _cross_up(dnl, c) & (c < trend)), {"Fractal High": upl, "Fractal Low": dnl}
+
+
+def _alligator(df, p):
+    o, h, l, c = _ohlc(df)
+    med = (h + l) / 2
+    k = p["scale"]
+    jaw = ta.shift(ta.rma(med, int(13 * k)), int(8 * k))
+    teeth = ta.shift(ta.rma(med, int(8 * k)), int(5 * k))
+    lips = ta.shift(ta.rma(med, int(5 * k)), int(3 * k))
+    up = (lips > teeth) & (teeth > jaw) & (c > lips)
+    dn = (lips < teeth) & (teeth < jaw) & (c < lips)
+    return _sig(up & ~(ta.shift(up.astype(float)) == 1), dn & ~(ta.shift(dn.astype(float)) == 1)), {"Jaw": jaw, "Teeth": teeth, "Lips": lips}
+
+
+def _elder_ray(df, p):
+    o, h, l, c = _ohlc(df)
+    n = int(p["ema_len"])
+    e = ta.ema(c, n)
+    bull, bear = h - e, l - e
+    rising, falling = e > ta.shift(e), e < ta.shift(e)
+    z = np.zeros(len(c))
+    return _sig(rising & (bear < 0) & _cross_up(bear, ta.shift(bear)) & (ta.shift(bear) < 0) & (bull > 0) & _cross_up(c, e),
+                falling & (bull > 0) & (bull < ta.shift(bull)) & (bear < 0) & _cross_up(e, c)), {f"EMA{n}": e}
+
+
 STRATEGIES: dict[str, dict] = {
     "donchian_trend": {
         "name": "Donchian Breakout + EMA200",
@@ -387,6 +713,246 @@ STRATEGIES: dict[str, dict] = {
         "fn": _aroon,
         "params": [{"key": "aroon_len", "label": "Aroon Length", "type": "int", "default": 25, "min": 10, "max": 100, "step": 1}],
         "grid": {"aroon_len": [25, 50], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'hma_trend': {
+        "name": 'Hull MA Turn',
+        "family": 'Trend following',
+        "rationale": 'Hull Moving Average (Alan Hull) ตอบสนองเร็วแต่เรียบ: ความชันกลับทิศ = แนวโน้มระยะสั้นเปลี่ยน',
+        "fn": _hma,
+        "params": [{"key": "hma_len", "label": "HMA Length", "type": "int", "default": 50, "min": 10, "max": 200, "step": 1}],
+        "grid": {"hma_len": [20, 50], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'kama_cross': {
+        "name": 'KAMA Cross',
+        "family": 'Trend following',
+        "rationale": 'Kaufman Adaptive MA ช้าลงเองเมื่อตลาดแกว่ง เร็วขึ้นเมื่อมีทิศทาง (Perry Kaufman) ราคาตัด KAMA = แนวโน้มเริ่ม โดยลดสัญญาณหลอกในช่วงไซด์เวย์',
+        "fn": _kama,
+        "params": [{"key": "er_len", "label": "Efficiency Ratio Length", "type": "int", "default": 10, "min": 5, "max": 50, "step": 1}],
+        "grid": {"er_len": [10, 20], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'tema_cross': {
+        "name": 'TEMA Crossover',
+        "family": 'Trend following',
+        "rationale": 'Triple EMA (Patrick Mulloy) ลดความหน่วงของเส้นค่าเฉลี่ย: เส้นเร็วตัดเส้นช้าเร็วกว่า EMA ธรรมดา',
+        "fn": _tema,
+        "params": [{"key": "fast", "label": "TEMA เร็ว", "type": "int", "default": 10, "min": 3, "max": 50, "step": 1}, {"key": "slow", "label": "TEMA ช้า", "type": "int", "default": 50, "min": 20, "max": 200, "step": 1}],
+        "grid": {"fast": [10, 20], "slow": [50], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'vortex': {
+        "name": 'Vortex Indicator Cross',
+        "family": 'Trend following',
+        "rationale": 'Vortex (Botes & Siepman, 2010) วัดแรงเคลื่อนขึ้น/ลงเทียบช่วงราคาจริง: VI+ ตัด VI− = แนวโน้มใหม่',
+        "fn": _vortex,
+        "params": [{"key": "vi_len", "label": "VI Length", "type": "int", "default": 14, "min": 7, "max": 50, "step": 1}],
+        "grid": {"vi_len": [14, 21], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'cci_trend': {
+        "name": 'CCI Breakout',
+        "family": 'Momentum',
+        "rationale": 'CCI (Donald Lambert) ทะลุ ±100–150 = ราคาเคลื่อนห่างค่าปกติแรงผิดปกติ ใช้เป็นสัญญาณโมเมนตัมเริ่มต้นแนวโน้ม',
+        "fn": _cci_trend,
+        "params": [{"key": "cci_level", "label": "ระดับ CCI", "type": "float", "default": 100, "min": 50, "max": 250, "step": 5}],
+        "grid": {"cci_level": [100, 150], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'trix_cross': {
+        "name": 'TRIX Signal Cross',
+        "family": 'Momentum',
+        "rationale": 'TRIX (Jack Hutson) = อัตราเปลี่ยนของ EMA สามชั้น กรองสัญญาณรบกวนสูง ตัดเส้นสัญญาณจากฝั่งตรงข้ามศูนย์ = โมเมนตัมกลับตัว',
+        "fn": _trix,
+        "params": [{"key": "trix_len", "label": "TRIX Length", "type": "int", "default": 15, "min": 5, "max": 60, "step": 1}],
+        "grid": {"trix_len": [15, 30], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'psar_flip': {
+        "name": 'Parabolic SAR Flip',
+        "family": 'Trend following',
+        "rationale": 'Parabolic SAR (J. Welles Wilder, 1978) จุดหยุดที่เร่งตามเวลา: กลับทิศในทางเดียวกับ EMA200 = แนวโน้มกลับมาต่อ',
+        "fn": _psar,
+        "params": [{"key": "psar_step", "label": "SAR Step", "type": "float", "default": 0.02, "min": 0.005, "max": 0.1, "step": 0.005}],
+        "grid": {"psar_step": [0.01, 0.02], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'keltner_breakout': {
+        "name": 'Keltner Channel Breakout',
+        "family": 'Volatility breakout',
+        "rationale": 'ราคาปิดทะลุกรอบ Keltner (Chester Keltner / Linda Raschke) ตามทิศ EMA200 = การขยายตัวของความผันผวนในทิศแนวโน้ม',
+        "fn": _keltner_breakout,
+        "params": [{"key": "kc_mult", "label": "Keltner (x ATR20)", "type": "float", "default": 2.0, "min": 1, "max": 4, "step": 0.1}],
+        "grid": {"kc_mult": [1.5, 2.0], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'bb_breakout': {
+        "name": 'Bollinger Expansion Breakout',
+        "family": 'Volatility breakout',
+        "rationale": 'ปิดนอก Bollinger Band ขณะแบนด์กำลังกว้างขึ้น (John Bollinger: band walk) = เริ่มแนวโน้มแรง ต่างจาก BB Fade ที่สวนทาง',
+        "fn": _bb_breakout,
+        "params": [{"key": "bb_k", "label": "BB Std (k)", "type": "float", "default": 2.0, "min": 1, "max": 3.5, "step": 0.1}],
+        "grid": {"bb_k": [2.0, 2.5], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'linreg_slope': {
+        "name": 'Linear Regression Slope',
+        "family": 'Trend following',
+        "rationale": 'ความชันของเส้นถดถอยเชิงเส้น N แท่งเปลี่ยนเครื่องหมาย = ทิศทางเชิงสถิติของราคาเปลี่ยน (วิธี time-series trend ที่ใช้ใน CTA)',
+        "fn": _linreg,
+        "params": [{"key": "lr_len", "label": "Regression Length", "type": "int", "default": 50, "min": 10, "max": 300, "step": 1}],
+        "grid": {"lr_len": [50, 100], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'elder_impulse': {
+        "name": 'Elder Impulse System',
+        "family": 'Momentum',
+        "rationale": 'Impulse System (Alexander Elder): EMA13 และ MACD histogram ขึ้นพร้อมกัน = แรงซื้อและแนวโน้มสอดคล้อง เข้าแท่งแรกที่เปลี่ยนเป็นเขียว',
+        "fn": _elder_impulse,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [100, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'ema_alignment': {
+        "name": 'EMA 20/50/200 Alignment',
+        "family": 'Trend following',
+        "rationale": 'เส้นค่าเฉลี่ยเรียงตัวครบ (20 > กลาง > 200) ครั้งแรก = แนวโน้มทุกระดับเวลาเห็นตรงกัน',
+        "fn": _ema_align,
+        "params": [{"key": "mid", "label": "EMA กลาง", "type": "int", "default": 50, "min": 30, "max": 150, "step": 1}],
+        "grid": {"mid": [50, 100], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'heikin_ashi': {
+        "name": 'Heikin-Ashi Trend Start',
+        "family": 'Trend following',
+        "rationale": 'แท่ง Heikin-Ashi สีเขียวไม่มีไส้ล่าง = แรงซื้อเต็มแท่ง แท่งแรกหลังเปลี่ยนสีในทิศ EMA = เริ่มแนวโน้ม',
+        "fn": _heikin,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [100, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'awesome_osc': {
+        "name": 'Awesome Oscillator Zero Cross',
+        "family": 'Momentum',
+        "rationale": 'Awesome Oscillator (Bill Williams) = SMA5 − SMA34 ของราคากลาง ตัดศูนย์ = โมเมนตัมเปลี่ยนฝั่ง ใช้กับตัวกรองแนวโน้ม',
+        "fn": _awesome,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [100, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'ultimate_osc': {
+        "name": 'Ultimate Oscillator Pullback',
+        "family": 'Pullback',
+        "rationale": 'Ultimate Oscillator (Larry Williams) รวม 3 กรอบเวลา ลดสัญญาณหลอก ตัดขึ้นจากโซนต่ำในขาขึ้น = ย่อจบ',
+        "fn": _ultimate,
+        "params": [{"key": "uo_level", "label": "ระดับ UO (ขาลง = 100 - ค่านี้)", "type": "float", "default": 30, "min": 15, "max": 45, "step": 1}],
+        "grid": {"uo_level": [30, 35], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'cci_reversion': {
+        "name": 'CCI Extreme Snap-back',
+        "family": 'Mean reversion',
+        "rationale": 'CCI ลงสุดโต่ง (< −150/−200) แล้วกลับขึ้นเหนือ −100 = การขายมากเกินจบลง (Lambert ใช้ ±100 เป็นขอบปกติ)',
+        "fn": _cci_reversion,
+        "params": [{"key": "cci_extreme", "label": "CCI สุดโต่ง", "type": "float", "default": 200, "min": 120, "max": 300, "step": 10}],
+        "grid": {"cci_extreme": [150, 200], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    'keltner_pullback': {
+        "name": 'Keltner Pullback in Trend',
+        "family": 'Pullback',
+        "rationale": 'ในขาขึ้น (EMA50 > EMA200) ราคาย่อแตะกรอบล่าง Keltner แล้วปิดกลับเข้ากรอบ = จังหวะซื้อย่อที่ปรับตามความผันผวน',
+        "fn": _keltner_pullback,
+        "params": [{"key": "kc_mult", "label": "Keltner (x ATR20)", "type": "float", "default": 1.5, "min": 0.5, "max": 3, "step": 0.1}],
+        "grid": {"kc_mult": [1.0, 1.5], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'three_bar_pullback': {
+        "name": 'N-Bar Pullback',
+        "family": 'Pullback',
+        "rationale": 'ราคาปิดลง N แท่งติดในขาขึ้น (เหนือ SMA200) แล้วปิดขึ้น = ย่อสั้นจบ — งานของ Larry Connors พบ short-term pullback ในแนวโน้มให้ผลดี',
+        "fn": _three_bar,
+        "params": [{"key": "n_bars", "label": "จำนวนแท่งที่ย่อ", "type": "int", "default": 3, "min": 2, "max": 6, "step": 1}],
+        "grid": {"n_bars": [3, 4], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'nr_breakout': {
+        "name": 'NR4 / NR7 Breakout',
+        "family": 'Volatility breakout',
+        "rationale": 'แท่งที่ช่วงแคบที่สุดใน N แท่ง (Toby Crabel, NR4/NR7) = ความผันผวนหดตัวสุด การทะลุกรอบแท่งนั้นมักวิ่งต่อ',
+        "fn": _nr_breakout,
+        "params": [{"key": "nr_len", "label": "NR ของกี่แท่ง", "type": "int", "default": 7, "min": 3, "max": 14, "step": 1}],
+        "grid": {"nr_len": [4, 7], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'engulfing_reversal': {
+        "name": 'Engulfing at Extreme',
+        "family": 'Price action',
+        "rationale": 'แท่งกลืนกิน (engulfing) ที่จุดต่ำ/สูงสุดของ N แท่ง = ฝั่งตรงข้ามเข้ามาคุมราคาทันที — รูปแบบแท่งเทียนญี่ปุ่น (Steve Nison) ที่ใช้เฉพาะตรงจุดสุดโต่ง',
+        "fn": _engulfing,
+        "params": [{"key": "lookback", "label": "จุดสุดของกี่แท่ง", "type": "int", "default": 20, "min": 5, "max": 100, "step": 1}],
+        "grid": {"lookback": [10, 20], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    'donchian_fade': {
+        "name": 'Range Edge Fade',
+        "family": 'Mean reversion',
+        "rationale": 'ตลาดไม่มีแนวโน้ม (ADX < 20) ราคาแตะขอบกรอบ N แท่งแล้วปิดกลับเข้า = ขอบกรอบยังรับได้ เทรดกลับกลางกรอบ',
+        "fn": _donchian_fade,
+        "params": [{"key": "lookback", "label": "กรอบกี่แท่ง", "type": "int", "default": 20, "min": 10, "max": 100, "step": 1}],
+        "grid": {"lookback": [20, 50], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    'rsi_divergence': {
+        "name": 'RSI Divergence',
+        "family": 'Price action',
+        "rationale": 'ราคาทำจุดต่ำใหม่แต่ RSI สูงกว่าจุดต่ำก่อนหน้า (bullish divergence) = แรงขายอ่อนลง ยืนยันด้วยแท่งเขียว',
+        "fn": _rsi_div,
+        "params": [{"key": "lookback", "label": "มองย้อนกี่แท่ง", "type": "int", "default": 30, "min": 10, "max": 100, "step": 1}],
+        "grid": {"lookback": [20, 40], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    'turn_of_month': {
+        "name": 'Turn-of-the-Month (long)',
+        "family": 'Calendar',
+        "rationale": 'ช่วงปลายเดือน–ต้นเดือนมีเงินไหลเข้าตลาดหุ้น (เงินเดือน, กองทุน) — Ariel (1987), Lakonishok & Smidt (1988) พบผลตอบแทนกระจุกช่วงนี้ เหมาะกับดัชนี (Long อย่างเดียว)',
+        "fn": _turn_of_month,
+        "params": [{"key": "days_before", "label": "เข้ากี่วันทำการก่อนสิ้นเดือน", "type": "int", "default": 1, "min": 0, "max": 4, "step": 1}],
+        "grid": {"days_before": [0, 1], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'london_fix_fade': {
+        "name": 'London Fix Reversal',
+        "family": 'Session / liquidity',
+        "rationale": 'หลัง WM/Reuters fix 16:00 ลอนดอน คำสั่งซื้อขายจากกองทุนหมดไป ราคาที่วิ่งแรงตั้งแต่เช้ามักย้อนกลับบางส่วน (Krohn et al. งานวิจัยเรื่อง FX fixing)',
+        "fn": _london_fade,
+        "params": [{"key": "move_atr", "label": "วิ่งมากกว่า (x ATR)", "type": "float", "default": 1.0, "min": 0.5, "max": 4, "step": 0.1}],
+        "grid": {"move_atr": [0.75, 1.0], "sl_atr": [1.5, 2.5], "rr": [1.0, 1.5]},
+    },
+    'ny_open_breakout': {
+        "name": 'New York Open Range Breakout',
+        "family": 'Session / liquidity',
+        "rationale": 'ช่วงเปิดตลาดนิวยอร์ก (13:30 UTC) สภาพคล่องสูงสุดของวัน การทะลุกรอบช่วงเปิดมักไปต่อ (opening range breakout, Toby Crabel) เหมาะกับดัชนีและทอง บน H1',
+        "fn": _ny_open,
+        "params": [{"key": "range_bars", "label": "กรอบกี่แท่ง H1", "type": "int", "default": 1, "min": 1, "max": 3, "step": 1}],
+        "grid": {"range_bars": [1, 2], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'weekly_breakout': {
+        "name": 'Previous-Week High/Low Breakout',
+        "family": 'Session / liquidity',
+        "rationale": 'High/Low สัปดาห์ก่อนเป็นระดับที่สถาบันเฝ้าดู ทะลุตามทิศแนวโน้ม = stop ที่ถูกกินดันราคาต่อ ครั้งแรกของสัปดาห์เท่านั้น',
+        "fn": _weekly,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [100, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'pivot_bounce': {
+        "name": 'Daily Pivot S1/R1 Bounce',
+        "family": 'Price action',
+        "rationale": 'Floor-trader pivot (S1/R1 จาก H/L/C เมื่อวาน) เป็นแนวรับต้านที่เทรดเดอร์ทั่วโลกใช้ ราคาแตะ S1 แล้วปิดกลับขึ้นในขาขึ้น = แนวรับทำงาน',
+        "fn": _pivot,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [100, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'fractal_breakout': {
+        "name": 'Williams Fractal Breakout',
+        "family": 'Trend following',
+        "rationale": 'Fractal (Bill Williams) = จุดกลับตัวย่อยที่ยืนยันแล้ว ราคาปิดทะลุ fractal ล่าสุดตามทิศแนวโน้ม = โครงสร้าง higher-high ต่อเนื่อง',
+        "fn": _fractal,
+        "params": [{"key": "trend_len", "label": "EMA แนวโน้ม", "type": "int", "default": 200, "min": 50, "max": 400, "step": 1}],
+        "grid": {"trend_len": [50, 200], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'alligator': {
+        "name": 'Williams Alligator Awakening',
+        "family": 'Trend following',
+        "rationale": 'Alligator (Bill Williams) = SMMA 3 เส้นเลื่อนไปข้างหน้า เส้นเรียงตัวครั้งแรก (“จระเข้ตื่น”) = แนวโน้มเริ่ม',
+        "fn": _alligator,
+        "params": [{"key": "scale", "label": "ตัวคูณช่วงเส้น", "type": "float", "default": 1.0, "min": 0.5, "max": 3, "step": 0.5}],
+        "grid": {"scale": [1.0, 2.0], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
+    },
+    'elder_ray': {
+        "name": 'Elder-Ray Pullback',
+        "family": 'Pullback',
+        "rationale": 'Elder-Ray (Alexander Elder): ในขาขึ้น (EMA ขึ้น) Bear Power ติดลบแต่เริ่มดีขึ้นและราคาปิดกลับเหนือ EMA = ย่อจบ แรงขายหมด',
+        "fn": _elder_ray,
+        "params": [{"key": "ema_len", "label": "EMA Length", "type": "int", "default": 13, "min": 8, "max": 50, "step": 1}],
+        "grid": {"ema_len": [13, 21], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
     },
 }
 
