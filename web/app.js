@@ -520,10 +520,10 @@ async function openQuickPicker(anchor, sel, pick) {
   const pop = document.createElement("div"); pop.className = "syspop quick";
   const row = (p) => { const st = stratById(p.strategy) || {}; const on = p.symbol === sel.symbol && p.tf === sel.tf && p.strategy === sel.strategy;
     return `<button data-i="${list.indexOf(p)}" class="${on ? "on" : ""}"><b class="ab">${ABBR[p.symbol] || p.symbol.slice(0, 3)}</b>
-      <span><em class="ql">${statusBadge(p.status)} <i class="mono">${p.tf}</i> · #${st.no ?? "?"} ${esc(st.name || p.strategy)}${p.live ? ' <i class="star">★</i>' : ""}</em>
+      <span><em class="ql">${statusBadge(p.status)}${p.portfolio ? ' <span class="badge ghost">พอร์ต</span>' : ""} <i class="mono">${p.tf}</i> · #${st.no ?? "?"} ${esc(st.name || p.strategy)}${p.live ? ' <i class="star">★</i>' : ""}</em>
       <small>${p.symbol} · OOS ${p.trades ?? "–"} ไม้ · ${fr(p.exp, 3)}/ไม้ · t ${fnum(p.t, 2)}${p.robust != null ? " · Robust " + p.robust : ""}</small></span></button>`; };
   const act = list.filter((p) => p.status === "ACTIVE"), wat = list.filter((p) => p.status === "WATCH"), rest = list.filter((p) => !["ACTIVE", "WATCH"].includes(p.status));
-  pop.innerHTML = `<div class="syspop-hd"><b>⚡ เลือกด่วน</b><span class="muted small">กดครั้งเดียว เปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน · เรียง ACTIVE → WATCH → t-stat สูง · ★ = ระบบที่ใช้จริง</span></div>
+  pop.innerHTML = `<div class="syspop-hd"><b>⚡ เลือกด่วน</b><span class="muted small">กดครั้งเดียว เปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน · ACTIVE = ระบบที่ส่งแจ้งเตือนจริง (★) รวมระบบพอร์ตที่เทรดทุกสินทรัพย์ · WATCH = ยังไม่ผ่านเกณฑ์ ไม่เทรด</span></div>
     <div class="syspop-list">${act.length ? `<div class="grp">ACTIVE (${act.length})</div>${act.map(row).join("")}` : ""}
       ${wat.length ? `<div class="grp">WATCH (${wat.length})</div>${wat.map(row).join("")}` : ""}
       ${rest.length ? `<div class="grp">ระบบปัจจุบันของสินทรัพย์อื่น (OFF)</div>${rest.map(row).join("")}` : ""}
@@ -1063,7 +1063,7 @@ async function renderLab(view) {
   const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
   if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
   view.innerHTML = wsHtml({
-    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="เทรดจริงไตรมาสนี้">★<span class="hide-sm"> เทรดจริงไตรมาสนี้</span></span>' : ""}`,
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isPortfolioSys(sym, sid, tf) ? `${statusBadge("ACTIVE")}<span class="badge ghost" data-tip="ผ่านเกณฑ์แบบพอร์ต (8 สินทรัพย์รวมกัน) — ผลรายสินทรัพย์ด้านล่างอาจยังไม่ผ่านเกณฑ์เดี่ยว">พอร์ต</span>` : statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="เทรดจริงไตรมาสนี้">★<span class="hide-sm"> เทรดจริงไตรมาสนี้</span></span>' : ""}`,
     tabs, tab, actions: runBtn,
     main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
     sel,
@@ -1785,12 +1785,17 @@ async function renderSignals(view) {
   const fa = fwd.all;
   const openOf = (sym) => sigs.find((s) => s.symbol === sym && s.outcome === "open");
   const tile = (x) => {
-    const st = stratById(x.strategy), op = openOf(x.symbol);
-    return `<a class="sys-tile ${x.status}" href="#/chart?symbol=${x.symbol}&tf=${x.tf || "H1"}${x.strategy ? "&strategy=" + x.strategy : ""}">
+    // what this symbol really trades this quarter (single-symbol + portfolio systems); none -> best candidate, muted
+    const sy = x.systems || [], main = sy.find((y) => y.source !== "portfolio") || sy[0];
+    const st = stratById(main ? main.strategy : x.strategy), tf = main ? main.tf : x.tf, op = openOf(x.symbol);
+    const more = sy.length > 1 ? ` <span class="badge ghost" title="${esc(sy.map((y) => "#" + (stratById(y.strategy)?.no ?? "?") + " " + y.tf + (y.source === "portfolio" ? " (พอร์ต)" : "")).join(" · "))}">+${sy.length - 1} ระบบ</span>` : "";
+    const exp = main ? main.exp : x.oos?.expectancy;
+    return `<a class="sys-tile ${x.status}" href="#/chart?symbol=${x.symbol}&tf=${tf || "H1"}${st ? "&strategy=" + st.id : ""}">
       <div class="t-top"><span class="ab">${ABBR[x.symbol] || ""}</span><b>${x.symbol}</b>${statusBadge(x.status)}</div>
-      <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${x.tf || ""}</span>${(x.systems || []).length > 1 ? ` <span class="badge ghost" title="${esc(x.systems.map((y) => "#" + (stratById(y.strategy)?.no ?? "?") + " " + y.tf).join(" · "))}">+${x.systems.length - 1} ระบบ</span>` : ""}</div>
-      <div class="t-foot">${op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : '<span class="muted">○ รอสัญญาณ</span>'}
-        ${x.oos ? `<span class="mono muted">${fr(x.oos.expectancy, 2)}/ไม้</span>` : ""}</div></a>`;
+      <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${tf || ""}</span>${main?.source === "portfolio" ? ' <span class="badge ghost">พอร์ต</span>' : ""}${more}
+        ${!sy.length ? '<div class="tiny muted">ยังไม่มีระบบผ่านเกณฑ์ — แสดงตัวที่ดีที่สุด ไม่เทรด</div>' : ""}</div>
+      <div class="t-foot">${op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : sy.length ? '<span class="muted">○ รอสัญญาณ</span>' : '<span class="muted">— ไม่เทรด</span>'}
+        ${exp != null ? `<span class="mono muted">${fr(exp, 2)}/ไม้</span>` : ""}</div></a>`;
   };
   view.innerHTML = `<div class="page">
     <div class="hero">

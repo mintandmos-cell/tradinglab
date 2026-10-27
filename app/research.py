@@ -417,9 +417,14 @@ def picks(lat: dict | None = None) -> list[dict]:
         for c in r.get("candidates", []):
             st = c.get("status")
             live = is_live(r, c.get("strategy"), c.get("tf"))
+            port = any(x["strategy"] == c.get("strategy") and x["tf"] == c.get("tf") and x.get("source") == "portfolio"
+                       for x in r.get("systems", []))
+            if port:
+                st = "ACTIVE"          # traded as part of a fund-style portfolio system (its own single-symbol status may be WATCH)
             if st in ("ACTIVE", "WATCH") or live:
                 o = c.get("oos") or {}
                 out.append({"symbol": sym, "tf": c["tf"], "strategy": c["strategy"], "status": st or r.get("status"), "live": live,
+                            "portfolio": port,
                             "t": o.get("t_stat"), "exp": o.get("expectancy"), "trades": o.get("trades"),
                             "robust": (c.get("robustness") or {}).get("score")})
     rank = {"ACTIVE": 0, "WATCH": 1}
@@ -438,7 +443,7 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
                     "params": r.get("params"), "risk_pct": r.get("risk_pct"), "oos": r.get("oos"),
                     "robust_score": (r.get("robustness") or {}).get("score"),
                     "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False), "source": x.get("source", "single"),
-                                 "risk_pct": x.get("risk_pct")} for x in live_systems(r)
+                                 "risk_pct": x.get("risk_pct"), "exp": x.get("exp"), "t": x.get("t")} for x in live_systems(r)
                                 if x.get("status") == "ACTIVE"],
                     "quarter": r.get("quarter")})
     return out
