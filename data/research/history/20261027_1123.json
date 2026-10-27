@@ -1,0 +1,316 @@
+{
+ "generated": "2026-10-27T11:23:51.416465+00:00",
+ "symbols": {
+  "EURUSD": {
+   "status": "WATCH",
+   "strategy": "ichimoku_tk",
+   "tf": "H4",
+   "params": {
+    "tenkan": 9,
+    "kijun": 26,
+    "sl_atr": 1.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 526,
+    "net_r": 54.38,
+    "expectancy": 0.1034,
+    "gross_expectancy": 0.1339,
+    "win_rate": 37.5,
+    "pf": 1.168,
+    "avg_win": 1.92,
+    "avg_loss": -0.984,
+    "max_dd_r": 24.64,
+    "t_stat": 1.63,
+    "trades_per_year": 19.9,
+    "risk_pct": 1.0,
+    "cagr_pct": 1.87,
+    "max_dd_pct": 22.3,
+    "mar": 0.08,
+    "max_consec_loss": 14,
+    "avg_bars": 18.6
+   },
+   "failed": [
+    "OOS t-stat",
+    "t ปรับตามจำนวนระบบที่เทียบ (109)"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 3,
+   "robust_score": 88
+  },
+  "GBPUSD": {
+   "status": "WATCH",
+   "strategy": "rsi_divergence",
+   "tf": "H4",
+   "params": {
+    "lookback": 20,
+    "sl_atr": 1.5,
+    "rr": 1.0,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 556,
+    "net_r": 37.43,
+    "expectancy": 0.0673,
+    "gross_expectancy": 0.0964,
+    "win_rate": 48.6,
+    "pf": 1.132,
+    "avg_win": 1.19,
+    "avg_loss": -0.993,
+    "max_dd_r": 29.89,
+    "t_stat": 1.42,
+    "trades_per_year": 21.0,
+    "risk_pct": 1.0,
+    "cagr_pct": 1.29,
+    "max_dd_pct": 26.64,
+    "mar": 0.05,
+    "max_consec_loss": 11,
+    "avg_bars": 12.2
+   },
+   "failed": [
+    "OOS t-stat",
+    "t ปรับตามจำนวนระบบที่เทียบ (109)",
+    "MC PF @95%"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 1,
+   "robust_score": 75
+  },
+  "USDJPY": {
+   "status": "WATCH",
+   "strategy": "hma_trend",
+   "tf": "H1",
+   "params": {
+    "hma_len": 50,
+    "sl_atr": 2.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 5125,
+    "net_r": 119.22,
+    "expectancy": 0.0233,
+    "gross_expectancy": 0.085,
+    "win_rate": 33.8,
+    "pf": 1.055,
+    "avg_win": 1.314,
+    "avg_loss": -0.637,
+    "max_dd_r": 71.98,
+    "t_stat": 1.51,
+    "trades_per_year": 193.9,
+    "risk_pct": 1.0,
+    "cagr_pct": 3.4,
+    "max_dd_pct": 54.63,
+    "mar": 0.06,
+    "max_consec_loss": 16,
+    "avg_bars": 15.4
+   },
+   "failed": [
+    "OOS expectancy (R)",
+    "OOS t-stat",
+    "t ปรับตามจำนวนระบบที่เทียบ (109)",
+    "MC PF @95%",
+    "Parameter plateau",
+    "Robustness score"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 1,
+   "robust_score": 50
+  },
+  "XAUUSD": {
+   "status": "ACTIVE",
+   "strategy": "weekly_breakout",
+   "tf": "H4",
+   "params": {
+    "trend_len": 200,
+    "sl_atr": 1.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 594,
+    "net_r": 123.86,
+    "expectancy": 0.2085,
+    "gross_expectancy": 0.2331,
+    "win_rate": 43.3,
+    "pf": 1.373,
+    "avg_win": 1.772,
+    "avg_loss": -0.984,
+    "max_dd_r": 22.95,
+    "t_stat": 3.63,
+    "trades_per_year": 28.4,
+    "risk_pct": 1.0,
+    "cagr_pct": 5.79,
+    "max_dd_pct": 21.36,
+    "mar": 0.27,
+    "max_consec_loss": 11,
+    "avg_bars": 15.6
+   },
+   "failed": [],
+   "trials": 1284,
+   "n_active": 2,
+   "n_watch": 43,
+   "robust_score": 100
+  },
+  "NAS100": {
+   "status": "WATCH",
+   "strategy": "nr_breakout",
+   "tf": "H4",
+   "params": {
+    "nr_len": 4,
+    "sl_atr": 1.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 569,
+    "net_r": 69.52,
+    "expectancy": 0.1222,
+    "gross_expectancy": 0.1357,
+    "win_rate": 42.0,
+    "pf": 1.257,
+    "avg_win": 1.421,
+    "avg_loss": -0.818,
+    "max_dd_r": 21.6,
+    "t_stat": 2.29,
+    "trades_per_year": 108.6,
+    "risk_pct": 1.0,
+    "cagr_pct": 13.2,
+    "max_dd_pct": 19.66,
+    "mar": 0.67,
+    "max_consec_loss": 8,
+    "avg_bars": 8.2
+   },
+   "failed": [
+    "t ปรับตามจำนวนระบบที่เทียบ (105)"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 12,
+   "robust_score": 88
+  },
+  "US500": {
+   "status": "WATCH",
+   "strategy": "ema_alignment",
+   "tf": "H1",
+   "params": {
+    "mid": 50,
+    "sl_atr": 1.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 408,
+    "net_r": 64.3,
+    "expectancy": 0.1576,
+    "gross_expectancy": 0.1968,
+    "win_rate": 40.7,
+    "pf": 1.264,
+    "avg_win": 1.855,
+    "avg_loss": -1.007,
+    "max_dd_r": 15.0,
+    "t_stat": 2.21,
+    "trades_per_year": 52.8,
+    "risk_pct": 1.0,
+    "cagr_pct": 8.08,
+    "max_dd_pct": 14.09,
+    "mar": 0.57,
+    "max_consec_loss": 10,
+    "avg_bars": 19.7
+   },
+   "failed": [
+    "t ปรับตามจำนวนระบบที่เทียบ (107)"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 3,
+   "robust_score": 100
+  },
+  "BTCUSD": {
+   "status": "WATCH",
+   "strategy": "inside_bar",
+   "tf": "H4",
+   "params": {
+    "ema_len": 50,
+    "sl_atr": 2.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 358,
+    "net_r": 65.55,
+    "expectancy": 0.1831,
+    "gross_expectancy": 0.2214,
+    "win_rate": 37.7,
+    "pf": 1.321,
+    "avg_win": 1.998,
+    "avg_loss": -0.916,
+    "max_dd_r": 14.36,
+    "t_stat": 2.34,
+    "trades_per_year": 44.9,
+    "risk_pct": 1.0,
+    "cagr_pct": 8.03,
+    "max_dd_pct": 13.69,
+    "mar": 0.59,
+    "max_consec_loss": 8,
+    "avg_bars": 24.7
+   },
+   "failed": [
+    "t ปรับตามจำนวนระบบที่เทียบ (111)"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 12,
+   "robust_score": 100
+  },
+  "ETHUSD": {
+   "status": "WATCH",
+   "strategy": "bb_breakout",
+   "tf": "H4",
+   "params": {
+    "bb_k": 2.0,
+    "sl_atr": 2.5,
+    "rr": 2.5,
+    "max_hold_h": 120
+   },
+   "risk_pct": 0.25,
+   "oos": {
+    "trades": 227,
+    "net_r": 47.91,
+    "expectancy": 0.2111,
+    "gross_expectancy": 0.28,
+    "win_rate": 42.3,
+    "pf": 1.372,
+    "avg_win": 1.84,
+    "avg_loss": -0.983,
+    "max_dd_r": 10.5,
+    "t_stat": 2.19,
+    "trades_per_year": 28.5,
+    "risk_pct": 1.0,
+    "cagr_pct": 5.87,
+    "max_dd_pct": 10.05,
+    "mar": 0.58,
+    "max_consec_loss": 10,
+    "avg_bars": 24.9
+   },
+   "failed": [
+    "t ปรับตามจำนวนระบบที่เทียบ (111)"
+   ],
+   "trials": 1284,
+   "n_active": 0,
+   "n_watch": 7,
+   "robust_score": 100
+  }
+ }
+}
