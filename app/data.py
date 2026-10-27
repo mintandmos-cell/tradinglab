@@ -224,6 +224,15 @@ def source_for(sym: str, settings=None) -> str:
     return "binance" if "binance" in SYMBOLS[sym] else "yahoo"
 
 
+def market_hours(sym: str, df: pd.DataFrame, settings=None) -> pd.DataFrame:
+    """FX / gold / indices trade Monday 00:00 – Friday 24:00 on the broker clock (like MT5). Free feeds sometimes print
+    flat 'bars' on Saturday / Sunday: drop them so charts, indicators and backtests never see a fake weekend."""
+    if SYMBOLS.get(sym, {}).get("group") == "Crypto" or df is None or df.empty:
+        return df
+    wd = utc_to_server(df.index, settings).dayofweek
+    return df[wd < 5]
+
+
 def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
     settings = load_settings()
     src = source_for(sym, settings)
@@ -253,6 +262,7 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
             df = cached
         if src == "yahoo":
             df = with_history(sym, df)       # cache keeps the raw Yahoo bars; the history file is joined on read
+        df = market_hours(sym, df, settings)
         _mem[key] = (time.time(), df)
         return df
 

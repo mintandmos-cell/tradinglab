@@ -31,7 +31,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   ⚡ quick pick at the top of the rail = ACTIVE → WATCH candidates (any strategy/TF) sorted by status then t (`research.picks`, static `picks.json`).
 - Live prices (display only, never used for signals): forming candle updated every 1 s — BTC/ETH from the Binance WebSocket, FX/gold/indices
   from Finnhub (user pastes a free key in Settings; OANDA symbols). Device prefs (theme, home page, candle colours, bars, live, key) live in
-  browser localStorage `tl.prefs` with a backup code — nothing personal is committed.
+  browser localStorage `tl.prefs` with a backup code. Cross-device sync (user's request): `data/sync.json` = those prefs + personal
+  settings ENCRYPTED (AES-GCM, PBKDF2-SHA256 600k, passphrase given to the user in chat 27 Oct 2026; repo is public, never commit
+  keys in plain text). Browser `Sync` object reads it via the GitHub API and writes it back with a GitHub token kept inside the blob.
   The chart tail is replaced by real recent H1 candles from the live feed's family (Binance klines for BTC/ETH; Twelve Data with the
   user's optional free key for FX/gold) — `recentBars` / `aggregate` in `web/app.js`. H4/D1 are cut on the BROKER clock everywhere
   (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time, a day = New York close.

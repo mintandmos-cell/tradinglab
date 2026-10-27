@@ -23,7 +23,7 @@ function toast(msg, ms = 2600) {
 const STATIC = window.TL_STATIC || null;
 const local = {  // per-device personal settings in static mode
   get() { return { account_balance: STATIC?.account_balance || 5000, risk_pct: null, mt5_symbol_map: {}, ...store.get("personal", {}) }; },
-  set(v) { store.set("personal", { ...local.get(), ...v }); },
+  set(v) { store.set("personal", { ...local.get(), ...v }); Sync.changed(); },
 };
 function repoUrl(path = "") {
   if (STATIC?.repo) return `https://github.com/${STATIC.repo}${path}`;
@@ -189,7 +189,100 @@ function dedupeTimes(points) {
 
 // ------------------------------------------------------------------ personal display preferences (this device) + live prices
 const PREF_DEF = { candle: "classic", bars: 220, live: true, finnhub: "", twelve: "", liveMap: {}, home: "chart" };
-const prefs = { get() { return { ...PREF_DEF, ...store.get("prefs", {}) }; }, set(v) { store.set("prefs", { ...prefs.get(), ...v }); } };
+const prefs = { get() { return { ...PREF_DEF, ...store.get("prefs", {}) }; }, set(v) { store.set("prefs", { ...prefs.get(), ...v }); Sync.changed(); } };
+
+// ------------------------------------------------------------------ settings sync across the user's devices
+// The repository / site is PUBLIC, so the shared settings (API keys, balance, risk, display) live in data/sync.json
+// ENCRYPTED (AES-GCM 256, key = PBKDF2-SHA256 of the sync passphrase). Each device types the passphrase once.
+// Reading needs nothing else; writing back uses a GitHub token that is itself stored inside the encrypted file.
+const Sync = {
+  PATH: "data/sync.json", ITER: 600000, busy: false, quiet: false, timer: null,
+  repo() { return STATIC?.repo || "mintandmos-cell/tradinglab"; },
+  dev() { return store.get("sync", {}); },
+  setDev(v) { store.set("sync", { ...Sync.dev(), ...v }); },
+  norm(p) { return String(p || "").normalize("NFKC").trim().toLowerCase().replace(/\s+/g, ""); },
+  b64e(u8) { let s = ""; u8.forEach((c) => { s += String.fromCharCode(c); }); return btoa(s); },
+  b64d(s) { return Uint8Array.from(atob(String(s).replace(/\s/g, "")), (c) => c.charCodeAt(0)); },
+  async key(pass, salt, iter) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(Sync.norm(pass)), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  },
+  async decrypt(blob, pass) {
+    const k = await Sync.key(pass, Sync.b64d(blob.salt), blob.iter);
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: Sync.b64d(blob.iv) }, k, Sync.b64d(blob.ct));
+    return JSON.parse(new TextDecoder().decode(pt));
+  },
+  async encrypt(obj, pass) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await Sync.key(pass, salt, Sync.ITER);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, k, new TextEncoder().encode(JSON.stringify(obj))));
+    return { v: 1, kdf: "PBKDF2-SHA256", iter: Sync.ITER, salt: Sync.b64e(salt), iv: Sync.b64e(iv), ct: Sync.b64e(ct), updated: obj.updated };
+  },
+  async fetch(token) {   // fresh copy from the GitHub API (falls back to the raw file, cached ~5 min)
+    const h = { Accept: "application/vnd.github+json", ...(token ? { Authorization: "Bearer " + token } : {}) };
+    try {
+      const r = await fetch(`https://api.github.com/repos/${Sync.repo()}/contents/${Sync.PATH}?ref=main&t=${Date.now()}`, { headers: h, cache: "no-store" });
+      if (r.status === 404) return null;
+      if (r.ok) { const j = await r.json(); return { blob: JSON.parse(new TextDecoder().decode(Sync.b64d(j.content))), sha: j.sha }; }
+    } catch { /* offline or rate-limited: try raw */ }
+    const r = await fetch(`https://raw.githubusercontent.com/${Sync.repo()}/main/${Sync.PATH}?t=${Date.now()}`, { cache: "no-store" });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return { blob: await r.json(), sha: null };
+  },
+  payload(token) {
+    return { updated: new Date().toISOString(), device: navigator.userAgent.slice(0, 60), prefs: prefs.get(),
+      personal: store.get("personal", {}), theme: store.get("theme", "dark"), token: token || "" };
+  },
+  apply(d) {
+    Sync.quiet = true;
+    try {
+      if (d.prefs) store.set("prefs", { ...prefs.get(), ...d.prefs });
+      if (d.personal) store.set("personal", { ...store.get("personal", {}), ...d.personal });
+      if (d.theme) { store.set("theme", d.theme); document.documentElement.dataset.theme = d.theme; }
+      S.recent = {};
+    } finally { Sync.quiet = false; }
+  },
+  // link this device: decrypt with the passphrase (wrong passphrase -> error), apply, remember
+  async link(pass) {
+    const f = await Sync.fetch();
+    if (!f) throw new Error("ยังไม่มีข้อมูลซิงค์บนคลาวด์");
+    const d = await Sync.decrypt(f.blob, pass).catch(() => { throw new Error("รหัสซิงค์ไม่ถูกต้อง"); });
+    Sync.apply(d);
+    Sync.setDev({ pass: Sync.norm(pass), applied: f.blob.updated, token: d.token || "" });
+    return d;
+  },
+  async pull() {         // on start: newer settings from another device?
+    const dv = Sync.dev(); if (!dv.pass || Sync.busy) return false;
+    try {
+      const f = await Sync.fetch(dv.token);
+      if (!f || f.blob.updated === dv.applied) return false;
+      const d = await Sync.decrypt(f.blob, dv.pass);
+      Sync.apply(d); Sync.setDev({ applied: f.blob.updated, token: d.token || dv.token || "", error: "" });
+      return true;
+    } catch (e) { Sync.setDev({ error: e.message }); return false; }
+  },
+  async push() {
+    const dv = Sync.dev(); if (!dv.pass) throw new Error("เครื่องนี้ยังไม่ได้เชื่อม");
+    if (!dv.token) throw new Error("ต้องมี GitHub token ก่อนจึงส่งขึ้นคลาวด์ได้");
+    Sync.busy = true;
+    try {
+      const cur = await Sync.fetch(dv.token);
+      const pl = Sync.payload(dv.token), blob = await Sync.encrypt(pl, dv.pass);
+      const body = { message: "sync: settings from a device [skip ci]", content: Sync.b64e(new TextEncoder().encode(JSON.stringify(blob, null, 1))),
+        branch: "main", ...(cur?.sha ? { sha: cur.sha } : {}) };
+      const r = await fetch(`https://api.github.com/repos/${Sync.repo()}/contents/${Sync.PATH}`, { method: "PUT", body: JSON.stringify(body),
+        headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + dv.token, "Content-Type": "application/json" } });
+      if (!r.ok) throw new Error(`GitHub ${r.status}: ${(await r.json().catch(() => ({}))).message || ""}`);
+      Sync.setDev({ applied: pl.updated, error: "" });
+    } finally { Sync.busy = false; }
+  },
+  changed() {            // a setting changed on this device: send it to the others (debounced)
+    if (Sync.quiet || !Sync.dev().pass || !Sync.dev().token) return;
+    clearTimeout(Sync.timer);
+    Sync.timer = setTimeout(() => Sync.push().then(() => toast("ซิงค์ไปทุกเครื่องแล้ว", 1400)).catch((e) => toast("ซิงค์ไม่สำเร็จ: " + e.message, 4000)), 1500);
+  },
+};
 const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขียว / แดง" }, tv: { up: "#26a69a", down: "#ef5350", name: "แบบ TradingView" },
   blue: { up: "#3b82f6", down: "#f59e0b", name: "ฟ้า / ส้ม (ตาบอดสีอ่านง่าย)" }, mono: { up: "#e6e9ef", down: "#6b7280", name: "ขาว / เทา" } };
 const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
@@ -695,6 +788,10 @@ async function renderChart(view) {
     const CC = CANDLE[prefs.get().candle] || CANDLE.classic;
     const cs = ch.addCandlestickSeries({ upColor: CC.up, downColor: CC.down, borderVisible: false, wickUpColor: CC.up, wickDownColor: CC.down,
       priceFormat: { type: "price", precision: dg, minMove: 1 / 10 ** dg } });
+    // FX / gold / indices: no weekend bars (some feeds print flat ones); lines only where a candle exists, so the
+    // time axis never gets empty "weekend" columns
+    if (!BINANCE_LIVE[sym]) cd.candles = cd.candles.filter((c) => marketOpen({ ...c, high: c.high > c.low ? c.high : c.high + 1e-9 }));
+    const candleT = new Set(cd.candles.map((c) => c.time));
     cs.setData(cd.candles.map((c) => ({ ...c, time: shiftT(c.time) })));
     let open = null;
     const legend = [];
@@ -702,7 +799,7 @@ async function renderChart(view) {
       Object.entries(sp.lines || {}).forEach(([name, vals], i) => {
         const color = LINE_COLORS[i % 5];
         const ls = ch.addLineSeries({ color, lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-        ls.setData(vals.map((v, k) => (v === null ? null : { time: shiftT(sp.t[k]), value: v })).filter(Boolean));
+        ls.setData(vals.map((v, k) => (v === null || !candleT.has(sp.t[k]) ? null : { time: shiftT(sp.t[k]), value: v })).filter(Boolean));
         legend.push(`<span><i style="background:${color}"></i>${esc(name)}</span>`);
       });
       const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.strategy === sid && s.outcome === "open") : [];
@@ -1213,12 +1310,38 @@ function personalSettingsHtml() {
         ${Object.keys(LIVE_DEFAULT).map((k) => `<label class="f">${k}<input class="inp mono" data-live="${k}" value="${esc(map[k])}"></label>`).join("")}</div></details>
       <div class="hint">ราคาสดมาจากผู้ให้บริการคนละรายกับโบรก (ต่างกันเล็กน้อย โดยเฉพาะทองและดัชนี) — ราคาเข้าออเดอร์จริงให้ดูใน MT5</div>
     </div></div>
+    <div class="card" id="syncCard"><div class="hd"><h3><span class="ic">🔗</span>ซิงค์ทุกเครื่อง<span class="desc">API key ทุนในบัญชี ความเสี่ยง และการแสดงผล ใช้ร่วมกันทุกเครื่อง (เข้ารหัสก่อนเก็บบนคลาวด์)</span></h3></div><div class="bd stack" style="gap:12px" id="syncBody"></div></div>
     <div class="card"><div class="hd"><h3><span class="ic">💾</span>สำรอง / ย้ายการตั้งค่า<span class="desc">ใช้ย้ายค่าที่ตั้งไว้ไปเครื่องอื่น (เช่น จาก iPad ไปมือถือ)</span></h3></div><div class="bd stack" style="gap:10px">
       <div class="row"><button class="btn sm" id="bkCopy">📋 คัดลอกรหัสการตั้งค่า</button><button class="btn sm" id="bkLoad">📥 นำเข้า</button><button class="btn sm ghost" id="bkReset">↺ คืนค่าเริ่มต้น</button></div>
       <textarea class="inp" id="bkText" rows="3" placeholder="วางรหัสการตั้งค่าจากอีกเครื่องที่นี่ แล้วกด นำเข้า"></textarea>
     </div></div>
     <div class="card"><div class="hd"><h3><span class="ic">ℹ️</span>เกี่ยวกับระบบ</h3></div><div class="bd"><div class="kv2" id="aboutBox"></div></div></div>
   </div>`;
+}
+function renderSyncCard() {
+  const box = $("#syncBody"); if (!box) return;
+  const dv = Sync.dev();
+  if (!dv.pass) {
+    box.innerHTML = `<div class="hint">ใส่ <b>รหัสซิงค์</b> ครั้งเดียวต่อเครื่อง แล้ว API key และการตั้งค่าจะมาเองทุกครั้งที่เปิดแอป</div>
+      <div class="row"><input class="inp mono" id="syPass" placeholder="เช่น abcd-efgh-jkmn-pqrs" autocomplete="off" autocapitalize="off" spellcheck="false" style="flex:1"><button class="btn sm primary" id="syLink">เชื่อมเครื่องนี้</button></div>`;
+    $("#syLink").onclick = async (e) => {
+      e.currentTarget.disabled = true; e.currentTarget.textContent = "กำลังถอดรหัส…";
+      try { await Sync.link($("#syPass").value); toast("เชื่อมแล้ว — โหลดการตั้งค่าจากคลาวด์", 2000); navigate(); }
+      catch (err) { toast(err.message, 3500); renderSyncCard(); }
+    };
+    return;
+  }
+  box.innerHTML = `<div class="row"><span class="live-dot">เชื่อมแล้ว</span><span class="muted small">ข้อมูลล่าสุด ${dv.applied ? fdt(dv.applied, true) : "–"}${dv.error ? ` · <span class="neg">${esc(dv.error)}</span>` : ""}</span></div>
+    <div class="hint">${dv.token ? "เปลี่ยนค่าในเครื่องไหนก็ได้ ระบบจะส่งไปเครื่องอื่นให้อัตโนมัติ (เครื่องอื่นได้รับเมื่อเปิดแอปครั้งถัดไป)"
+      : "เครื่องนี้ <b>รับ</b> การตั้งค่าได้แล้ว · ถ้าอยากให้แก้จากเครื่องไหนก็ได้แล้วส่งไปทุกเครื่อง ใส่ GitHub token ด้านล่าง (ทำครั้งเดียว ทุกเครื่องจะได้ token ไปด้วย)"}</div>
+    <div class="row"><button class="btn sm" id="syPull">⬇️ ดึงล่าสุด</button>${dv.token ? '<button class="btn sm" id="syPush">⬆️ ส่งค่าของเครื่องนี้</button>' : ""}<button class="btn sm ghost" id="syOff">ยกเลิกการเชื่อม</button></div>
+    <details><summary class="small muted">GitHub token (สำหรับส่งการเปลี่ยนแปลง)</summary><div class="stack" style="gap:8px;margin-top:8px">
+      <div class="hint">GitHub → Settings → Developer settings → Fine-grained tokens → Generate · Repository access: เฉพาะ <b>${esc(Sync.repo())}</b> · Permissions → Contents: <b>Read and write</b></div>
+      <div class="row"><input class="inp mono" id="syTok" value="${esc(dv.token || "")}" placeholder="github_pat_…" autocomplete="off" style="flex:1"><button class="btn sm primary" id="sySaveTok">บันทึกและส่ง</button></div></div></details>`;
+  $("#syPull").onclick = async () => { Sync.setDev({ applied: "" }); const ch = await Sync.pull(); toast(ch ? "อัปเดตจากคลาวด์แล้ว" : (Sync.dev().error || "เป็นค่าล่าสุดอยู่แล้ว"), 2000); navigate(); };
+  if ($("#syPush")) $("#syPush").onclick = () => Sync.push().then(() => { toast("ส่งแล้ว", 1400); renderSyncCard(); }).catch((e) => toast(e.message, 4000));
+  $("#syOff").onclick = () => { if (confirm("ยกเลิกการเชื่อมเครื่องนี้? (ค่าที่ตั้งไว้ในเครื่องยังอยู่)")) { store.set("sync", {}); renderSyncCard(); } };
+  $("#sySaveTok").onclick = () => { Sync.setDev({ token: $("#syTok").value.trim() }); Sync.push().then(() => { toast("บันทึก token และส่งการตั้งค่าแล้ว", 2000); renderSyncCard(); }).catch((e) => toast(e.message, 5000)); };
 }
 function bindPersonalSettings(view) {
   const save = () => {
@@ -1243,6 +1366,7 @@ function bindPersonalSettings(view) {
     try { const d = JSON.parse(decodeURIComponent(escape(atob($("#bkText").value.trim())))); Object.entries(d).forEach(([k, v]) => KEYS.includes(k) && store.set(k, v)); toast("นำเข้าแล้ว"); setTimeout(() => location.reload(), 600); }
     catch { toast("รหัสไม่ถูกต้อง"); }
   };
+  renderSyncCard();
   $("#bkReset").onclick = () => { if (!confirm("คืนค่าการตั้งค่าในเครื่องนี้ทั้งหมด?")) return; KEYS.forEach((k) => { try { localStorage.removeItem("tl." + k); } catch { /* */ } }); location.reload(); };
   const st = S.status || {};
   const rows = [["เวอร์ชันเว็บ", STATIC?.version || "เซิร์ฟเวอร์บนคอม"], ["สร้างเว็บล่าสุด", STATIC?.built ? fdt(STATIC.built, true) : "–"],
@@ -1411,7 +1535,10 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
 - ถ้าไม่กดเลย ระบบก็ยังทำงานครบตามตารางข้างบน`],
     ["setup", "2. ตั้งค่าครั้งแรก (ทำครั้งเดียวต่อเครื่อง)", `
 - **ติดตั้งเป็นแอปบนมือถือ/iPad:** Safari → ปุ่มแชร์ → **เพิ่มไปยังหน้าจอโฮม** · Android Chrome → ⋮ → **ติดตั้งแอป**
-- **หน้า ตั้งค่า:** ใส่ **ทุน (USD)** และ **ความเสี่ยงต่อไม้ %** แล้วกด **บันทึก** เว็บจะจำค่าไว้ในเครื่องนั้น (มือถือ, iPad, คอม ต้องตั้งแยกกัน)
+- **เชื่อมเครื่อง (ครั้งเดียวต่อเครื่อง):** หน้า **ตั้งค่า → 🔗 ซิงค์ทุกเครื่อง** → ใส่ **รหัสซิงค์** → กด **เชื่อมเครื่องนี้** — API key (Finnhub / Twelve Data), ทุน, ความเสี่ยง และการแสดงผลจะมาเองทุกเครื่อง
+  - ข้อมูลเก็บบนคลาวด์แบบ **เข้ารหัส** (เว็บนี้เป็นสาธารณะ ใครเปิดไฟล์ก็อ่านไม่ออกถ้าไม่มีรหัส) · เก็บรหัสซิงค์ไว้ให้ดี อย่าแชร์
+  - อยากแก้ค่าจากเครื่องไหนก็ได้แล้วส่งไปทุกเครื่อง: ใส่ GitHub token ครั้งเดียวในการ์ดเดียวกัน
+- **หน้า ตั้งค่า:** ใส่ **ทุน (USD)** และ **ความเสี่ยงต่อไม้ %** แล้วกด **บันทึก**
 - **ชื่อสัญลักษณ์ใน MT5:** แก้ให้ตรงกับโบรกเกอร์ เช่น Exness อาจเป็น \`XAUUSDm\` และ NAS100 = \`USTEC\` ชื่อนี้จะแสดงบนการ์ดสัญญาณ
 - **แจ้งเตือน:** ติดตั้งแอป **ntfy** (App Store / Play Store ฟรี ไม่ต้องสมัคร) → กด **+** → ใส่ชื่อ topic ที่ตั้งเป็น \`NTFY_TOPIC\` ใน GitHub → Subscribe
   - บน iPhone ต้องอนุญาตการแจ้งเตือนของแอป ntfy ด้วย
@@ -1732,6 +1859,7 @@ async function boot() {
   await refreshStatus();
   window.addEventListener("hashchange", navigate);
   navigate();
+  Sync.pull().then((changed) => { if (changed) { toast("โหลดการตั้งค่าจากเครื่องอื่นแล้ว", 1800); navigate(); } });
   if (STATIC) {  // the cloud build changes once an hour: check for a new web version / new data every 3 minutes and on return to the app
     checkUpdate(); setInterval(checkUpdate, 180000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
