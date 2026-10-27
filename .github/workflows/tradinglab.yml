@@ -20,8 +20,10 @@ permissions:
   pages: write
   id-token: write
 
+# One queue for hourly scans / site builds (a newer queued one replaces an older queued one — fine for scans).
+# Research runs (button, Saturday, new history pushed) get their own group so a queued scan can never cancel them.
 concurrency:
-  group: tradinglab
+  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || contains(toJSON(github.event.commits), 'data/history/')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
   cancel-in-progress: false
 
 jobs:
