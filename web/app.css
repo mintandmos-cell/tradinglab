@@ -207,18 +207,20 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .badge.ghost { background: transparent; }
 
 /* =====================================================================  workspace: head / main + rail / foot (no page scroll) */
-.ws { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
-.ws-head { display: flex; align-items: center; gap: 12px; padding: 9px 12px 9px 16px; border-bottom: 1px solid var(--line); min-width: 0; flex-wrap: wrap; }
-.ws-title { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px; }
+.ws { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.ws-head { display: flex; align-items: center; gap: 12px; padding: 9px 12px 9px 16px; border-bottom: 1px solid var(--line); min-width: 0; max-width: 100%; flex-wrap: wrap; overflow: hidden; }
+.ws-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; max-width: 100%; font-size: 14px; }
 .ws-title .sym { font-weight: 800; font-size: 16px; letter-spacing: .3px; }
 .ws-title .ttl { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34vw; }
 .ws-tabs { display: inline-flex; background: var(--panel2); border: 1px solid var(--line2); border-radius: 9px; padding: 2px; }
 .ws-tabs button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; color: var(--muted); font-weight: 600; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
 .ws-tabs button.on { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.ws-head > * { min-width: 0; max-width: 100%; }
 .ws-act { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.ws-body { display: flex; min-height: 0; min-width: 0; }
-.ws-body > .ws-main { flex: 1 1 0; width: 0; }
-.ws-body > .rail { flex: 0 0 62px; width: 62px; }
+/* rail is absolutely positioned so no content (long Thai text, chart canvas, old Android WebViews) can push it off-screen */
+.ws-body { position: relative; display: block; min-height: 0; min-width: 0; overflow: hidden; }
+.ws-body > .ws-main { position: absolute; top: 0; bottom: 0; left: 0; right: 62px; width: auto; }
+.ws-body > .rail { position: absolute; top: 0; bottom: 0; right: 0; width: 62px; }
 .ws-main { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .ws-main > * { flex: 1; min-height: 0; min-width: 0; }
 .ws-main > [hidden] { display: none !important; }
@@ -377,7 +379,8 @@ label.f.full { grid-column: 1 / -1; }
 }
 /* =====================================================================  phone: icon bar on top (pinned), workspace keeps the rail */
 @media (max-width: 760px) {
-  .app { grid-template-columns: 1fr; }
+  .app { grid-template-columns: minmax(0, 1fr); }
+  html, body { overflow-x: hidden; }
   .sidebar { display: none; }
   .topbar { padding: calc(8px + env(safe-area-inset-top)) 14px 6px; border-bottom: 0; }
   .topbar h1 { font-size: 15px; } .topbar .sub { display: none; }
@@ -390,7 +393,8 @@ label.f.full { grid-column: 1 / -1; }
   .ws-head { padding: 7px 8px 7px 10px; gap: 8px; }
   .ws-title { font-size: 12.5px; } .ws-title .sym { font-size: 14px; } .ws-title .ttl { display: none; }
   .ws-tabs button { padding: 5px 8px; font-size: 11.5px; }
-  .ws-body > .rail { flex-basis: 50px; width: 50px; }
+  .ws-body > .ws-main { right: 50px; }
+  .ws-body > .rail { width: 50px; }
   .rail { padding: 6px 4px; gap: 7px; } .rb { height: 27px; font-size: 10.5px; } .sysbtn { height: 44px; font-size: 15px; }
   .rail-grp + .rail-grp { padding-top: 7px; }
   .ws-foot { font-size: 11px; gap: 4px 12px; padding: 6px 10px; }
