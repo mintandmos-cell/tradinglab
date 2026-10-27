@@ -610,7 +610,7 @@ function equityChart(el, st, bal) {
 
 const PARAM_SRC = {
   live: ["ระบบจริง", "พารามิเตอร์ที่ใช้ส่งแจ้งเตือนจริงตอนนี้"],
-  wf: ["ผลวิจัยล่าสุด", "พารามิเตอร์ล่าสุดที่ Walk-Forward เลือกให้กลยุทธ์นี้ (ไม่ได้ใช้เทรดจริง)"],
+  wf: ["ผลวิจัยล่าสุด", "พารามิเตอร์ที่ Walk-Forward เลือกไว้ตอนต้นรอบ 3 เดือนปัจจุบัน (ไม่ได้ใช้เทรดจริง)"],
   default: ["ค่าเริ่มต้น", "กลยุทธ์ × TF นี้ไม่ได้อยู่ในการวิจัย จึงใช้ค่าเริ่มต้นของกลยุทธ์"],
   custom: ["กำหนดเอง", "พารามิเตอร์ที่คุณใส่เอง"],
 };
@@ -994,6 +994,7 @@ async function renderLab(view) {
   }
   $("#wsFoot").innerHTML = `<span class="fi strat"><b>#${st.no}</b> ${esc(st.name)} <span class="muted">· ${esc(paramText(cand?.current_params || sp?.params))}</span></span>
     ${isBest ? footItem("สถานะ", statusBadge(R.status)) : footItem("บทบาท", "ผู้สมัคร")}${footItem("เกณฑ์", `${passed}/${judged}`)}
+    ${isBest && R.locked_until ? `<span class="fi" data-tip="${esc(R.pick_reason || "")}">ล็อกระบบ+พารามิเตอร์ถึง <b>${fdt(Date.parse(R.locked_until) / 1000, true).split(",")[0]}</b></span>` : ""}
     ${footItem("วิเคราะห์ล่าสุด", res.generated ? ago(res.generated) : "–")}<span class="fi faint">เส้น OOS equity ในข้อ 3 เป็นหน่วย R สะสม</span>`;
 }
 
@@ -1146,7 +1147,7 @@ function showWf(out, r) {
       <div class="bd stack">${metricKpis(m)}
       <div class="kpis">${kpi("WF Efficiency", r.wfe ?? "–", "OOS ÷ IS ต่อเดือน", r.wfe >= 0.5 ? "pos" : "neg")}${kpi("Plateau", fnum(r.plateau * 100, 0) + "%", "ชุดพารามิเตอร์ที่เป็นบวก")}${kpi("เปลี่ยนพารามิเตอร์", r.param_switches, `${r.distinct_params} ชุดที่ต่างกัน`)}
         ${rb ? kpi("vs สุ่มจุดเข้า", rb.percentile + "%", `สุ่ม ${rb.sims} รอบ เฉลี่ย ${fr(rb.random_mean, 3)}`, rb.percentile >= 90 ? "pos" : "neg") : ""}${kpi("พารามิเตอร์ล่าสุด", r.current_params ? "พร้อม" : "ไม่มี", r.current_params ? "t IS " + r.current_is_t : "IS ไม่เป็นบวก")}</div>
-      ${r.current_params ? `<div class="small mono muted">ใช้ต่อ (12 เดือนล่าสุด): ${esc(paramText(r.current_params))}</div>` : ""}</div></div>
+      ${r.current_params ? `<div class="small mono muted">ใช้ในรอบปัจจุบัน (ล็อกถึงสิ้นรอบ 3 เดือน): ${esc(paramText(r.current_params))}</div>` : ""}</div></div>
     <div class="card"><div class="hd"><h3>OOS Equity</h3></div><div class="chart md" id="wfEq"></div></div>
     <div class="card"><div class="hd"><h3>Folds</h3></div><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>#</th><th>IS</th><th>OOS</th><th>พารามิเตอร์ที่เลือก</th><th class="num">IS n</th><th class="num">IS Exp</th><th class="num">OOS n</th><th class="num">OOS R</th></tr></thead><tbody>
       ${r.folds.map((f, i) => `<tr><td>${i + 1}</td><td class="small">${f.is_start.slice(0, 7)} → ${f.is_end.slice(0, 7)}</td><td class="small">${f.oos_start.slice(0, 7)}${f.partial ? "*" : ""}</td><td class="small mono">${f.params ? esc(paramText(f.params)) : '<span class="faint">ไม่เทรด</span>'}</td><td class="num">${f.is_trades}</td><td class="num">${f.is_exp ?? "–"}</td><td class="num">${f.oos_trades}</td><td class="num ${cls(f.oos_r)}">${fnum(f.oos_r, 2)}</td></tr>`).join("")}</tbody></table></div></div>
@@ -1387,7 +1388,10 @@ function manualChapters() {
 TradingLab มี 3 ส่วนที่ทำงานแยกกัน และ **คอมของคุณไม่ต้องเปิดไว้**:
 ### 🤖 ส่วนที่ทำงานเองทั้งหมด (บน GitHub ฟรี)
 - **ทุกชั่วโมง (นาทีที่ ~4–20):** ดึงราคาล่าสุด → ตรวจว่าระบบ ACTIVE มีสัญญาณใหม่ไหม → ถ้ามี ส่งแจ้งเตือนเข้ามือถือพร้อม **Lot / Entry / SL / TP** → อัปเดตเว็บนี้ (กราฟ เส้น Entry/SL/TP, ผล forward test)
-- **ทุกวันเสาร์ 09:30 น.:** วิเคราะห์ใหม่ทั้งหมดทุกสินทรัพย์ (Backtest + Walk-Forward + Robustness 8 แบบ + Monte Carlo) แล้วเลือกระบบ / Timeframe / พารามิเตอร์ใหม่ให้เอง ตลาด FX ปิดวันเสาร์ จึงไม่กระทบการเทรด
+- **ทุกวันเสาร์ 09:30 น.:** วิเคราะห์ใหม่ทั้งหมดทุกสินทรัพย์ (Backtest + Walk-Forward + Robustness 8 แบบ + Monte Carlo) ตลาด FX ปิดวันเสาร์ จึงไม่กระทบการเทรด
+  - **ระบบและพารามิเตอร์ที่ใช้จริงถูกล็อกตามรอบ Walk-Forward (3 เดือน)** เหมือนตอนทดสอบเป๊ะ — วันเสาร์แค่อัปเดตผลและเช็คว่ายังผ่านเกณฑ์
+  - เปลี่ยนก่อนครบรอบเฉพาะเมื่อ: ระบบเดิมตกเป็น **OFF** (หยุดทันที) หรือระบบเดิมเป็นแค่ WATCH แล้วมีระบบ ACTIVE
+  - ครบรอบแล้วเปลี่ยนระบบเฉพาะเมื่อตัวใหม่ดีกว่า **ชัดเจน** (สถานะสูงกว่า หรือ t สูงกว่า ≥ 0.5) — กันการสลับไปมา
 - ทุกพารามิเตอร์ของการวิเคราะห์ (ช่วง IS/OOS, ชุดค่าที่ทดสอบ, เกณฑ์ผ่าน) **ตั้งไว้แล้ว ไม่ต้องปรับเอง**
 ### 🙋 ส่วนที่คุณทำ
 - **เมื่อมีแจ้งเตือน:** เปิด MT5 แล้วส่งคำสั่งซื้อขายตาม Lot / SL / TP ในข้อความ (ระบบ **ไม่ได้** ส่งออเดอร์ให้เอง)

@@ -77,14 +77,13 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
         folds.append(fold)
         k += 1
 
-    # parameters for live trading = best combination on the most recent in-sample window
-    cur_start = end - pd.DateOffset(months=is_m)
-    cur, cur_t = None, -np.inf
-    for j, rr in enumerate(runs):
-        x = rr["r"][rr["t"] >= cur_start]
-        t = _tstat(x) if len(x) >= min_tr and x.mean() > 0 else -np.inf
-        if t > cur_t:
-            cur, cur_t = j, t
+    # parameters for live trading = the ones the CURRENT fold picked at its start, kept until that fold's OOS window ends
+    # (exactly what the walk-forward test did: re-optimise every oos_months, never in between). The current fold is the
+    # last one; its OOS window contains "now". A flat fold (nothing positive in-sample) means: do not trade.
+    last = folds[-1] if folds else None
+    cur = last.get("combo") if last else None
+    cur_t = last.get("is_t") if last and cur is not None else None
+    lock = {"start": last["oos_start"], "end": (pd.Timestamp(last["is_end"]) + pd.DateOffset(months=oos_m)).isoformat()} if last else None
 
     oos_trades.sort(key=lambda x: x["entry_time"])
     oos_r = np.array([x["r"] for x in oos_trades], float)
@@ -105,6 +104,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
         "distinct_params": len(set(chosen)),
         "current_params": runs[cur]["params"] if cur is not None else None,
         "current_is_t": round(cur_t, 2) if cur is not None else None,
+        "current_lock": lock,
         "_runs": runs,
         "combos_full": [{"params": rr["params"], "trades": int(len(rr["r"])),
                          "expectancy": round(float(rr["r"].mean()), 4) if len(rr["r"]) else None} for rr in runs],

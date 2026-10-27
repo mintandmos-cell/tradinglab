@@ -85,7 +85,7 @@ def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tu
     mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000) if enough else {}
     rob = robustness(df, wf, spec, tf, cfg)
     summary = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
-                                   "param_switches", "distinct_params", "current_params", "current_is_t")}
+                                   "param_switches", "distinct_params", "current_params", "current_is_t", "current_lock")}
     summary.update(name=STRATEGIES[wf["strategy"]]["name"], random_benchmark=rb,
                    mc_1y={k: mc[k] for k in MC_KEEP if k in mc}, mc_pf_p5=mc_full.get("pf_p5"), robustness=rob)
     heavy = {"oos_eq": [[int(t), round(float(x["r"]), 3)] for t, x in zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])],
@@ -117,8 +117,37 @@ def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
     return out
 
 
-def merge_symbol(sym: str, parts: list[dict], settings: dict) -> dict:
-    """Judge every candidate with the same gates; the symbol trades its best candidate (ACTIVE first, then OOS t)."""
+SWITCH_MARGIN_T = 0.5     # a new system must beat the current one by this much OOS t to replace it at a fold boundary
+
+
+def _pick_live(cands: list[dict], prev: dict | None, now: datetime, rank: dict) -> tuple[dict, str]:
+    """Which candidate the symbol trades. Mirrors the walk-forward test instead of re-choosing every Saturday:
+    * the live system and its parameters stay locked until the current 3-month fold ends (prev["locked_until"]);
+    * it is dropped at once if it turns OFF (safety first), or if it is only WATCH and an ACTIVE one exists
+      (WATCH sends no alerts, so nothing being traded is disturbed);
+    * when the lock expires it is replaced only by a clearly better candidate (higher status, or OOS t + SWITCH_MARGIN_T)."""
+    key = lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99)
+    best = max(cands, key=key)
+    if not prev or not prev.get("strategy"):
+        return best, "เลือกครั้งแรก"
+    pc = next((c for c in cands if c["strategy"] == prev["strategy"] and c["tf"] == prev.get("tf")), None)
+    if pc is None:
+        return best, "ระบบเดิมไม่อยู่ในผลวิจัย"
+    if pc["status"] == "OFF":
+        return best, "ระบบเดิมตกเป็น OFF — เปลี่ยน/หยุดทันที"
+    if pc["status"] == "WATCH" and best["status"] == "ACTIVE":
+        return best, "ระบบเดิมเป็นแค่ WATCH และมีระบบ ACTIVE"
+    lu = prev.get("locked_until")
+    if lu and now < datetime.fromisoformat(lu):
+        return pc, f"ล็อกไว้จนจบรอบ Walk-Forward ({lu[:10]})"
+    if best is not pc and (rank[best["status"]] > rank[pc["status"]] or best["oos"]["t_stat"] >= pc["oos"]["t_stat"] + SWITCH_MARGIN_T):
+        return best, "ครบรอบ 3 เดือน และมีระบบที่ดีกว่าชัดเจน"
+    return pc, "ครบรอบ 3 เดือน ระบบเดิมยังดีพอ — ใช้ต่อ"
+
+
+def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None = None) -> dict:
+    """Judge every candidate with the same gates; the symbol trades its best candidate (ACTIVE first, then OOS t),
+    locked per walk-forward fold (see _pick_live)."""
     cfg = settings["research"]
     g = cfg["gates"]
     cands = [c for p in parts for c in p["candidates"]]
@@ -129,7 +158,8 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict) -> dict:
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
     rank = {"ACTIVE": 2, "WATCH": 1, "OFF": 0}
-    best = max(cands, key=lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99))
+    best, why = _pick_live(cands, prev, datetime.now(timezone.utc), rank)
+    lock = best.get("current_lock") or {}
     status = best["status"] if sym not in settings.get("force_off", []) else "OFF"   # manual / AI veto
     mc = best["mc_1y"] or {}
     suggested = mc.get("suggested_risk_pct") or 0.0
@@ -145,6 +175,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict) -> dict:
         "data_from": first["data_from"], "data_to": first["data_to"], "bars_h1": first["bars_h1"],
         "strategy": best["strategy"], "strategy_name": STRATEGIES[best["strategy"]]["name"], "tf": best["tf"],
         "params": best["current_params"], "risk_pct": risk if status != "OFF" else 0.0,
+        "locked_from": lock.get("start"), "locked_until": lock.get("end"), "pick_reason": why,
         "oos": best["oos"], "oos_years": best["oos_years"], "wfe": best["wfe"], "plateau": best["plateau"],
         "param_switches": best["param_switches"], "folds": heavy.get("folds", []),
         "random_benchmark": best["random_benchmark"], "mc_1y": mc, "mc_pf_p5": best["mc_pf_p5"], "robustness": best["robustness"],
@@ -189,7 +220,7 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
         if sym not in by_sym:
             continue
         try:
-            res = merge_symbol(sym, by_sym[sym], settings)
+            res = merge_symbol(sym, by_sym[sym], settings, prev.get("symbols", {}).get(sym))
         except Exception as e:
             log.exception("merge %s failed", sym)
             res = {"symbol": sym, "status": "OFF", "reason": f"error: {e}", "candidates": []}

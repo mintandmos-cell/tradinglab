@@ -45,7 +45,11 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - `app/strategies.py` — strategy library (50) (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
 - `app/research.py` — every strategy × TF × symbol goes through **every** step (WF OOS, random benchmark, 8 robustness tests, MC) via
-  `research_part` → `merge`; status is decided per candidate, the symbol's live system = best ACTIVE, then WATCH, then t. Summaries →
+  `research_part` → `merge`; status is decided per candidate. Live system / params are LOCKED per walk-forward fold (user's
+  decision 27 Oct 2026, so live trading = the OOS of the current fold): params = what the current fold picked at its start
+  (`current_params`, `current_lock`), the symbol keeps its system until `locked_until` (`research._pick_live`); it switches early only
+  if the system turns OFF or is WATCH while an ACTIVE exists; at the boundary only for a clearly better one (higher status or t + 0.5).
+  Fold boundaries depend on the data start date — a new MT5 history export with a different start shifts them. Summaries →
   `data/research/latest.json` (+ `history/`); heavy per-candidate data (`oos_eq`, folds) → `data/research/oos/{SYM}_{TF}.json.gz` (`research.heavy`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Robustness noise test = 10 sims.
 - `app/scanner.py` — signals on closed bars, forward tracking with the same rules, ntfy/Telegram push.
 - `app/charts.py` (`system_payload`: any strategy on any chart, view-only — chart page picker + equity curve; static build writes `site/data/sys/{SYM}_{TF}_{strategy}.json`), `app/export.py` (static site → `site/`), `app/cloud.py` (Actions entry), `app/server.py` + `web/` (same front-end; `window.TL_STATIC` switches it to static JSON).
