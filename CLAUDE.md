@@ -6,7 +6,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 
 ## How it runs (no PC needed)
 - GitHub repo (this folder) + **GitHub Actions** `.github/workflows/tradinglab.yml`:
-  - every hour: `python -m app.cloud scan` → free data (Yahoo / Binance mirror) → new signals + forward tracking → ntfy push → rebuild site → **GitHub Pages**.
+  - every 10 minutes (cron 1,11,21… — GitHub delays a lone hourly cron by ~40 min): `python -m app.cloud scan` → free data (Yahoo / Binance mirror) → new signals + forward tracking → ntfy push → rebuild site → **GitHub Pages**.
   - Research is QUARTERLY (user's rule, 27 Oct 2026): cron 1 Jan/Apr/Jul/Oct 09:30 Bangkok; the Saturday cron only runs it if this
     quarter's research is missing (mode "due" in `plan`). "Run workflow" button (mode research) any time: job `plan` (prefetch prices → cache) → matrix job `part`
     (8 symbols × 3 TF, `python -m app.cloud part SYM TF`, offline `TL_OFFLINE=1`) → job `run` (`app.cloud merge` = gates/status + scan + site).
