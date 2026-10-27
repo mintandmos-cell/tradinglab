@@ -570,7 +570,7 @@ function openSysPicker(anchor, sel, pick) {
   $("#sysQ", pop).oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$("[data-sid]", pop).forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
   pop.onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) close().then(() => pick(b.dataset.sid)); };
 }
-const footItem = (k, v, cls = "") => `<span class="fi"><span class="k">${k}</span><span class="v ${cls}">${v}</span></span>`;
+const footItem = (k, v, cls = "", wide = false) => `<span class="fi${wide ? " wide" : ""}"><span class="k">${k}</span><span class="v ${cls}">${v}</span></span>`;
 
 // ------------------------------------------------------------------ SIGNALS
 function signalCard(s, compact = false) {
@@ -770,7 +770,7 @@ async function renderChart(view) {
   if (route() !== "chart" || S.chartToken !== token) return;
   const strat = stratById(sid) || {};
   const live = sp.is_live;
-  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} <span class="badge ghost">★ ระบบจริง</span>` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
+  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} <span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
 
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
@@ -874,7 +874,7 @@ async function renderChart(view) {
     $("#wsFoot").innerHTML = `
       <span class="fi strat"><b>#${strat.no}</b> ${esc(sp.name)} <span class="muted">· ${esc(paramText(sp.params))}</span></span>
       ${footItem("สัญญาณแท่งล่าสุด", sp.last_signal > 0 ? "LONG" : sp.last_signal < 0 ? "SHORT" : "ไม่มี", sp.last_signal > 0 ? "pos" : sp.last_signal < 0 ? "neg" : "")}
-      ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`) : footItem("ออเดอร์", "ไม่มี")}
+      ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`, "", true) : footItem("ออเดอร์", "ไม่มี")}
       ${legend.length ? `<span class="fi legend">${legend.join("")}</span>` : ""}
       ${LB.some((b) => b.color) ? '<span class="fi faint"><i style="display:inline-block;width:8px;height:10px;background:rgba(139,147,161,.7);border-radius:2px"></i> แท่งเทา = สร้างจากราคาสดตั้งแต่เปิดหน้า (ยังไม่ครบ)</span>' : ""}
       <span class="fi faint">${esc(source || "")}</span>`;
@@ -976,7 +976,7 @@ async function renderSystems(view) {
   const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`);
   if (route() !== "systems" || S.sysToken !== token) return;
   const sys = sysOf(sym);
-  $("#sysBadge").innerHTML = sp.is_live ? `${statusBadge(sys.status)} <span class="badge ghost">★ ระบบจริง</span>` : "";
+  $("#sysBadge").innerHTML = sp.is_live ? `${statusBadge(sys.status)} <span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>` : "";
 
   const bal = myBalance() || 5000, risk = effRisk(sys.risk_pct || 0.25) || 0.25;
   const modes = { oos: sp.oos?.equity?.length ? sp.oos.equity : null, bt: sp.equity?.length ? sp.equity : null };
@@ -1056,12 +1056,12 @@ async function renderLab(view) {
   const st = stratById(sid);
   const isBest = isLiveSys(sym, sid, tf) || (!(R.systems || []).length && best.strategy === sid && best.tf === tf);
   let tab = store.get("labTab2", "steps");
-  const runBtn = STATIC ? `<a class="btn sm primary" href="${actionsUrl()}" target="_blank" rel="noopener" data-tip="เปิด GitHub Actions → Run workflow → research">▶ สั่งวิเคราะห์ใหม่ทันที</a>`
-    : `<button class="btn sm primary" id="runAll">▶ สั่งวิเคราะห์ใหม่ทันที</button>`;
+  const runBtn = STATIC ? `<a class="btn sm primary" href="${actionsUrl()}" target="_blank" rel="noopener" data-tip="เปิด GitHub Actions → Run workflow → research">▶<span class="hide-sm"> สั่งวิเคราะห์ใหม่ทันที</span><span class="only-sm"> วิเคราะห์ใหม่</span></a>`
+    : `<button class="btn sm primary" id="runAll">▶<span class="hide-sm"> สั่งวิเคราะห์ใหม่ทันที</span><span class="only-sm"> วิเคราะห์ใหม่</span></button>`;
   const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
   if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
   view.innerHTML = wsHtml({
-    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost">★ เทรดจริงไตรมาสนี้</span>' : ""}`,
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="เทรดจริงไตรมาสนี้">★<span class="hide-sm"> เทรดจริงไตรมาสนี้</span></span>' : ""}`,
     tabs, tab, actions: runBtn,
     main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
     sel,

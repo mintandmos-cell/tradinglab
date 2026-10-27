@@ -433,3 +433,52 @@ details summary { cursor: pointer; }
 
 .fgrid.symmap { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (max-width: 560px) { .fgrid.symmap { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---- phone polish (user's request 27 Oct 2026): one-row top bar, two-row workspace header, tidy details strip */
+.only-sm { display: none; }
+@media (max-width: 760px) {
+  .only-sm { display: inline; }
+  /* nav icons + refresh / theme share ONE row */
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto minmax(0, 1fr); }
+  .mnav { grid-column: 1; grid-row: 1; padding: calc(6px + env(safe-area-inset-top)) 4px 6px 8px; gap: 0; }
+  .topbar { grid-column: 2; grid-row: 1; padding: calc(6px + env(safe-area-inset-top)) 8px 6px 2px; border-bottom: 1px solid var(--line); gap: 4px; }
+  .mnav { border-bottom: 1px solid var(--line); }
+  .topbar .tb-title { display: none; }
+  .topbar .right { gap: 4px; }
+  .topbar .ibtn { width: 34px; height: 34px; }
+  #updateBar { grid-column: 1 / -1; grid-row: 2; }
+  .content { grid-column: 1 / -1; grid-row: 3; min-height: 0; }
+  /* workspace header: row 1 = title, row 2 = tabs (scroll if long) + actions */
+  .ws-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; padding: 7px 8px; align-items: center; }
+  .ws-title { grid-column: 1 / -1; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; gap: 6px; }
+  .ws-title .badge { height: 20px; font-size: 10px; padding: 0 6px; flex: none; }
+  .ws-title .live-dot { font-size: 10.5px; }
+  .ws-title > * { flex: none; }
+  .ws-tabs { min-width: 0; overflow-x: auto; scrollbar-width: none; justify-self: start; max-width: 100%; }
+  .ws-tabs::-webkit-scrollbar { display: none; }
+  .ws-act { margin-left: 0; gap: 6px; }
+  .ws-act .btn.sm { height: 30px; padding: 0 10px; font-size: 12px; }
+  .ws-act .seg.sm button { padding: 4px 8px; font-size: 11px; }
+  .ws-act .ibtn { width: 30px; height: 30px; }
+  .hist-note { font-size: 10px; max-width: calc(100% - 80px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 6px; left: 6px; top: 6px; }
+  /* details strip: 2-column key / value grid, long items take the full width */
+  .ws-foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 12px; padding: 7px 10px; font-size: 11px; align-items: start;
+    max-height: 30vh; overflow-y: auto; }
+  .ws-foot .fi { display: flex; justify-content: space-between; gap: 6px; min-width: 0; white-space: nowrap; }
+  .ws-foot .fi .v { overflow: hidden; text-overflow: ellipsis; text-align: right; }
+  .ws-foot .fi.strat, .ws-foot .fi.legend, .ws-foot .fi.faint, .ws-foot .fi.wide, .ws-foot .fi:not(:has(.k)) { grid-column: 1 / -1; }
+  .ws-foot .fi.strat { display: block; white-space: normal; font-size: 12px; padding-bottom: 3px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
+  .ws-foot .fi.strat .muted { display: block; font-size: 10.5px; margin-top: 1px; }
+  .ws-foot .fi.wide { white-space: normal; }
+  .ws-foot .fi.wide .v { white-space: normal; text-align: right; }
+  .ws-foot .fi.legend { justify-content: flex-start; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+  .ws-foot .fi.faint, .ws-foot .fi:not(:has(.k)) { justify-content: flex-start; white-space: normal; font-size: 10.5px; }
+  .ws-foot .fi.wide { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .ws-foot .fi.wide .k { white-space: nowrap; }
+  /* Lab steps: number above the body, KPIs two per row */
+  .steps { padding: 10px 8px 18px; gap: 10px; }
+  .step { grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 12px 10px; }
+  .step-no { width: 26px; height: 26px; font-size: 12px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kpi .v { font-size: 16px; }
+}
