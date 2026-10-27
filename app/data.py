@@ -263,7 +263,7 @@ def twelve_h1(sym: str) -> pd.DataFrame | None:
         df.to_pickle(path)
         meta.write_text(json.dumps({"fetched": now.isoformat()}))
         if os.environ.get("GITHUB_ACTIONS"):
-            print(f"::notice title=Twelve Data::{sym} ok — {len(d)} bars fetched, last {d.index[-1]:%Y-%m-%d %H:%M} UTC", flush=True)
+            print(f"::notice title=Twelve Data::{sym} ok — {len(d)} bars fetched, {d.index.min():%Y-%m-%d} → {d.index.max():%Y-%m-%d %H:%M} UTC", flush=True)
         return df
     except Exception as e:
         log.warning("Twelve Data %s failed (%s); using %s", sym, e, "cache" if cached is not None else "Yahoo")
