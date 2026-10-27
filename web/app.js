@@ -636,7 +636,8 @@ async function renderChart(view) {
 
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
-  let liveSeries = null, liveBar = null, liveDigits = 2;
+  let liveSeries = null, liveBar = null, liveDigits = 2, tickBucket = null, tailSrc = "";
+  const PARTIAL = { color: "rgba(139,147,161,.55)", wickColor: "rgba(139,147,161,.8)", borderColor: "rgba(139,147,161,.8)" };
   const TFS = { H1: 3600, H4: 14400, D1: 86400 }[tf];
   const LB = ((S.liveBars ||= {})[sym + tf] ||= []);
   const histLabel = () => {
@@ -672,6 +673,7 @@ async function renderChart(view) {
       const from = tail[0].time;
       cd.candles = cd.candles.filter((c) => c.time < from).concat(tail);
       cd.source = `${cd0.source || ""} · ${tail.length} แท่งล่าสุดจาก ${rec.src}`;
+      tailSrc = rec.src;
     } else if (rec?.error) cd.source = `${cd0.source || ""} · ${rec.src}: ${rec.error}`;
     const range0 = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
     const range = range0 ? { from: range0.from + shiftBy, to: range0.to + shiftBy } : null;
@@ -722,6 +724,7 @@ async function renderChart(view) {
       ${footItem("สัญญาณแท่งล่าสุด", sp.last_signal > 0 ? "LONG" : sp.last_signal < 0 ? "SHORT" : "ไม่มี", sp.last_signal > 0 ? "pos" : sp.last_signal < 0 ? "neg" : "")}
       ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`) : footItem("ออเดอร์", "ไม่มี")}
       ${legend.length ? `<span class="fi legend">${legend.join("")}</span>` : ""}
+      ${LB.some((b) => b.color) ? '<span class="fi faint"><i style="display:inline-block;width:8px;height:10px;background:rgba(139,147,161,.7);border-radius:2px"></i> แท่งเทา = สร้างจากราคาสดตั้งแต่เปิดหน้า (ยังไม่ครบ)</span>' : ""}
       <span class="fi faint">${esc(source || "")}</span>`;
   };
   await draw(false);
@@ -739,9 +742,27 @@ async function renderChart(view) {
     const p = Live.price; if (!p || !liveSeries || !liveBar) return;
     const t = Math.floor((Live.ts || Date.now()) / 1000), start = bucketStart(t, TFS);
     if (start < liveBar.time) return;
-    // a new candle opens at its own first trade (not at an old close, which drew fake bodies after a data gap)
-    if (start > liveBar.time) liveBar = { time: start, open: p, high: p, low: p, close: p };
-    else liveBar = { ...liveBar, high: Math.max(liveBar.high, p), low: Math.min(liveBar.low, p), close: p };
+    if (tickBucket === null && !tailSrc) {          // first tick: how far is the live feed from the chart's last candle?
+      const d = p - liveBar.close;
+      if (Math.abs(d) / p > 0.003 && !S.gapWarned?.[sym]) {
+        (S.gapWarned ||= {})[sym] = 1;
+        toast(`ราคาสด (${Live.src}) ต่างจากแท่งล่าสุดบนกราฟ ${d > 0 ? "+" : ""}${fpx(d, liveDigits)} — แท่งเก่ามาจาก Yahoo ซึ่งอัปเดตทุกชั่วโมงและเป็นคนละแหล่ง` +
+          (TWELVE_SYM[sym] && !prefs.get().twelve ? " · ใส่ Twelve Data key ในหน้าตั้งค่าเพื่อดึงแท่งจริงล่าสุด" : ""), 7000);
+      }
+    }
+    if (start > liveBar.time) {
+      if (tickBucket === liveBar.time) {
+        // we watched the previous candle close: the new one opens at its first trade, exactly like the market
+        liveBar = { time: start, open: p, high: p, low: p, close: p };
+      } else {
+        // page opened in the middle of a candle the chart does not have yet: its real open / high / low before now are unknown.
+        // Open it at the previous candle's close (continuous markets) and draw it grey until the hourly data brings the real one.
+        const adjacent = bucketStart(liveBar.time + TFS + 60, TFS) === start;
+        const o = adjacent ? liveBar.close : p;
+        liveBar = { time: start, open: o, high: Math.max(o, p), low: Math.min(o, p), close: p, ...PARTIAL };
+      }
+    } else liveBar = { ...liveBar, high: Math.max(liveBar.high, p), low: Math.min(liveBar.low, p), close: p };
+    tickBucket = start;
     if (LB.length && LB[LB.length - 1].time === liveBar.time) LB[LB.length - 1] = liveBar; else { LB.push(liveBar); if (LB.length > 60) LB.shift(); }
     try { liveSeries.update({ ...liveBar, time: shiftT(liveBar.time) }); } catch { /* chart rebuilding */ }
     $("#chSub").innerHTML = `${tf} · <b class="mono">${fpx(p, liveDigits)}</b>`;
