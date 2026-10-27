@@ -988,5 +988,7 @@ def signals(strategy_id: str, df: pd.DataFrame, params: dict):
 
 
 def public_list() -> list[dict]:
-    return [{"id": k, "name": v["name"], "family": v["family"], "rationale": v["rationale"],
-             "params": schema(k), "grid": v["grid"], "grid_size": len(grid(k, 120))} for k, v in STRATEGIES.items()]
+    from .strategy_docs import doc
+    return [{"id": k, "no": i + 1, "name": v["name"], "family": v["family"], "rationale": v["rationale"],
+             "params": schema(k), "grid": v["grid"], "grid_size": len(grid(k, 120)), **doc(k)}
+            for i, (k, v) in enumerate(STRATEGIES.items())]

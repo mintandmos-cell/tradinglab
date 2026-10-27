@@ -19,24 +19,24 @@
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand"><div class="logo">▲</div><span>TradingLab<small>Research &amp; Signal Desk</small></span></div>
+    <a class="logo" href="#/chart" data-tip="TradingLab">▲</a>
     <nav class="nav" id="nav"></nav>
     <div class="foot" id="sideFoot"></div>
   </aside>
   <main class="main">
     <header class="topbar">
-      <div><h1 id="pageTitle">สัญญาณ</h1><div class="sub" id="pageSub"></div></div>
+      <div class="tb-title"><h1 id="pageTitle">กราฟ</h1><div class="sub" id="pageSub"></div></div>
       <div class="right">
         <span class="row small muted hide-sm" id="statusLine"></span>
-        <button class="btn sm" id="refreshBtn" title="โหลดข้อมูลใหม่ทั้งหมด">🔄 <span class="hide-sm">รีเฟรชทั้งหมด</span></button>
-        <button class="btn ghost sm" id="themeBtn" title="สลับธีม">◐</button>
+        <button class="ibtn" id="refreshBtn" data-tip="โหลดข้อมูลใหม่ทั้งหมด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+        <button class="ibtn" id="themeBtn" data-tip="สลับธีม"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
       </div>
     </header>
+    <nav class="mnav" id="mnav"></nav>
     <div id="updateBar"></div>
     <div class="content" id="view"></div>
   </main>
 </div>
-<nav class="bottomnav" id="bottomnav"></nav>
 <script src="config.js"></script>
 <script src="static/app.js"></script>
 </body>

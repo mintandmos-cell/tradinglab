@@ -18,8 +18,13 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
   The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
   (chapters 6–8 explain the testing method step by step, ACTIVE/WATCH/OFF, references and limitations).
-- UI rules from the user: the page must not pinch-zoom on iPad (only charts zoom); the "re-run research now" button lives only in Strategy Lab;
-  the chart page order is chart → equity curve → system info → latest trades, and its strategy picker is view-only.
+- UI rules from the user (27 Oct 2026 redesign): icon-only left rail (phone: pinned icon bar on top), page order
+  กราฟ → ระบบเทรด → Strategy Lab → สัญญาณ → เครื่องคำนวณ → ตั้งค่า → คู่มือ; the app opens on the chart with the last symbol / TF / system.
+  Chart, Systems and Lab are "workspaces" (no page scroll): title + tabs on top, main view in the middle, right rail
+  (H1/H4/D1 → system number picker 1–50 → symbol abbreviations EU GU UJ XAU NAS SPX BTC ETH), details strip at the bottom.
+  Chart: latest candle centred, tabs chart / latest trades. Systems: equity curve / system details (indicators, params, rules
+  from `app/strategy_docs.py`) / catalogue. Lab: step-by-step results of one system, default = the symbol's best; the
+  "re-run research now" button lives only here. Page must not pinch-zoom on iPad (only charts zoom).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout

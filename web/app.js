@@ -187,61 +187,134 @@ function dedupeTimes(points) {
 }
 
 // ------------------------------------------------------------------ router / shell
-const ROUTES = {
-  signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรดล่าสุด พร้อม Lot / SL / TP สำหรับ MT5", ic: "🔔", render: renderSignals, primary: true },
-  systems: { title: "ระบบเทรด", sub: "ผลวิจัย Walk-Forward + Monte Carlo ของแต่ละสินทรัพย์", ic: "🧠", render: renderSystems, primary: true },
-  chart: { title: "กราฟ", sub: "แท่งเทียน พร้อมสัญญาณและเทรดของระบบ", ic: "📈", render: renderChart, primary: true },
-  lab: { title: "Strategy Lab", sub: "Backtest · Walk-Forward · Monte Carlo", ic: "🧪", render: renderLab, primary: true },
-  calc: { title: "เครื่องคำนวณ", sub: "Position size · R:R · SL/TP", ic: "🧮", render: renderCalc },
-  settings: { title: "ตั้งค่า", sub: "บัญชี ความเสี่ยง ข้อมูล การแจ้งเตือน", ic: "⚙️", render: renderSettings },
-  guide: { title: "คู่มือ", sub: "วิธีใช้งานและเชื่อมต่อมือถือ", ic: "📘", render: renderGuide },
+const SVG = (d, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
+const ICONS = {
+  chart: SVG('<path d="M7 3v18M17 3v18"/><rect x="4.5" y="7" width="5" height="8" rx="1"/><rect x="14.5" y="5" width="5" height="10" rx="1"/>'),
+  systems: SVG('<path d="M12 3 3 7.5l9 4.5 9-4.5L12 3z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16.5 9 4.5 9-4.5"/>'),
+  lab: SVG('<path d="M9 3h6M10 3v6L4.6 18.6A1.6 1.6 0 0 0 6 21h12a1.6 1.6 0 0 0 1.4-2.4L14 9V3"/><path d="M7.5 15h9"/>'),
+  signals: SVG('<path d="M6 9a6 6 0 1 1 12 0c0 6.5 2.5 8.5 2.5 8.5h-17S6 15.5 6 9"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
+  calc: SVG('<rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01" stroke-width="2.6"/>'),
+  settings: SVG('<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'),
+  guide: SVG('<path d="M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2z"/><path d="M4 19.5A2 2 0 0 0 6 21.5h14"/><path d="M9 7.5h7M9 11h5"/>'),
+  refresh: SVG('<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>'),
+  theme: SVG('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/>'),
+  ind: SVG('<path d="M3 17c3-6 5-6 7-3s4 3 7-4l4-4"/>'),
 };
-function route() { return (location.hash.replace(/^#\/?/, "").split("?")[0] || "signals"); }
+const ROUTES = {
+  chart: { title: "กราฟ", sub: "แท่งเทียน สัญญาณ และเทรดของระบบ", render: renderChart, ws: true },
+  systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทั้ง 50 ระบบ", render: renderSystems, ws: true },
+  lab: { title: "Strategy Lab", sub: "ผลทดสอบทีละขั้น: Backtest → Walk-Forward → สุ่ม → Robustness → Monte Carlo", render: renderLab, ws: true },
+  signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรด พร้อม Lot / SL / TP สำหรับ MT5", render: renderSignals },
+  calc: { title: "เครื่องคำนวณ", sub: "Lot size · R:R · SL / TP", render: renderCalc },
+  settings: { title: "ตั้งค่า", sub: "บัญชี ความเสี่ยง ชื่อสัญลักษณ์ การแจ้งเตือน", render: renderSettings },
+  guide: { title: "คู่มือ", sub: "วิธีใช้งานทีละขั้น", render: renderGuide },
+};
+const NAV_ORDER = ["chart", "systems", "lab", "signals", "calc", "settings", "guide"];
+function route() { const r = location.hash.replace(/^#\/?/, "").split("?")[0]; return ROUTES[r] ? r : "chart"; }
 
 function renderNav(newCount = 0) {
   const cur = route();
-  const item = (k, r) => `<a href="#/${k}" class="${cur === k ? "active" : ""}"><span class="ic">${r.ic}</span><span class="lbl">${r.title}</span>${k === "signals" && newCount ? `<span class="count">${newCount}</span>` : ""}</a>`;
-  $("#nav").innerHTML = `<div class="nav-sec">เทรด</div>${["signals", "systems", "chart"].map((k) => item(k, ROUTES[k])).join("")}
-    <div class="nav-sec">วิจัย</div>${["lab", "calc"].map((k) => item(k, ROUTES[k])).join("")}
-    <div class="nav-sec">ระบบ</div>${["settings", "guide"].map((k) => item(k, ROUTES[k])).join("")}`;
-  const more = ["calc", "settings", "guide"].includes(cur);
-  $("#bottomnav").innerHTML = ["signals", "systems", "chart", "lab"].map((k) => {
-    const r = ROUTES[k];
-    return `<a href="#/${k}" class="${cur === k ? "active" : ""}"><span class="ic">${r.ic}</span>${k === "lab" ? "Lab" : r.title}${k === "signals" && newCount ? `<span class="count">${newCount}</span>` : ""}</a>`;
-  }).join("") + `<a href="javascript:void 0" id="moreBtn" class="${more ? "active" : ""}"><span class="ic">☰</span>เพิ่มเติม</a>`;
-  $("#moreBtn").onclick = () => {
-    const bg = document.createElement("div"); bg.className = "sheet-bg";
-    const sh = document.createElement("div"); sh.className = "sheet";
-    sh.innerHTML = `<div class="grabber"></div>${["calc", "settings", "guide"].map((k) => `<a href="#/${k}"><span>${ROUTES[k].ic}</span>${ROUTES[k].title}<span class="muted small" style="margin-left:auto">${ROUTES[k].sub}</span></a>`).join("")}`;
-    const close = () => { bg.remove(); sh.remove(); };
-    bg.onclick = close; sh.onclick = (e) => { if (e.target.closest("a")) close(); };
-    document.body.append(bg, sh);
-  };
+  const item = (k) => `<a href="#/${k}" class="${cur === k ? "active" : ""}" data-tip="${ROUTES[k].title}" aria-label="${ROUTES[k].title}">${ICONS[k]}${k === "signals" && newCount ? `<span class="count">${newCount}</span>` : ""}</a>`;
+  $("#nav").innerHTML = NAV_ORDER.map(item).join("");
+  $("#mnav").innerHTML = NAV_ORDER.map(item).join("");
 }
 
 async function refreshStatus() {
   try {
     S.status = await api("/api/status");
     const st = S.status;
-    const mt5 = st.static ? `<span class="dot on"></span> ☁️ คลาวด์ (สแกนทุกชั่วโมง)`
-      : st.mt5.connected ? `<span class="dot on"></span> MT5 ${esc(st.mt5.account?.server || "")}` : `<span class="dot mid"></span> ข้อมูลฟรี (Yahoo/Binance)`;
+    const src = st.static ? `<span class="dot on"></span> คลาวด์` : st.mt5.connected ? `<span class="dot on"></span> MT5 ${esc(st.mt5.account?.server || "")}` : `<span class="dot mid"></span> ข้อมูลฟรี`;
     const scan = st.scanner.last_scan ? `<span class="dot on"></span> สแกน ${ago(st.scanner.last_scan)}` : `<span class="dot off"></span> ยังไม่สแกน`;
-    $("#statusLine").innerHTML = `${mt5} <span class="faint">·</span> ${scan}${st.research.running ? ` <span class="faint">·</span> <span class="spinner"></span> วิจัย ${esc(st.research.progress)}` : ""}`;
-    $("#sideFoot").innerHTML = `<div>${mt5}</div><div>${scan}</div><div>วิจัยล่าสุด: ${ago(st.research_generated)}</div>`;
-  } catch (e) { $("#statusLine").innerHTML = `<span class="dot off"></span> เชื่อมต่อเซิร์ฟเวอร์ไม่ได้`; }
+    $("#statusLine").innerHTML = `${src} <span class="faint">·</span> ${scan}${st.research.running ? ` <span class="faint">·</span> <span class="spinner"></span> วิจัย ${esc(st.research.progress)}` : ""}`;
+    $("#sideFoot").innerHTML = `<span class="dot ${st.scanner.last_scan ? "on" : "off"}" data-tip="สแกนล่าสุด ${ago(st.scanner.last_scan)} · วิจัย ${ago(st.research_generated)}"></span>`;
+  } catch (e) { $("#statusLine").innerHTML = `<span class="dot off"></span> เชื่อมต่อไม่ได้`; }
 }
 
 async function navigate() {
-  const r = ROUTES[route()] || ROUTES.signals;
+  const k = route(), r = ROUTES[k];
   S.charts.forEach((c) => { try { c.remove(); } catch { /* already gone */ } }); S.charts = [];
+  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
   $("#pageTitle").textContent = r.title; $("#pageSub").textContent = r.sub;
   document.title = `${r.title} · TradingLab`;
+  document.body.dataset.page = k;
   renderNav(S.newCount || 0);
-  window.scrollTo(0, 0);
   const view = $("#view");
+  view.className = "content" + (r.ws ? " fill" : "");
+  view.scrollTop = 0;
   view.innerHTML = `<div class="empty"><div class="spinner"></div></div>`;
-  try { await r.render(view); } catch (e) { view.innerHTML = `<div class="banner"><span class="ic">⚠️</span><div>เกิดข้อผิดพลาด: ${esc(e.message)}</div></div>`; console.error(e); }
+  try { await r.render(view); } catch (e) { view.innerHTML = `<div class="pad"><div class="banner"><span class="ic">⚠️</span><div>เกิดข้อผิดพลาด: ${esc(e.message)}</div></div></div>`; console.error(e); }
 }
+
+// ------------------------------------------------------------------ workspace (chart / systems / lab): main area + right rail
+const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH" };
+const stratById = (id) => S.strategies.find((s) => s.id === id);
+const sysOf = (sym) => S.symbols.find((x) => x.symbol === sym) || {};
+const stratLabel = (id) => { const s = stratById(id); return s ? `#${s.no} ${s.name}` : id; };
+function pickSel(q, key, fallbackStrategy) {
+  const prev = store.get(key, store.get("sel", {}));
+  const symbol = S.symbols.some((x) => x.symbol === q.symbol) ? q.symbol : (prev.symbol || "XAUUSD");
+  const sys = sysOf(symbol);
+  const tf = ["H1", "H4", "D1"].includes(q.tf) ? q.tf : (prev.tf || sys.tf || "H1");
+  let strategy = stratById(q.strategy) ? q.strategy : (prev.strategy || fallbackStrategy || sys.strategy);
+  if (!stratById(strategy)) strategy = sys.strategy || S.strategies[0].id;
+  return { symbol, tf, strategy };
+}
+function wsHtml({ title, tabs = [], tab, actions = "", main, sel, foot = "" }) {
+  return `<div class="ws">
+    <div class="ws-head"><div class="ws-title">${title}</div>
+      ${tabs.length ? `<div class="ws-tabs" id="wsTabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
+      <div class="ws-act">${actions}</div></div>
+    <div class="ws-body"><div class="ws-main">${main}</div>${railHtml(sel)}</div>
+    <div class="ws-foot" id="wsFoot">${foot}</div></div>`;
+}
+function railHtml(sel) {
+  const sys = sysOf(sel.symbol), st = stratById(sel.strategy) || {};
+  return `<div class="rail">
+    <div class="rail-grp">${["H1", "H4", "D1"].map((t) => `<button class="rb ${t === sel.tf ? "on" : ""}" data-tf="${t}" data-tip="Timeframe ${t}">${t}</button>`).join("")}</div>
+    <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${sys.strategy === sel.strategy ? '<i class="star">★</i>' : ""}</button></div>
+    <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i></button>`).join("")}</div>
+  </div>`;
+}
+function bindRail(root, sel, onChange) {
+  $$("[data-tf]", root).forEach((b) => b.onclick = () => onChange({ ...sel, tf: b.dataset.tf }, "tf"));
+  $$("[data-sym]", root).forEach((b) => b.onclick = () => onChange({ ...sel, symbol: b.dataset.sym }, "symbol"));
+  $("#sysBtn", root).onclick = (e) => openSysPicker(e.currentTarget, sel, (sid) => onChange({ ...sel, strategy: sid }, "strategy"));
+}
+function goSel(page, sel, extra = {}) {
+  const p = new URLSearchParams({ symbol: sel.symbol, tf: sel.tf, strategy: sel.strategy, ...extra });
+  const h = `#/${page}?${p}`;
+  if (location.hash === h) navigate(); else location.hash = h;
+}
+function bindTabs(root, key, onTab) {
+  const box = $("#wsTabs", root); if (!box) return;
+  box.onclick = (e) => {
+    const b = e.target.closest("[data-tab]"); if (!b) return;
+    $$("[data-tab]", box).forEach((x) => x.classList.toggle("on", x === b));
+    store.set(key, b.dataset.tab); onTab(b.dataset.tab);
+  };
+}
+function openSysPicker(anchor, sel, pick) {
+  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  const live = sysOf(sel.symbol).strategy;
+  const bg = document.createElement("div"); bg.className = "syspop-bg";
+  const pop = document.createElement("div"); pop.className = "syspop";
+  pop.innerHTML = `<div class="syspop-hd"><b>เลือกระบบเทรด</b><span class="muted small">${S.strategies.length} ระบบ · ★ = ระบบจริงของ ${sel.symbol}</span>
+      <input class="inp" id="sysQ" placeholder="ค้นหาเลข ชื่อ หรือกลุ่ม…" autocomplete="off"></div>
+    <div class="syspop-list">${S.strategies.map((s) => `<button data-sid="${s.id}" class="${s.id === sel.strategy ? "on" : ""}" data-q="${esc((s.no + " " + s.name + " " + s.family).toLowerCase())}">
+      <b>${s.no}</b><span>${esc(s.name)}<small>${esc(s.family)}</small></span>${s.id === live ? '<i class="star">★</i>' : ""}</button>`).join("")}</div>`;
+  document.body.append(bg, pop);
+  const r = anchor.getBoundingClientRect();
+  if (window.innerWidth > 760) {
+    pop.style.top = Math.max(8, Math.min(r.top, window.innerHeight - pop.offsetHeight - 8)) + "px";
+    pop.style.left = Math.max(8, r.left - pop.offsetWidth - 8) + "px";
+  }
+  const close = () => { bg.remove(); pop.remove(); };
+  bg.onclick = close;
+  pop.querySelector(".on")?.scrollIntoView({ block: "center" });
+  $("#sysQ", pop).oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$("[data-sid]", pop).forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
+  pop.onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) { close(); pick(b.dataset.sid); } };
+}
+const footItem = (k, v, cls = "") => `<span class="fi"><span class="k">${k}</span><span class="v ${cls}">${v}</span></span>`;
 
 // ------------------------------------------------------------------ SIGNALS
 function signalCard(s, compact = false) {
@@ -309,94 +382,8 @@ function bindSignalCards(root, sigs) {
   });
 }
 
-async function renderSignals(view) {
-  const [sigs, syms, fwd] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward")]);
-  S.symbols = syms;
-  const now = new Date();
-  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
-  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s));
-  const closed = sigs.filter((s) => s.outcome !== "open");
-  S.newCount = actionable.length; renderNav(S.newCount);
-  const active = syms.filter((x) => x.status === "ACTIVE"), watch = syms.filter((x) => x.status === "WATCH");
-  const fa = fwd.all;
-  view.innerHTML = `<div class="stack">
-    ${!active.length ? `<div class="banner"><span class="ic">🧭</span><div><b>ตอนนี้ยังไม่มีระบบไหนผ่านเกณฑ์ ACTIVE</b> — ระบบสถานะ WATCH (${watch.length}) จะถูกติดตามแบบ forward test อัตโนมัติ
-      ${S.settings?.alerts?.watch ? "และส่งแจ้งเตือนด้วย" : "แต่ยังไม่ส่งแจ้งเตือน (เปิดได้ในตั้งค่า)"} ใช้บัญชี demo จนกว่าผลจริงจะยืนยัน · <a href="#/systems">ดูเหตุผลที่หน้า ระบบเทรด →</a></div></div>` : ""}
-    <div class="card"><div class="hd"><h3>สัญญาณที่เข้าได้ตอนนี้</h3><span class="badge open">${actionable.length}</span>
-      <div class="right"><button class="btn sm" id="scanBtn">${STATIC ? "↻ โหลดใหม่" : "↻ สแกนตอนนี้"}</button></div></div>
-      <div class="bd">${actionable.length ? `<div class="sig-grid">${actionable.map((s) => signalCard(s)).join("")}</div>`
-        : `<div class="empty"><div class="big">🔕</div>ยังไม่มีสัญญาณใหม่ · ${STATIC ? `คลาวด์สแกนทุกชั่วโมง (ล่าสุด ${ago(STATIC.last_scan)})` : `ระบบจะสแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} และแจ้งเตือนบนมือถือเมื่อมีสัญญาณ</div>`}</div></div>
-    <div class="grid g2">
-      <div class="card"><div class="hd"><h3>ระบบที่ใช้อยู่ในแต่ละสินทรัพย์</h3><div class="right"><a class="btn sm ghost" href="#/systems">รายละเอียด →</a></div></div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>สถานะ</th><th>ระบบ</th><th>TF</th><th class="num">Risk</th><th class="num">OOS Exp</th><th class="num">Robust</th></tr></thead><tbody>
-        ${syms.map((x) => `<tr class="click" onclick="location.hash='#/chart?symbol=${x.symbol}&tf=${x.tf || "H1"}'"><td><b>${x.symbol}</b> <span class="faint small">${esc(x.mt5_symbol)}</span></td><td>${statusBadge(x.status)}</td>
-          <td class="small">${esc(x.strategy_name || "–")}</td><td>${x.tf || "–"}</td><td class="num">${x.risk_pct ? effRisk(x.risk_pct) + "%" : "–"}</td>
-          <td class="num ${cls(x.oos?.expectancy)}">${x.oos ? fr(x.oos.expectancy, 3) : "–"}</td>
-          <td class="num ${x.robust_score >= 80 ? "pos" : x.robust_score >= 60 ? "warn" : x.robust_score != null ? "neg" : ""}">${x.robust_score ?? "–"}</td></tr>`).join("")}</tbody></table></div></div>
-      <div class="card"><div class="hd"><h3>Forward test (ผลจริงหลังสัญญาณ)</h3></div><div class="bd stack">
-        ${fa ? `<div class="kpis">${kpi("สัญญาณที่จบแล้ว", fa.trades)}${kpi("รวม", fr(fa.net_r, 1), "", cls(fa.net_r))}${kpi("Expectancy", fr(fa.expectancy, 3), "", cls(fa.expectancy))}${kpi("Win rate", fa.win_rate + "%")}${kpi("PF", fnum(fa.pf, 2))}${kpi("Max DD", fnum(fa.max_dd_r, 1) + "R")}</div>`
-          : `<div class="hint">ยังไม่มีสัญญาณที่จบ — ทุกสัญญาณจะถูกติดตามด้วยกฎเดียวกับ backtest (SL/TP/หมดเวลา) เพื่อเทียบผลจริงกับผลวิจัย</div>`}
-        ${fwd.taken ? `<div class="hint">ไม้ที่คุณเปิดจริง: ${fwd.taken.trades} ไม้ · ${fr(fwd.taken.net_r, 1)}</div>` : ""}
-      </div></div>
-    </div>
-    ${tracking.length ? `<div class="card"><div class="hd"><h3>กำลังติดตาม</h3><span class="badge">${tracking.length}</span></div><div class="bd"><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div></div></div>` : ""}
-    <div class="card"><div class="hd"><h3>ประวัติสัญญาณ</h3><span class="badge">${closed.length}</span></div>
-      <div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>TF</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
-      ${closed.length ? closed.map((s) => `<tr><td>${fdt(s.bar_time)}</td><td><b>${s.symbol}</b></td><td>${statusBadge(s.side)}</td><td>${s.tf}</td><td class="small">${esc(s.strategy_name || "")} ${statusBadge(s.system_status)}</td>
-        <td class="num">${fnum(s.lots, 2)}</td><td><span class="badge ${s.outcome}">${s.exit_reason && !["SL", "TP"].includes(s.exit_reason) ? reasonTh(s.exit_reason) : { win: "TP", loss: "SL", time: "หมดเวลา" }[s.outcome]}</span></td><td class="num ${cls(s.outcome_r)}">${fr(s.outcome_r)}</td><td>${s.user_status === "new" ? '<span class="faint">–</span>' : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิด" : "ข้าม"}</span>`}</td></tr>`).join("")
-        : `<tr><td colspan="9" class="muted" style="text-align:center;padding:22px">ยังไม่มีประวัติ</td></tr>`}</tbody></table></div></div>
-  </div>`;
-  bindSignalCards(view, sigs);
-  $("#scanBtn").onclick = async (e) => { if (STATIC) { location.reload(); return; } e.target.disabled = true; const r = await api("/api/scan", { method: "POST" }); toast(r.new.length ? `พบ ${r.new.length} สัญญาณใหม่` : "สแกนแล้ว ไม่มีสัญญาณใหม่"); navigate(); };
-}
-
 // ------------------------------------------------------------------ SYSTEMS (research)
 function gateChips(g) { return `<div class="gates">${(g || []).map((x) => `<span class="gate ${x.pass ? "p" : "f"}" title="ต้องการ ${x.need}">${x.pass ? "✓" : "✗"} ${esc(x.name)} ${x.value === null || x.value === undefined ? "–" : fnum(x.value, typeof x.value === "number" && Math.abs(x.value) < 10 ? 2 : 0)}</span>`).join("")}</div>`; }
-
-async function renderSystems(view) {
-  const [res, notes, hist] = await Promise.all([api("/api/research"), api("/api/research/notes"), api("/api/research/history")]);
-  const st = S.status?.research || {};
-  const syms = Object.values(res.symbols || {});
-  const counts = { ACTIVE: 0, WATCH: 0, OFF: 0 }; syms.forEach((s) => counts[s.status] = (counts[s.status] || 0) + 1);
-  view.innerHTML = `<div class="stack">
-    <div class="card"><div class="bd row" style="gap:16px">
-      <div class="kpis" style="flex:1;min-width:280px">${kpi("ACTIVE", counts.ACTIVE, "แจ้งเตือนจริง", "pos")}${kpi("WATCH", counts.WATCH, "forward test")}${kpi("OFF", counts.OFF, "ไม่มี edge", "neg")}${kpi("วิจัยล่าสุด", res.generated ? ago(res.generated) : "ยังไม่เคย", res.generated ? fdt(res.generated, true) : "")}${kpi("รอบอัปเดต", S.settings?.research?.schedule || "–", "IS " + (S.settings?.research?.is_months || "-") + "m / OOS " + (S.settings?.research?.oos_months || "-") + "m")}</div>
-      <div class="stack" style="gap:8px;max-width:340px"><span class="hint"><b>✅ วิเคราะห์ใหม่เองอัตโนมัติทุกวันเสาร์ 09:30 น.</b> — ไม่ต้องกดอะไร · สแกนหาสัญญาณเองทุกชั่วโมง<br>
-        ถ้าอยากสั่งวิเคราะห์ใหม่ทันที ใช้ปุ่มในหน้า <a href="#/lab">Strategy Lab</a></span>${st.running ? `<span class="hint" id="resProg"><span class="spinner"></span> ${esc(st.progress)}</span>` : ""}</div>
-    </div></div>
-    <div class="banner info"><span class="ic">ℹ️</span><div><b>วิธีตัดสิน:</b> ทุกสินทรัพย์ถูกทดสอบ ${S.strategies.length} กลยุทธ์ × ${(S.settings?.research?.timeframes || []).join("/")} ด้วย Walk-Forward แบบ rolling
-      (เลือกพารามิเตอร์จาก In-Sample แล้วเทรดจริงใน Out-of-Sample ที่ระบบไม่เคยเห็น) → เลือกตัวที่ OOS ดีที่สุด แล้ว <b>ตั้งเกณฑ์ t สูงขึ้นตามจำนวนผู้สมัคร</b> (กันการเลือกตัวที่ดีเพราะโชค) → ทดสอบกับการสุ่มจุดเข้า,
-      <b>Robustness</b> 8 แบบ (หน้าต่าง WF อื่น, ต้นทุน ×2, เข้าช้า 1 แท่ง, noise ในราคา, Long/Short, รายครึ่งปี, ตัดไม้ที่ดีที่สุด, พารามิเตอร์ข้างเคียง) และ Monte Carlo — ทุกค่าตั้งอัตโนมัติ ไม่ต้องปรับเอง
-      · <b>ACTIVE</b> = ผ่านทุกเกณฑ์ ส่งแจ้งเตือนจริง · <b>WATCH</b> = OOS เป็นบวกแต่ยังพิสูจน์ไม่ได้ → เฝ้าดูผลจริงเงียบ ๆ ไม่แจ้งเตือน · <b>OFF</b> = ไม่พบ edge → ไม่เทรด · <a href="#/guide">วิธีทดสอบทีละขั้น →</a></div></div>
-    <div class="sys-grid">${syms.length ? syms.map((s) => systemCard(s)).join("") : `<div class="card"><div class="empty"><div class="big">🧪</div>ยังไม่มีผลวิจัย — กด “รันวิจัยใหม่ทั้งหมด”</div></div>`}</div>
-    <div class="card"><div class="hd"><h3>บันทึกจาก AI (Claude)</h3><span class="muted small">data/research/ai_notes.md</span></div><div class="bd md">${notes ? md(notes) : '<span class="hint">ยังไม่มีบันทึก — เมื่อ Claude ตรวจผลวิจัยรอบถัดไป จะเขียนข้อสังเกตและการปรับปรุงไว้ที่นี่</span>'}</div></div>
-    <div class="card"><div class="hd"><h3>ประวัติการอัปเดตระบบ</h3></div><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th>${Object.keys(res.symbols || {}).map((k) => `<th>${k}</th>`).join("")}</tr></thead><tbody>
-      ${hist.map((h) => `<tr><td>${fdt(h.generated, true)}</td>${Object.keys(res.symbols || {}).map((k) => { const v = h.symbols[k]; return `<td>${v ? `${statusBadge(v.status)} <span class="small muted">${v.tf || ""}</span>` : "–"}</td>`; }).join("")}</tr>`).join("") || '<tr><td class="muted">–</td></tr>'}</tbody></table></div></div>
-  </div>`;
-  $$(".sys [data-a=detail]", view).forEach((b) => b.onclick = () => toggleDetail(b.closest(".sys"), res.symbols[b.dataset.sym]));
-  if (st.running) pollResearch();
-}
-
-function systemCard(s) {
-  const o = s.oos || {};
-  const rb = s.random_benchmark;
-  return `<div class="card sys" data-sym="${s.symbol}"><div class="hd"><span class="sym">${s.symbol}</span>${statusBadge(s.status)}
-      <div class="right"><span class="small muted">${s.tf || ""}</span></div></div>
-    <div class="bd stack" style="gap:12px">
-      ${s.strategy ? `<div><div style="font-weight:650">${esc(s.strategy_name)}</div><div class="small muted mono" style="margin-top:3px">${esc(paramText(s.params))}</div></div>` : `<div class="hint">${esc(s.reason || "")}</div>`}
-      <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
-        ${kpi("OOS trades", o.trades ?? "–", (o.trades_per_year ?? "–") + "/ปี")}${kpi("Expectancy", fr(o.expectancy, 3), "t = " + fnum(o.t_stat, 2), cls(o.expectancy))}${kpi("Risk แนะนำ", s.risk_pct ? s.risk_pct + "%" : "–", "MC DD95 ≤ " + (S.settings?.target_max_dd_pct || 10) + "%")}
-        ${kpi("Profit factor", fnum(o.pf, 2), "MC@95%: " + fnum(s.mc_pf_p5, 2))}${kpi("Win rate", (o.win_rate ?? "–") + "%", "R:R " + (s.params?.rr ?? "–"))}${kpi("vs สุ่ม", rb ? rb.percentile + "%" : "–", "percentile")}
-      </div>
-      ${robustBar(s.robustness)}
-      ${gateChips(s.gates)}
-      <div class="row small muted">ข้อมูล ${esc(s.data_source || "")} · ${s.data_from ? fdt(s.data_from, true).split(",")[0] : ""} → ${s.data_to ? fdt(s.data_to, true).split(",")[0] : ""} · ทดสอบทั้งหมด ${s.trials || 0} ชุด</div>
-      ${s.previous && (s.previous.strategy !== s.strategy || s.previous.tf !== s.tf || s.previous.status !== s.status) ? `<div class="hint">เปลี่ยนจากรอบก่อน: ${statusBadge(s.previous.status)} ${esc(stratName(s.previous.strategy))} ${s.previous.tf || ""}</div>` : ""}
-      <div class="row"><button class="btn sm" data-a="detail" data-sym="${s.symbol}">รายละเอียด ▾</button>
-        ${s.strategy ? `<a class="btn sm" href="#/lab?symbol=${s.symbol}&tf=${s.tf}&strategy=${s.strategy}&params=${encodeURIComponent(JSON.stringify(s.params || {}))}">🧪 เปิดใน Lab</a><a class="btn sm ghost" href="#/chart?symbol=${s.symbol}&tf=${s.tf}">📈</a>` : ""}</div>
-      <div class="detail hidden"></div>
-    </div></div>`;
-}
 
 function robustBar(rb) {
   if (!rb || rb.score === null || rb.score === undefined) return `<div class="robust"><span class="small muted">Robustness: ${esc(rb?.grade || "ยังไม่ได้ทดสอบ")}</span></div>`;
@@ -411,24 +398,6 @@ function robustTable(rb) {
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>การทดสอบ</th><th class="num">ผล</th><th>เกณฑ์</th></tr></thead><tbody>
     ${rb.tests.map((t) => `<tr><td>${t.pass === null ? '<span class="faint">–</span>' : t.pass ? '<span class="pos">✓</span>' : '<span class="neg">✗</span>'}</td>
       <td class="small">${esc(t.name)}${t.note ? `<div class="tiny faint">${esc(t.note)}</div>` : ""}</td><td class="num small">${esc(t.value ?? "–")}</td><td class="small muted">${esc(t.need)}</td></tr>`).join("")}</tbody></table></div>`;
-}
-
-function toggleDetail(card, s) {
-  const box = $(".detail", card);
-  if (!box.classList.contains("hidden")) { box.classList.add("hidden"); return; }
-  box.classList.remove("hidden");
-  const d = specOf(s.symbol).digits;
-  box.innerHTML = `<div class="formsec">OOS equity (risk 1%/ไม้, เริ่ม 10,000)</div><div class="chart sm" id="eq-${s.symbol}"></div>
-    ${robustTable(s.robustness)}
-    <div class="formsec">ผู้สมัครทั้งหมด (Walk-Forward OOS)</div>
-    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>กลยุทธ์</th><th>TF</th><th class="num">n</th><th class="num">Exp</th><th class="num">t</th><th class="num">PF</th><th class="num">WFE</th><th class="num">Plateau</th></tr></thead><tbody>
-    ${(s.candidates || []).slice().sort((a, b) => b.oos.t_stat - a.oos.t_stat).map((c) => `<tr><td class="small">${esc(c.name)}</td><td>${c.tf}</td><td class="num">${c.oos.trades}</td><td class="num ${cls(c.oos.expectancy)}">${fnum(c.oos.expectancy, 3)}</td><td class="num">${fnum(c.oos.t_stat, 2)}</td><td class="num">${fnum(c.oos.pf, 2)}</td><td class="num">${c.wfe ?? "–"}</td><td class="num">${fnum(c.plateau, 2)}</td></tr>`).join("")}</tbody></table></div>
-    <div class="formsec">Walk-forward folds ของระบบที่เลือก</div>
-    <div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>OOS</th><th>พารามิเตอร์ที่เลือก (IS)</th><th class="num">IS t</th><th class="num">OOS n</th><th class="num">OOS R</th></tr></thead><tbody>
-    ${(s.folds || []).map((f) => `<tr><td>${f.oos_start.slice(0, 7)}</td><td class="small mono">${f.params ? esc(paramText(f.params)) : '<span class="faint">ไม่เทรด (IS ไม่เป็นบวก)</span>'}</td><td class="num">${f.is_t ?? "–"}</td><td class="num">${f.oos_trades}</td><td class="num ${cls(f.oos_r)}">${fnum(f.oos_r, 2)}</td></tr>`).join("")}</tbody></table></div>
-    ${s.mc_1y?.max_dd_pct ? `<div class="formsec">Monte Carlo 1 ปี (${s.mc_1y.n_trades} ไม้, risk 1%)</div><div class="kpis">${kpi("ผลตอบแทนกลาง", fnum(s.mc_1y.return_pct["50"], 1) + "%")}${kpi("แย่ 5%", fnum(s.mc_1y.return_pct["5"], 1) + "%", "", "neg")}${kpi("DD กลาง", fnum(s.mc_1y.max_dd_pct["50"], 1) + "%")}${kpi("DD 95%", fnum(s.mc_1y.max_dd_pct["95"], 1) + "%", "", "neg")}${kpi("โอกาสกำไร", s.mc_1y.prob_profit + "%")}</div>` : ""}`;
-  if (s.oos_equity?.length) lineChart($(`#eq-${s.symbol}`), [{ data: dedupeTimes(s.oos_equity.map((p) => ({ time: shiftT(p.time), value: p.value }))), color: "#60a5fa", last: true }]);
-  void d;
 }
 
 async function pollResearch() {
@@ -521,51 +490,38 @@ const PARAM_SRC = {
 
 async function renderChart(view) {
   const token = S.chartToken = (S.chartToken || 0) + 1;
-  const q = qs();
-  const sym = q.symbol || store.get("chartSym", "XAUUSD"), tf = q.tf || store.get("chartTf", "H4");
+  const sel = pickSel(qs(), "sel");
+  store.set("sel", sel);
+  const { symbol: sym, tf, strategy: sid } = sel;
+  const sys = sysOf(sym);
   const overlay = store.get("chartOverlay", true);
-  store.set("chartSym", sym); store.set("chartTf", tf);
-  const sys = S.symbols.find((x) => x.symbol === sym);
-  const sid = S.strategies.some((s) => s.id === q.strategy) ? q.strategy : (sys?.strategy || S.strategies[0].id);
-  const nav = (o) => { const p = { symbol: sym, tf, strategy: sid, ...o }; location.hash = "#/chart?" + new URLSearchParams(Object.entries(p).filter(([, v]) => v)).toString(); };
-  view.innerHTML = `<div class="stack">
-    <div class="stack" style="gap:10px">
-      <div class="chips" id="symChips">${S.symbols.map((x) => `<button class="chip ${x.symbol === sym ? "active" : ""}" data-s="${x.symbol}">${x.symbol} ${x.status === "ACTIVE" ? '<span class="dot on"></span>' : x.status === "WATCH" ? '<span class="dot mid"></span>' : ""}</button>`).join("")}</div>
-      <div class="row">
-        <div class="seg" id="tfSeg">${["H1", "H4", "D1"].map((t) => `<button class="${t === tf ? "active" : ""}" data-t="${t}">${t}</button>`).join("")}</div>
-        <select class="inp" id="stratSel" style="width:auto;max-width:100%;flex:1 1 240px">
-          ${S.strategies.map((s) => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${s.id === sys?.strategy ? "★ " : ""}${esc(s.name)} — ${esc(s.family)}${s.id === sys?.strategy ? ` (ระบบจริง ${sys.tf})` : ""}</option>`).join("")}
-        </select>
-        <label class="check small"><input type="checkbox" id="ovl" ${overlay ? "checked" : ""}> แสดงระบบบนกราฟ</label>
-      </div>
-      <div class="tiny muted"><span class="dot on"></span> ACTIVE = ผ่านทุกเกณฑ์ ส่งแจ้งเตือนจริง · <span class="dot mid"></span> WATCH = ผลดีแต่ยังพิสูจน์ไม่พอ เฝ้าดูเงียบ ๆ ไม่แจ้งเตือน · ไม่มีจุด = OFF · ★ = กลยุทธ์ที่ระบบจริงใช้</div>
-    </div>
-    <div id="viewOnly"></div>
-    <div class="card"><div class="hd"><h3 id="chTitle">${sym} · ${tf}</h3><div class="right legend" id="chLegend"></div></div><div class="chart" id="mainChart"></div><div class="tiny muted" id="chHist" style="padding:6px 14px 10px"></div></div>
-    <div class="card"><div class="hd"><h3>Equity curve</h3><div class="right"><div class="seg" id="eqSeg"></div></div></div>
-      <div class="bd stack" style="gap:12px"><div class="kpis" id="eqKpis"></div><div class="chart md" id="eqChart"></div><div class="hint" id="eqHint"></div></div></div>
-    <div class="card"><div class="hd"><h3>ระบบบนกราฟนี้</h3></div><div class="bd" id="chInfo"><span class="spinner"></span></div></div>
-    <div class="card"><div class="hd"><h3>เทรดล่าสุดของระบบ</h3><span class="badge" id="trCount"></span></div><div class="tbl-wrap tbl-scroll" id="chTrades"></div></div>
-  </div>`;
-  $("#symChips").onclick = (e) => { const b = e.target.closest("[data-s]"); if (b) location.hash = `#/chart?symbol=${b.dataset.s}&tf=${tf}`; };
-  $("#tfSeg").onclick = (e) => { const b = e.target.closest("[data-t]"); if (b) nav({ tf: b.dataset.t }); };
-  $("#stratSel").onchange = (e) => nav({ strategy: e.target.value });
-  $("#ovl").onchange = (e) => { store.set("chartOverlay", e.target.checked); navigate(); };
+  let tab = store.get("chartTab", "chart");
+  view.innerHTML = wsHtml({
+    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="chBadge"></span>`,
+    tabs: [["chart", "กราฟ"], ["trades", "เทรดล่าสุด"]], tab,
+    actions: `<button class="ibtn ${overlay ? "on" : ""}" id="ovl" data-tip="แสดง/ซ่อน indicator และจุดเข้าออกของระบบ">${ICONS.ind}</button>`,
+    main: `<div class="chart-box" id="chartBox"><div class="chart fill" id="mainChart"></div><div class="hist-note" id="chHist"></div></div><div class="ws-pane" id="trPane" hidden></div>`,
+    sel,
+  });
+  bindRail(view, sel, (n) => goSel("chart", n));
+  $("#ovl").onclick = () => { store.set("chartOverlay", !overlay); navigate(); };
+  const showTab = (t) => { tab = t; $("#chartBox").hidden = t !== "chart"; $("#trPane").hidden = t !== "trades"; };
+  bindTabs(view, "chartTab", showTab);
+  showTab(tab);
 
   const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`);
   if (route() !== "chart" || S.chartToken !== token) return;
-  const strat = S.strategies.find((s) => s.id === sid) || {};
+  const strat = stratById(sid) || {};
   const live = sp.is_live;
-  if (!live) {
-    $("#viewOnly").innerHTML = `<div class="banner info"><span class="ic">🔍</span><div><b>โหมดดูอย่างเดียว</b> — กำลังดู <b>${esc(sp.name)}</b> บน ${tf} เพื่อเปรียบเทียบเท่านั้น
-      การเลือกตรงนี้ <b>ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน</b> ·
-      ระบบจริงของ ${sym}: ${sys?.strategy ? `<b>${esc(sys.strategy_name)}</b> ${sys.tf} ${statusBadge(sys.status)}` : "ยังไม่มี"}
-      ${sys?.strategy ? ` <a href="#/chart?symbol=${sym}&tf=${sys.tf}&strategy=${sys.strategy}">← กลับไปดูระบบจริง</a>` : ""}</div></div>`;
-  }
+  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} <span class="badge ghost">★ ระบบจริง</span>` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
 
-  // ---- main chart (candles + the chosen strategy)
+  // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
-  // scrolling back: older candles come in yearly chunks, prepended to the chart without moving the view
+  const histLabel = () => {
+    const el = $("#chHist"); if (!el || !last) return;
+    const from = (older[0] || last.cd.candles[0])?.time;
+    el.textContent = yearsLeft?.length ? `◀ เลื่อนซ้ายเพื่อดูย้อนหลัง (ถึงปี ${yearsLeft[0]}) · ตอนนี้ตั้งแต่ ${fdt(from, true).split(",")[0]}` : `ข้อมูลตั้งแต่ ${fdt(from, true).split(",")[0]}`;
+  };
   const loadOlder = async () => {
     if (loadingOld || !yearsLeft?.length) return;
     loadingOld = true;
@@ -579,12 +535,6 @@ async function renderChart(view) {
       older = add.concat(older);
       await draw(true, add.length, true);
     } catch (e) { toast("โหลดข้อมูลย้อนหลังไม่ได้: " + e.message); } finally { loadingOld = false; histLabel(); }
-  };
-  const histLabel = () => {
-    const el = $("#chHist"); if (!el || !last) return;
-    const from = (older[0] || last.cd.candles[0])?.time;
-    el.textContent = yearsLeft?.length ? `◀ เลื่อนกราฟไปทางซ้ายเพื่อดูย้อนหลัง (มีถึงปี ${yearsLeft[0]}) · ตอนนี้ตั้งแต่ ${fdt(from, true).split(",")[0]}`
-      : `ข้อมูลทั้งหมดตั้งแต่ ${fdt(from, true).split(",")[0]}`;
   };
   const draw = async (keepRange, shiftBy = 0, reuse = false) => {
     const [cd0, sigs] = reuse && last ? [last.cd, last.sigs] : await Promise.all([api(`/api/candles?symbol=${sym}&tf=${tf}&limit=1500&system=false`), api("/api/signals?limit=50")]);
@@ -601,8 +551,8 @@ async function renderChart(view) {
     const cs = ch.addCandlestickSeries({ upColor: "#16c784", downColor: "#ef4444", borderVisible: false, wickUpColor: "#16c784", wickDownColor: "#ef4444",
       priceFormat: { type: "price", precision: dg, minMove: 1 / 10 ** dg } });
     cs.setData(cd.candles.map((c) => ({ ...c, time: shiftT(c.time) })));
-    const legend = [];
     let open = null;
+    const legend = [];
     if (overlay) {
       Object.entries(sp.lines || {}).forEach(([name, vals], i) => {
         const color = LINE_COLORS[i % 5];
@@ -612,98 +562,258 @@ async function renderChart(view) {
       });
       const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.outcome === "open") : [];
       open = live ? openPosition(sp, liveSigs) : (sp.open_trade ? { ...sp.open_trade, from: sp.open_trade.entry_time, pending: false } : null);
-      if (open) open.lot = live ? lotLabel(sym, open.entry, open.sl, sys?.risk_pct) : "ทดลอง";
+      if (open) open.lot = live ? lotLabel(sym, open.entry, open.sl, sys.risk_pct) : "ทดลอง";
       const markers = drawTradeLevels(ch, { candles: cd.candles, trades: sp.trades, digits: dg }, open);
       markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
-      if (open) legend.push(`<span class="badge open">${open.dir > 0 ? "LONG" : "SHORT"} ${open.lot} · ${fpx(open.entry, dg)}</span>`);
     }
     S.chartOpen = open;
-    const n = cd.candles.length;
-    ch.timeScale().setVisibleLogicalRange(range || { from: Math.max(0, n - 220), to: n + 8 });
-    $("#chLegend").innerHTML = legend.join("") + `<span class="faint">${esc(cd.source)}</span>`;
-    $("#chTitle").textContent = `${sym} · ${tf} · ${fpx(cd.candles[n - 1]?.close, dg)}`;
+    const n = cd.candles.length, half = Math.max(30, Math.round(($("#mainChart").clientWidth || 800) / 14));
+    // latest candle in the middle of the chart, room on the right for the open position's labels
+    ch.timeScale().setVisibleLogicalRange(range || { from: n - 1 - half, to: n - 1 + half });
+    $("#chTitle").textContent = sym;
+    $("#chSub").innerHTML = `${tf} · <b class="mono">${fpx(cd.candles[n - 1]?.close, dg)}</b>`;
+    $("#chHist").innerHTML = "";
     ch.timeScale().subscribeVisibleLogicalRangeChange((r) => { if (r && r.from < 40) loadOlder(); });
     histLabel();
+    renderFoot(dg, legend, cd.source);
+  };
+  const renderFoot = (dg, legend, source) => {
+    const o = S.chartOpen;
+    $("#wsFoot").innerHTML = `
+      <span class="fi strat"><b>#${strat.no}</b> ${esc(sp.name)} <span class="muted">· ${esc(paramText(sp.params))}</span></span>
+      ${footItem("สัญญาณแท่งล่าสุด", sp.last_signal > 0 ? "LONG" : sp.last_signal < 0 ? "SHORT" : "ไม่มี", sp.last_signal > 0 ? "pos" : sp.last_signal < 0 ? "neg" : "")}
+      ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`) : footItem("ออเดอร์", "ไม่มี")}
+      ${legend.length ? `<span class="fi legend">${legend.join("")}</span>` : ""}
+      <span class="fi faint">${esc(source || "")}</span>`;
   };
   await draw(false);
-  const timer = setInterval(() => { if (route() !== "chart" || S.chartToken !== token) return clearInterval(timer); if (!document.hidden) draw(true).catch(() => {}); },
+  const timer = setInterval(() => { if (route() !== "chart" || S.chartToken !== token) return clearInterval(timer); if (!document.hidden && tab === "chart") draw(true).catch(() => {}); },
     STATIC ? 300000 : 60000);
 
-  // ---- equity curve (under the chart, full width)
-  const bal = myBalance() || 5000, risk = effRisk(sys?.risk_pct || 0.25) || 0.25;
-  const modes = [];
-  if (sp.oos?.equity?.length) modes.push(["oos", "Walk-Forward OOS"]);
-  if (sp.equity?.length) modes.push(["bt", "Backtest ทั้งช่วง"]);
-  let eqCh = null;
-  const showEq = (m) => {
-    store.set("eqMode", m);
-    $$("#eqSeg button").forEach((b) => b.classList.toggle("active", b.dataset.m === m));
-    if (eqCh) { S.charts = S.charts.filter((c) => c !== eqCh); eqCh.remove(); eqCh = null; }
-    const pts = m === "oos" ? sp.oos.equity : sp.equity;
-    const st = equityStats(pts, risk, bal);
-    $("#eqKpis").innerHTML = `${kpi("กำไรสุทธิ", `${st.net >= 0 ? "+" : ""}$${fnum(st.net, 0)}`, `${st.netPct >= 0 ? "+" : ""}${fnum(st.netPct, 1)}%`, cls(st.net))}${kpi("เทรดที่ปิดแล้ว", st.n, `${fdt(st.from, true).split(",")[0]} → ${fdt(st.to, true).split(",")[0]}`)}
-      ${kpi("ชนะ", fnum(st.winPct, 1) + "%")}${kpi("Profit factor", fnum(st.pf, 2), "", st.pf >= 1 ? "pos" : "neg")}
-      ${kpi("Max drawdown", `$${fnum(st.maxDdUsd, 0)}`, fnum(st.maxDd, 1) + "%", "neg")}${kpi("เฉลี่ยต่อไม้", fr(st.avgR, 3), "t = " + fnum(st.t, 2), cls(st.avgR))}`;
-    eqCh = equityChart($("#eqChart"), st, bal);
-    $("#eqHint").innerHTML = (m === "oos"
-      ? `<b>Walk-Forward OOS</b> = ผลแบบ “ไม่เคยเห็นข้อมูลมาก่อน”: ทุก 3 เดือนเลือกพารามิเตอร์จาก 12 เดือนก่อนหน้า แล้วเทรดช่วงถัดไปที่ระบบไม่เคยเห็น — <b>ใช้ตัวนี้ตัดสินว่ามี edge จริงไหม</b>`
-      : `<b>Backtest ทั้งช่วง</b> = ใช้พารามิเตอร์ชุดปัจจุบันย้อนทดสอบตั้งแต่ ${fdt(sp.from, true).split(",")[0]} — มักดูดีเกินจริง เพราะพารามิเตอร์ถูกเลือกจากข้อมูลบางส่วนในช่วงนี้เอง ใช้ดูหน้าตาการเทรด ไม่ใช่หลักฐาน`)
-      + ` · คิดแบบทบต้น เริ่ม $${fnum(bal, 0)} เสี่ยง ${risk}% ต่อไม้ (ตามที่ตั้งไว้) · รวมต้นทุน spread + slippage + ค่าคอมแล้ว`;
-  };
-  if (modes.length) {
-    $("#eqSeg").innerHTML = modes.map(([k, l]) => `<button data-m="${k}">${l}</button>`).join("");
-    $("#eqSeg").onclick = (e) => { const b = e.target.closest("[data-m]"); if (b) showEq(b.dataset.m); };
-    const pref = store.get("eqMode", "oos");
-    showEq(modes.some(([k]) => k === pref) ? pref : modes[0][0]);
-  } else {
-    $("#eqKpis").innerHTML = ""; $("#eqChart").outerHTML = `<div class="empty"><div class="big">📉</div>กลยุทธ์นี้ไม่มีเทรดบน ${tf} ในข้อมูลที่มี</div>`;
-  }
-
-  // ---- system info
-  const src = PARAM_SRC[sp.params_source] || PARAM_SRC.default, o = sp.oos?.metrics, m = sp.metrics, dg = sp.digits;
-  $("#chInfo").innerHTML = `<div class="stack" style="gap:12px">
-    <div><div style="font-weight:650">${esc(sp.name)} <span class="muted small">· ${esc(sp.family)}</span></div><div class="small muted" style="margin-top:4px;line-height:1.6">${esc(strat.rationale || "")}</div></div>
-    <div class="kv">
-      <span class="k">บทบาท</span><span class="v">${live ? `${statusBadge(sys?.status)} ระบบจริง` : '<span class="muted">ดูอย่างเดียว (ไม่ส่งแจ้งเตือน)</span>'}</span>
-      <span class="k">พารามิเตอร์</span><span class="v small">${esc(paramText(sp.params))}</span>
-      <span class="k">ที่มาพารามิเตอร์</span><span class="v small">${src[0]} <span class="muted">— ${src[1]}</span></span>
-      ${o ? `<span class="k">Walk-Forward OOS</span><span class="v small">${o.trades} ไม้ · ${fr(o.expectancy, 3)}/ไม้ · t ${fnum(o.t_stat, 2)} · PF ${fnum(o.pf, 2)}</span>` : `<span class="k">Walk-Forward OOS</span><span class="v small muted">ไม่มี (กลยุทธ์ × TF นี้ไม่ได้ถูกวิจัย)</span>`}
-      <span class="k">Backtest ทั้งช่วง</span><span class="v small">${m.trades} ไม้ · ${fr(m.expectancy, 3)}/ไม้ · t ${fnum(m.t_stat, 2)} · Long ${fr(m.long, 2)} / Short ${fr(m.short, 2)}</span>
-      <span class="k">สัญญาณแท่งล่าสุด</span><span class="v">${sp.last_signal > 0 ? '<span class="pos">LONG</span>' : sp.last_signal < 0 ? '<span class="neg">SHORT</span>' : "ไม่มี"}</span>
-      ${S.chartOpen ? `<span class="k">ออเดอร์ที่${live ? "เปิดอยู่" : "ระบบนี้จะถืออยู่ (ทดลอง)"}</span><span class="v">${S.chartOpen.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'} <b>${S.chartOpen.lot}</b> @ ${fpx(S.chartOpen.entry, dg)}
-        · SL <span class="neg">${fpx(S.chartOpen.sl, dg)}</span> · TP <span class="pos">${fpx(S.chartOpen.tp, dg)}</span>${S.chartOpen.close_by ? ` · ปิดภายใน ${fdt(S.chartOpen.close_by)}` : ""}${S.chartOpen.reverse_pending ? ` · <span class="warn">มีสัญญาณกลับทิศ → ปิดที่แท่งถัดไป</span>` : ""}</span>` : ""}
-    </div>
-    ${STATIC ? "" : `<div class="row"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}&params=${encodeURIComponent(JSON.stringify(sp.params))}">🧪 ปรับพารามิเตอร์ใน Lab</a></div>`}
-  </div>`;
-
-  // ---- latest trades
-  const tr = (sp.trades || []).slice(-30).reverse();
-  $("#trCount").textContent = tr.length;
-  $("#chTrades").innerHTML = `<table class="tbl"><thead><tr><th>เข้า</th><th>ฝั่ง</th><th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th class="num">Exit</th><th>ออก</th><th class="num">R</th></tr></thead><tbody>
-    ${tr.map((t) => `<tr><td>${fdt(t.entry_time)}</td><td>${t.dir > 0 ? '<span class="pos">L</span>' : '<span class="neg">S</span>'}</td><td class="num">${fpx(t.entry, dg)}</td><td class="num">${fpx(t.sl, dg)}</td><td class="num">${fpx(t.tp, dg)}</td><td class="num">${fpx(t.exit, dg)}</td><td>${reasonTh(t.reason)}</td><td class="num ${cls(t.r)}">${fr(t.r)}</td></tr>`).join("") || '<tr><td colspan="8" class="muted">–</td></tr>'}</tbody></table>`;
+  // ---- latest trades tab
+  const dg = sp.digits;
+  const tr = (sp.trades || []).slice(-60).reverse();
+  $("#trPane").innerHTML = `<div class="pane-hd"><b>เทรดล่าสุดของระบบ #${strat.no} ${esc(sp.name)}</b><span class="muted small">${sym} ${tf} · ${tr.length} ไม้ล่าสุด · ใช้กติกาเดียวกับ backtest</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>เข้า</th><th>ฝั่ง</th><th class="num">Entry</th><th class="num">SL</th><th class="num">TP</th><th>ออก</th><th class="num">Exit</th><th>เหตุผล</th><th class="num">R</th></tr></thead><tbody>
+    ${tr.map((t) => `<tr><td>${fdt(t.entry_time, true)}</td><td>${t.dir > 0 ? '<span class="pos">LONG</span>' : '<span class="neg">SHORT</span>'}</td><td class="num">${fpx(t.entry, dg)}</td><td class="num">${fpx(t.sl, dg)}</td><td class="num">${fpx(t.tp, dg)}</td><td>${fdt(t.exit_time)}</td><td class="num">${fpx(t.exit, dg)}</td><td>${reasonTh(t.reason)}</td><td class="num ${cls(t.r)}">${fr(t.r)}</td></tr>`).join("") || '<tr><td colspan="9" class="muted">ยังไม่มีเทรด</td></tr>'}</tbody></table></div>`;
 }
 
-// ------------------------------------------------------------------ LAB
+// ------------------------------------------------------------------ SYSTEMS: equity curve · system details · catalogue of all systems
+function paramRows(st, values) {
+  return st.params.filter((p) => p.key !== "max_hold_h").map((p) => {
+    const tested = st.grid?.[p.key];
+    return `<tr><td>${esc(p.label)}<div class="tiny faint mono">${p.key}</div></td><td class="num"><b>${values?.[p.key] ?? p.default}</b></td><td class="num muted">${p.default}</td><td class="num muted">${tested ? tested.join(" / ") : "–"}</td></tr>`;
+  }).join("");
+}
+function systemDoc(st, sp, opts = {}) {
+  const src = PARAM_SRC[sp?.params_source] || null;
+  return `<div class="doc">
+    <div class="doc-hd"><div class="no">${st.no}</div><div><h2>${esc(st.name)}</h2><div class="muted">${esc(st.family)}</div></div></div>
+    <p class="doc-why">${esc(st.rationale)}</p>
+    <div class="doc-grid">
+      <section><h4>Indicator ที่ใช้</h4><ul>${st.indicators.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></section>
+      <section><h4>เงื่อนไขการเทรด</h4>
+        <div class="rule long"><span>LONG / BUY</span><p>${esc(st.long)}</p></div>
+        <div class="rule short"><span>SHORT / SELL</span><p>${esc(st.short)}</p></div>
+        <div class="rule exit"><span>ออกจากออเดอร์</span><p>${esc(st.exits)}</p></div></section>
+    </div>
+    <section><h4>พารามิเตอร์${opts.symbol ? ` <span class="muted small">(${opts.symbol} ${opts.tf}${src ? " · " + src[0] : ""})</span>` : ""}</h4>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>พารามิเตอร์</th><th class="num">ค่าที่ใช้</th><th class="num">ค่าเริ่มต้น</th><th class="num">ค่าที่ทดสอบใน Walk-Forward</th></tr></thead>
+      <tbody>${paramRows(st, sp?.params)}</tbody></table></div>
+      ${src ? `<div class="hint" style="margin-top:8px">${src[1]}</div>` : ""}</section>
+  </div>`;
+}
+
+async function renderSystems(view) {
+  const token = S.sysToken = (S.sysToken || 0) + 1;
+  const sel = pickSel(qs(), "sel");
+  store.set("sel", sel);
+  const { symbol: sym, tf, strategy: sid } = sel;
+  const st = stratById(sid);
+  let tab = store.get("sysTab", "equity");
+  let mode = store.get("eqMode", "oos");
+  view.innerHTML = wsHtml({
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span><span id="sysBadge"></span>`,
+    tabs: [["equity", "Equity curve"], ["detail", "รายละเอียดระบบ"], ["catalog", `รายชื่อระบบ (${S.strategies.length})`]], tab,
+    actions: `<div class="seg sm" id="eqSeg"><button data-m="oos" data-tip="ผลบนข้อมูลที่ระบบไม่เคยเห็น (ใช้ตัดสิน)">WF OOS</button><button data-m="bt" data-tip="ใช้พารามิเตอร์ปัจจุบันย้อนทดสอบทั้งช่วง">Backtest</button></div>`,
+    main: `<div class="chart fill" id="eqChart"></div><div class="ws-pane" id="detailPane" hidden></div><div class="ws-pane" id="catPane" hidden></div>`,
+    sel,
+  });
+  bindRail(view, sel, (n) => goSel("systems", n));
+  const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`);
+  if (route() !== "systems" || S.sysToken !== token) return;
+  const sys = sysOf(sym);
+  $("#sysBadge").innerHTML = sp.is_live ? `${statusBadge(sys.status)} <span class="badge ghost">★ ระบบจริง</span>` : "";
+
+  const bal = myBalance() || 5000, risk = effRisk(sys.risk_pct || 0.25) || 0.25;
+  const modes = { oos: sp.oos?.equity?.length ? sp.oos.equity : null, bt: sp.equity?.length ? sp.equity : null };
+  if (!modes[mode]) mode = modes.oos ? "oos" : "bt";
+  let eqCh = null;
+  const showEq = () => {
+    $$("#eqSeg button").forEach((b) => { b.classList.toggle("active", b.dataset.m === mode); b.disabled = !modes[b.dataset.m]; });
+    if (eqCh) { S.charts = S.charts.filter((c) => c !== eqCh); eqCh.remove(); eqCh = null; }
+    const pts = modes[mode];
+    if (!pts) { $("#eqChart").innerHTML = `<div class="empty"><div class="big">📉</div>ระบบนี้ไม่มีเทรดบน ${sym} ${tf}</div>`; $("#wsFoot").innerHTML = ""; return; }
+    const s = equityStats(pts, risk, bal);
+    eqCh = equityChart($("#eqChart"), s, bal);
+    $("#wsFoot").innerHTML = `${footItem(mode === "oos" ? "Walk-Forward OOS" : "Backtest ทั้งช่วง", `${fdt(s.from, true).split(",")[0]} → ${fdt(s.to, true).split(",")[0]}`)}
+      ${footItem("กำไรสุทธิ", `${s.net >= 0 ? "+" : ""}$${fnum(s.net, 0)} (${s.netPct >= 0 ? "+" : ""}${fnum(s.netPct, 1)}%)`, cls(s.net))}
+      ${footItem("เทรด", s.n)}${footItem("ชนะ", fnum(s.winPct, 1) + "%")}${footItem("PF", fnum(s.pf, 2), s.pf >= 1 ? "pos" : "neg")}
+      ${footItem("Max DD", `$${fnum(s.maxDdUsd, 0)} (${fnum(s.maxDd, 1)}%)`, "neg")}${footItem("เฉลี่ย/ไม้", fr(s.avgR, 3), cls(s.avgR))}${footItem("t", fnum(s.t, 2))}
+      <span class="fi faint">ทบต้น เริ่ม $${fnum(bal, 0)} เสี่ยง ${risk}%/ไม้ · รวมต้นทุนแล้ว</span>`;
+  };
+  $("#eqSeg").onclick = (e) => { const b = e.target.closest("[data-m]"); if (b && !b.disabled) { mode = b.dataset.m; store.set("eqMode", mode); showEq(); } };
+
+  $("#detailPane").innerHTML = systemDoc(st, sp, { symbol: sym, tf }) + (sp.oos ? `<div class="doc"><section><h4>ผลบน ${sym} ${tf}</h4><div class="kpis">
+      ${kpi("WF OOS เทรด", sp.oos.metrics.trades, `${fnum(sp.oos.years, 1)} ปี`)}${kpi("Expectancy", fr(sp.oos.metrics.expectancy, 3), "t = " + fnum(sp.oos.metrics.t_stat, 2), cls(sp.oos.metrics.expectancy))}
+      ${kpi("Profit factor", fnum(sp.oos.metrics.pf, 2))}${kpi("Win rate", sp.oos.metrics.win_rate + "%")}${kpi("Backtest ทั้งช่วง", fr(sp.metrics.expectancy, 3), sp.metrics.trades + " ไม้")}</div>
+      <div class="row" style="margin-top:12px"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}">🧪 ดูผลทดสอบทีละขั้นใน Strategy Lab</a><a class="btn sm ghost" href="#/chart?symbol=${sym}&tf=${tf}&strategy=${sid}">📈 ดูบนกราฟ</a></div></section></div>` : "");
+  $("#catPane").innerHTML = `<div class="cat-hd"><input class="inp" id="catQ" placeholder="ค้นหาเลข ชื่อ กลุ่ม หรือ indicator…"><span class="muted small">กดการ์ดเพื่อเลือกระบบนั้น</span></div>
+    <div class="cat">${S.strategies.map((s) => `<button class="cat-card ${s.id === sid ? "on" : ""}" data-sid="${s.id}" data-q="${esc((s.no + " " + s.name + " " + s.family + " " + s.indicators.join(" ")).toLowerCase())}">
+      <div class="cat-top"><span class="no">${s.no}</span><div><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.family)}</div></div>${s.id === sys.strategy ? '<i class="star">★</i>' : ""}</div>
+      <div class="tiny"><span class="muted">Indicator:</span> ${esc(s.indicators.join(", "))}</div>
+      <div class="tiny"><span class="pos">LONG:</span> ${esc(s.long)}</div></button>`).join("")}</div>`;
+  $("#catQ").oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$(".cat-card").forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
+  $("#catPane").onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) { store.set("sysTab", "detail"); goSel("systems", { ...sel, strategy: b.dataset.sid }); } };
+
+  const showTab = (t) => {
+    tab = t;
+    $("#eqChart").hidden = t !== "equity"; $("#detailPane").hidden = t !== "detail"; $("#catPane").hidden = t !== "catalog";
+    $("#eqSeg").style.visibility = t === "equity" ? "visible" : "hidden";
+    if (t === "equity") showEq(); else $("#wsFoot").innerHTML = `<span class="fi strat"><b>#${st.no}</b> ${esc(st.name)} <span class="muted">· ${esc(paramText(sp.params))}</span></span>${sp.is_live ? footItem("สถานะ", statusBadge(sys.status)) : footItem("บทบาท", "ดูอย่างเดียว")}`;
+  };
+  bindTabs(view, "sysTab", showTab);
+  showTab(tab);
+}
+
+// ------------------------------------------------------------------ STRATEGY LAB: the research result of one system, step by step
+function mcJs(r, nTrades, riskPct, sims = 3000) {  // bootstrap Monte Carlo of R-multiples (same idea as app/montecarlo.py)
+  if (!r || r.length < 5) return null;
+  let seed = 11; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const f = riskPct / 100, n = Math.max(1, Math.round(nTrades)), rets = [], dds = [], pfs = [], exps = [];
+  for (let s = 0; s < sims; s++) {
+    let eq = 1, peak = 1, dd = 0, gw = 0, gl = 0, sum = 0;
+    for (let i = 0; i < n; i++) {
+      const x = r[Math.floor(rnd() * r.length)];
+      eq *= 1 + f * x; peak = Math.max(peak, eq); dd = Math.max(dd, (peak - eq) / peak);
+      if (x > 0) gw += x; else gl -= x; sum += x;
+    }
+    rets.push((eq - 1) * 100); dds.push(dd * 100); pfs.push(gl > 0 ? gw / gl : 99); exps.push(sum / n);
+  }
+  const pct = (a, p) => { const b = a.slice().sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.floor(p / 100 * b.length))]; };
+  return { ret50: pct(rets, 50), ret5: pct(rets, 5), dd50: pct(dds, 50), dd95: pct(dds, 95), pf5: pct(pfs, 5), exp5: pct(exps, 5),
+    prob: rets.filter((x) => x > 0).length / sims * 100, n };
+}
+const step = (no, title, body, state = "") => `<section class="step ${state}"><div class="step-no">${no}</div><div class="step-bd"><h3>${title}</h3>${body}</div></section>`;
+const verdict = (ok, txt) => `<div class="verdict ${ok === null ? "na" : ok ? "ok" : "no"}">${ok === null ? "–" : ok ? "✓" : "✗"} ${txt}</div>`;
+
+async function renderLab(view) {
+  const token = S.labToken = (S.labToken || 0) + 1;
+  const [res, notes] = await Promise.all([api("/api/research"), api("/api/research/notes")]);
+  const q = qs(), prev = store.get("labSel", {});
+  const sym = S.symbols.some((x) => x.symbol === q.symbol) ? q.symbol : (prev.symbol || store.get("sel", {}).symbol || "XAUUSD");
+  const R = res.symbols?.[sym] || {};
+  const best = { strategy: R.strategy, tf: R.tf };
+  // default = the best system of this symbol; picking TF / system on the rail shows that candidate instead
+  const sameSym = prev.symbol === sym;
+  const tf = ["H1", "H4", "D1"].includes(q.tf) ? q.tf : (sameSym && prev.tf) || best.tf || "H1";
+  const sid = stratById(q.strategy) ? q.strategy : (sameSym && prev.strategy) || best.strategy || S.strategies[0].id;
+  const sel = { symbol: sym, tf, strategy: sid };
+  store.set("labSel", sel);
+  const st = stratById(sid);
+  const isBest = best.strategy === sid && best.tf === tf;
+  let tab = store.get("labTab2", "steps");
+  const runBtn = STATIC ? `<a class="btn sm primary" href="${actionsUrl()}" target="_blank" rel="noopener" data-tip="เปิด GitHub Actions → Run workflow → research">▶ สั่งวิเคราะห์ใหม่ทันที</a>`
+    : `<button class="btn sm primary" id="runAll">▶ สั่งวิเคราะห์ใหม่ทันที</button>`;
+  const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
+  if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
+  view.innerHTML = wsHtml({
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isBest ? `${statusBadge(R.status)}<span class="badge ghost">ดีที่สุดของ ${sym}</span>` : `<span class="badge ghost">ผู้สมัคร</span>`}`,
+    tabs, tab, actions: runBtn,
+    main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
+    sel,
+  });
+  bindRail(view, sel, (n, what) => {
+    if (what === "symbol") { const b = res.symbols?.[n.symbol]; store.set("labSel", { symbol: n.symbol }); goSel("lab", { symbol: n.symbol, tf: b?.tf || n.tf, strategy: b?.strategy || n.strategy }); }
+    else goSel("lab", n);
+  });
+  if (!STATIC) $("#runAll").onclick = async () => { await api("/api/research/run", { method: "POST", body: {} }); toast("เริ่มวิเคราะห์ใหม่แล้ว"); pollResearch(); };
+
+  const showTab = (t) => {
+    tab = t;
+    ["steps", "ov", "notes", "man"].forEach((k) => { const el = $(`#${k}Pane`); if (el) el.hidden = !(t === k || (t === "overview" && k === "ov") || (t === "manual" && k === "man")); });
+    if (t === "manual" && !$("#manPane").dataset.done) { $("#manPane").dataset.done = 1; renderLabManual($("#manPane")); }
+  };
+  bindTabs(view, "labTab2", showTab);
+  showTab(tab);
+
+  // ---- overview of the 8 symbols
+  const syms = Object.values(res.symbols || {});
+  $("#ovPane").innerHTML = `<div class="pane-hd"><b>ผลวิเคราะห์ล่าสุดของทุกสินทรัพย์</b><span class="muted small">${res.generated ? fdt(res.generated, true) : "ยังไม่เคยวิเคราะห์"} · ${S.strategies.length} ระบบ × ${(res.settings?.timeframes || []).join("/")}</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>สถานะ</th><th>ระบบที่ดีที่สุด</th><th>TF</th><th class="num">ข้อมูล</th><th class="num">OOS ไม้</th><th class="num">Exp</th><th class="num">t / ต้องการ</th><th class="num">Robust</th></tr></thead><tbody>
+    ${syms.map((s) => { const o = s.oos || {}; const sx = stratById(s.strategy); return `<tr class="click" data-go="${s.symbol}"><td><b>${s.symbol}</b></td><td>${statusBadge(s.status)}</td><td>${sx ? `<b>#${sx.no}</b> ${esc(sx.name)}` : "–"}</td><td>${s.tf || "–"}</td>
+      <td class="num">${s.data_from ? s.data_from.slice(0, 4) : "–"}</td><td class="num">${o.trades ?? "–"}</td><td class="num ${cls(o.expectancy)}">${o.expectancy != null ? fnum(o.expectancy, 3) : "–"}</td>
+      <td class="num">${fnum(o.t_stat, 2)} / ${fnum(s.t_needed, 2)}</td><td class="num">${s.robustness?.score ?? "–"}</td></tr>`; }).join("")}</tbody></table></div>
+    <div class="hint pad-x">กดแถวเพื่อดูผลทดสอบทีละขั้นของระบบที่ดีที่สุดของสินทรัพย์นั้น</div>`;
+  $("#ovPane").onclick = (e) => { const r = e.target.closest("[data-go]"); if (!r) return; const s = res.symbols[r.dataset.go]; store.set("labTab2", "steps"); goSel("lab", { symbol: s.symbol, tf: s.tf || "H1", strategy: s.strategy || sid }); };
+  $("#notesPane").innerHTML = notes ? md(notes) : '<div class="hint">ยังไม่มีบันทึก</div>';
+
+  // ---- step by step
+  const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`).catch(() => null);
+  if (route() !== "lab" || S.labToken !== token) return;
+  const cand = (R.candidates || []).find((c) => c.strategy === sid && c.tf === tf);
+  const ranked = (R.candidates || []).filter((c) => c.oos?.trades >= 10).sort((a, b) => b.oos.t_stat - a.oos.t_stat);
+  const rank = cand ? ranked.findIndex((c) => c === cand) + 1 : 0;
+  const o = cand?.oos, m = sp?.metrics, G = res.settings?.gates || S.settings?.research?.gates || {};
+  const rOos = (sp?.oos?.equity || []).map((p) => p[1]);
+  const risk = effRisk(sysOf(sym).risk_pct || 0.25) || 0.25;
+  const mc = mcJs(rOos, Math.max(10, o?.trades_per_year || 10), risk);
+  const mcFull = mcJs(rOos, rOos.length, 1, 2000);
+  const tNeed = R.t_needed;
+  const gates = isBest && R.gates ? R.gates : o ? [
+    { name: "OOS trades", value: o.trades, need: G.min_oos_trades, pass: o.trades >= G.min_oos_trades },
+    { name: "OOS expectancy (R)", value: o.expectancy, need: G.min_expectancy, pass: o.expectancy >= G.min_expectancy },
+    { name: "OOS t-stat", value: o.t_stat, need: G.min_t, pass: o.t_stat >= G.min_t },
+    { name: `t ปรับตามจำนวนระบบที่เทียบ (${R.n_candidates ?? "?"})`, value: o.t_stat, need: tNeed, pass: tNeed != null && o.t_stat >= tNeed },
+    { name: "MC PF @95%", value: mcFull ? +mcFull.pf5.toFixed(3) : null, need: G.min_mc_pf_p5, pass: !!mcFull && mcFull.pf5 >= G.min_mc_pf_p5 },
+    { name: "Parameter plateau", value: cand.plateau, need: G.min_plateau, pass: cand.plateau >= G.min_plateau },
+    { name: "ชนะการสุ่มจุดเข้า / Robustness", value: null, need: "ทดสอบเฉพาะตัวที่ดีที่สุด", pass: null },
+  ] : [];
+  const passed = gates.filter((g) => g.pass).length, judged = gates.filter((g) => g.pass !== null).length;
+  const rb = isBest ? R.random_benchmark : null, rob = isBest ? R.robustness : null;
+  const oosChart = rOos.length ? `<div class="mini-chart" id="oosMini"></div>` : "";
+  $("#stepsPane").innerHTML = `<div class="steps">
+    ${step(1, "ข้อมูลและกติกา", `<div class="kv2">${[["ข้อมูล", `${sp?.from ? fdt(sp.from, true).split(",")[0] : "–"} → ปัจจุบัน (${fnum(sp?.years, 1)} ปี)`], ["แหล่งข้อมูล", R.data_source || "–"],
+      ["เข้า", "อ่านสัญญาณตอนแท่งปิด เข้าที่ราคาเปิดแท่งถัดไป"], ["ออก", "ชน SL / ชน TP / มีสัญญาณตรงข้าม (กลับทิศ)"], ["ต้นทุน", "หัก spread + slippage × 2 + ค่าคอม ทุกไม้"]].map(([k, v]) => `<span class="k">${k}</span><span>${v}</span>`).join("")}</div>`)}
+    ${step(2, "Backtest ทั้งช่วง (พารามิเตอร์ปัจจุบัน)", m ? `<div class="kpis">${kpi("เทรด", m.trades, fnum(m.trades_per_year, 0) + "/ปี")}${kpi("Expectancy", fr(m.expectancy, 3), "", cls(m.expectancy))}${kpi("t-stat", fnum(m.t_stat, 2))}${kpi("PF", fnum(m.pf, 2))}${kpi("Win rate", m.win_rate + "%")}${kpi("Max DD", fnum(m.max_dd_r, 1) + "R", "", "neg")}</div>
+      <div class="hint">⚠️ เป็นผล in-sample — พารามิเตอร์ถูกเลือกจากข้อมูลบางส่วนในช่วงนี้เอง จึงมักดูดีเกินจริง ใช้ดูภาพรวมเท่านั้น</div>` : '<div class="hint">ไม่มีข้อมูล</div>')}
+    ${step(3, "Walk-Forward (ข้อสอบที่ระบบไม่เคยเห็น)", o ? `<div class="kpis">${kpi("OOS เทรด", o.trades, `${fnum(cand.oos_years, 1)} ปี`)}${kpi("Expectancy", fr(o.expectancy, 3), "", cls(o.expectancy))}${kpi("t-stat", fnum(o.t_stat, 2), o.t_stat >= 2 ? "มีนัยสำคัญ" : "ยังไม่มีนัยสำคัญ", o.t_stat >= 2 ? "pos" : "")}${kpi("PF", fnum(o.pf, 2))}${kpi("WF Efficiency", cand.wfe ?? "–", "OOS ÷ IS")}${kpi("Plateau", fnum(cand.plateau * 100, 0) + "%", "พารามิเตอร์ข้างเคียงที่กำไร")}</div>
+      ${oosChart}<div class="hint">ทุก ${res.settings?.oos_months || 3} เดือน เลือกพารามิเตอร์จาก ${res.settings?.is_months || 12} เดือนก่อนหน้า แล้วเทรดช่วงถัดไปโดยห้ามแก้ · เปลี่ยนพารามิเตอร์ ${cand.param_switches} ครั้ง</div>` : `<div class="hint">ระบบนี้บน ${tf} ไม่ได้อยู่ในการวิจัย หรือมีเทรดไม่พอ</div>`, o ? (o.expectancy > 0 ? "ok" : "no") : "na")}
+    ${step(4, "คัดเลือก + หักค่าโชค", o ? `<p>ระบบนี้อยู่อันดับ <b>${rank || "–"}</b> จาก <b>${ranked.length}</b> ผู้สมัครที่มีเทรดพอของ ${sym} (เรียงตาม OOS t-stat) · ตัวที่ดีที่สุดคือ <b>${stratLabel(best.strategy)}</b> ${best.tf || ""}</p>
+      ${verdict(tNeed != null ? o.t_stat >= tNeed : null, `t-stat ${fnum(o.t_stat, 2)} ${tNeed != null ? (o.t_stat >= tNeed ? "≥" : "<") + " เกณฑ์ " + fnum(tNeed, 2) : ""} (ยิ่งเทียบหลายระบบ เกณฑ์ยิ่งสูง เพื่อตัดตัวที่ดีเพราะโชค)`)}` : '<div class="hint">–</div>')}
+    ${step(5, "เทียบกับการสุ่มจุดเข้า", rb ? `${verdict(rb.percentile >= G.min_random_pct, `ชนะการสุ่ม ${rb.percentile}% ของ ${rb.sims} รอบ (ต้อง ≥ ${G.min_random_pct}%) · สุ่มเฉลี่ย ${fr(rb.random_mean, 3)} vs ระบบ ${fr(rb.actual_exp, 3)}`)}`
+      : '<div class="hint">ทดสอบเฉพาะระบบที่ดีที่สุดของแต่ละสินทรัพย์ (ข้อนี้และข้อ 6) เพื่อไม่ให้ใช้เวลาเกินไป</div>', rb ? (rb.percentile >= G.min_random_pct ? "ok" : "no") : "na")}
+    ${step(6, "Robustness — พยายามทำให้ระบบพัง", rob?.tests?.length ? `${robustBar(rob)}<div class="tbl-wrap" style="margin-top:10px"><table class="tbl"><tbody>${rob.tests.map((t) => `<tr><td>${t.pass === null ? '<span class="faint">–</span>' : t.pass ? '<span class="pos">✓</span>' : '<span class="neg">✗</span>'}</td><td class="wrap">${esc(t.name)}${t.note ? `<div class="tiny faint">${esc(t.note)}</div>` : ""}</td><td class="num">${esc(t.value ?? "–")}</td><td class="muted small wrap">${esc(t.need)}</td></tr>`).join("")}</tbody></table></div>`
+      : '<div class="hint">ทดสอบเฉพาะระบบที่ดีที่สุดของแต่ละสินทรัพย์</div>', rob ? (rob.score >= (G.min_robust_score ?? 60) ? "ok" : "no") : "na")}
+    ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
+      <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
+    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง" : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `ผ่าน ${passed}/${judged} เกณฑ์ที่ตรวจได้ — ระบบนี้ไม่ใช่ตัวที่ถูกเลือกของ ${sym}`}</p>`)}
+  </div>`;
+  if (rOos.length) {
+    let cum = 0; const pts = (sp.oos.equity || []).map(([t, r]) => ({ time: shiftT(t), value: +(cum += r).toFixed(2) }));
+    lineChart($("#oosMini"), [{ data: dedupeTimes(pts), color: "#60a5fa", last: true }]);
+  }
+  $("#wsFoot").innerHTML = `<span class="fi strat"><b>#${st.no}</b> ${esc(st.name)} <span class="muted">· ${esc(paramText(cand?.current_params || sp?.params))}</span></span>
+    ${isBest ? footItem("สถานะ", statusBadge(R.status)) : footItem("บทบาท", "ผู้สมัคร")}${footItem("เกณฑ์", `${passed}/${judged}`)}
+    ${footItem("วิเคราะห์ล่าสุด", res.generated ? ago(res.generated) : "–")}<span class="fi faint">เส้น OOS equity ในข้อ 3 เป็นหน่วย R สะสม</span>`;
+}
+
+// ------------------------------------------------------------------ LAB (manual, local server)
 function paramInputs(strat, values) {
   return strat.params.map((p) => `<label class="f">${esc(p.label)}<input class="inp num" type="number" data-p="${p.key}" value="${values?.[p.key] ?? p.default}" step="${p.step}" min="${p.min}" max="${p.max}"></label>`).join("");
 }
 
-async function renderLab(view) {
-  if (STATIC) {
-    view.innerHTML = `<div class="stack">
-      <div class="card"><div class="bd stack">
-        <div style="font-size:18px;font-weight:700">🤖 วิเคราะห์อัตโนมัติ — ไม่ต้องตั้งค่าเอง</div>
-        <div class="md">${md(`ทุกสินทรัพย์ถูกวิเคราะห์ครบชุดโดยอัตโนมัติ:
-- **Backtest + Walk-Forward** ทั้ง ${S.strategies.length} กลยุทธ์ × ${(S.settings?.research?.timeframes || []).join("/")} × ทุกชุดพารามิเตอร์ (IS 12 เดือน / OOS 3 เดือน)
-- **Robustness 8 แบบ** รวมถึงทดสอบหน้าต่าง WF อีก 4 ขนาด (6/2, 9/3, 18/3, 24/6 เดือน)
-- **สุ่มจุดเข้า 300 รอบ** และ **Monte Carlo 5,000 รอบ** → คำนวณความเสี่ยงต่อไม้ให้ DD 95% ไม่เกินเป้า
-- รันเองทุก **วันเสาร์ 09:30 น.** โดยไม่ต้องกดอะไร · ถ้าอยากสั่งทันที: Sign in GitHub → **Run workflow** → research`)}</div>
-        <div class="row"><a class="btn primary" href="${actionsUrl()}" target="_blank" rel="noopener">▶️ สั่งวิเคราะห์ใหม่ทันที (ไม่บังคับ)</a><a class="btn" href="#/systems">ดูผลวิเคราะห์ →</a></div>
-        <div class="hint">ต้อง <b>Sign in</b> GitHub ก่อน จึงจะเห็นปุ่ม <b>Run workflow</b> → เลือก research → Run · รอ ~10–20 นาที · ดูวิธีในหน้า <a href="#/guide">คู่มือ</a></div>
-        <div class="hint">การทดลองตั้งค่าเอง (Backtest / WF / MC แบบกำหนดพารามิเตอร์) ใช้ได้เมื่อเปิด <code>start_server.bat</code> บนคอม</div>
-      </div></div></div>`;
-    return;
-  }
+async function renderLabManual(view) {   // local server only: free experiments with your own parameters
   const q = qs();
   const saved = store.get("lab", {});
   const sym = q.symbol || saved.symbol || "USDJPY", tf = q.tf || saved.tf || "H4", sid = q.strategy || saved.strategy || S.strategies[0].id;
@@ -884,54 +994,13 @@ function showMc(out, r) {
   S.charts[S.charts.length - 1].applyOptions({ timeScale: { tickMarkFormatter: (t) => String(Math.round(((t - base) / 86400) * r.fan_step)) } });
 }
 
-// ------------------------------------------------------------------ CALCULATOR
-async function renderCalc(view) {
-  const saved = store.get("calc", {});
-  const sym = saved.symbol || "USDJPY";
-  view.innerHTML = `<div class="grid g2" style="align-items:start">
-    <div class="card"><div class="hd"><h3>Position size · R:R</h3></div><div class="bd stack" style="gap:12px">
-      <div class="fgrid" style="grid-template-columns:1fr 1fr">
-        <label class="f">สินทรัพย์<select class="inp" id="kSym">${S.symbols.map((x) => `<option ${x.symbol === sym ? "selected" : ""}>${x.symbol}</option>`).join("")}</select></label>
-        <label class="f">ฝั่ง<select class="inp" id="kSide"><option value="1">LONG (Buy)</option><option value="-1" ${saved.side == -1 ? "selected" : ""}>SHORT (Sell)</option></select></label>
-        <label class="f">ทุน (USD)<input class="inp num" type="number" id="kBal" value="${saved.balance ?? S.settings.account_balance}"></label>
-        <label class="f">ความเสี่ยง %<input class="inp num" type="number" step="0.05" id="kRisk" value="${saved.risk ?? S.settings.default_risk_pct}"></label>
-        <label class="f">ราคาเข้า (Entry)<input class="inp num" type="number" step="any" id="kEntry" value="${saved.entry ?? ""}"></label>
-        <label class="f">SL แบบ<select class="inp" id="kSlMode"><option value="price">ราคา</option><option value="pips" ${saved.slMode === "pips" ? "selected" : ""}>ระยะ pips</option></select></label>
-        <label class="f">Stop Loss<input class="inp num" type="number" step="any" id="kSl" value="${saved.sl ?? ""}"></label>
-        <label class="f">TP แบบ<select class="inp" id="kTpMode"><option value="rr">R:R</option><option value="price" ${saved.tpMode === "price" ? "selected" : ""}>ราคา</option></select></label>
-        <label class="f">Take Profit<input class="inp num" type="number" step="any" id="kTp" value="${saved.tp ?? 2}"></label>
-      </div>
-      <div class="hint" id="kSpec"></div>
-    </div></div>
-    <div class="card"><div class="hd"><h3>ผลลัพธ์สำหรับ MT5</h3></div><div class="bd stack" id="kOut"><div class="hint">กรอกราคาเข้าและ SL</div></div></div></div>`;
-  const calc = debounce(async () => {
-    const s = $("#kSym").value, sp = specOf(s), dir = +$("#kSide").value, e = parseFloat($("#kEntry").value);
-    $("#kSpec").textContent = `${s}: 1 pip = ${sp.pip} · contract ${sp.contract} · ${sp.digits} digits · MT5: ${sp.mt5_symbol}`;
-    const slIn = parseFloat($("#kSl").value), tpIn = parseFloat($("#kTp").value);
-    store.set("calc", { symbol: s, side: dir, balance: $("#kBal").value, risk: $("#kRisk").value, entry: $("#kEntry").value, sl: $("#kSl").value, tp: $("#kTp").value, slMode: $("#kSlMode").value, tpMode: $("#kTpMode").value });
-    if (!e || !slIn) return;
-    const sl = $("#kSlMode").value === "pips" ? e - dir * slIn * sp.pip : slIn;
-    if ((e - sl) * dir <= 0) { $("#kOut").innerHTML = `<div class="banner"><span class="ic">⚠️</span><div>SL ต้องอยู่${dir > 0 ? "ต่ำกว่า" : "สูงกว่า"}ราคาเข้า</div></div>`; return; }
-    const tp = $("#kTpMode").value === "rr" ? e + dir * Math.abs(e - sl) * (tpIn || 0) : tpIn;
-    const r = await api(`/api/size?symbol=${s}&entry=${e}&sl=${sl}&tp=${tp || ""}&risk_pct=${$("#kRisk").value}&balance=${$("#kBal").value}`);
-    $("#kOut").innerHTML = `<div class="lotbar" style="display:flex;gap:18px;padding:14px;border-radius:10px;background:var(--accent-bg);border:1px solid rgba(59,130,246,.3)">
-        <div><div class="small muted">LOT</div><div class="mono" style="font-size:30px;font-weight:800">${fnum(r.lots, 2)}</div></div>
-        <div><div class="small muted">เสี่ยงจริง</div><div class="mono" style="font-size:18px">$${fnum(r.actual_risk_usd, 2)}</div><div class="tiny faint">เป้า $${fnum(r.risk_usd, 2)} · ${fnum(r.raw_lots, 3)} lot ก่อนปัด</div></div></div>
-      <div class="kpis">${kpi("Stop Loss", fpx(sl, sp.digits), fnum(r.sl_pips, 1) + " pips", "neg")}${kpi("Take Profit", tp ? fpx(tp, sp.digits) : "–", r.tp_pips ? fnum(r.tp_pips, 1) + " pips" : "", "pos")}${kpi("R:R", r.rr ? "1 : " + fnum(r.rr, 2) : "–")}${kpi("กำไรเป้า", r.reward_usd ? "$" + fnum(r.reward_usd, 2) : "–", "", "pos")}${kpi("$/จุด/ล็อต", fnum(r.value_per_point_per_lot, 2), r.mt5 ? "จาก MT5" : "ค่าตั้งต้น")}</div>
-      ${r.below_min_lot ? `<div class="banner"><span class="ic">⚠️</span><div>ต่ำกว่า lot ขั้นต่ำ — เพิ่มทุน/ความเสี่ยง หรือขยับ SL ให้ใกล้ขึ้น</div></div>` : ""}
-      <div class="hint">สูตร: Lot = (ทุน × risk%) ÷ (|Entry − SL| × มูลค่าต่อ 1 หน่วยราคาต่อ 1 lot) ${s.endsWith("JPY") ? "· คู่ JPY แปลงเป็น USD ด้วย ÷ ราคา USDJPY" : ""}</div>`;
-  }, 250);
-  $$("#view input, #view select").forEach((i) => i.addEventListener("input", calc));
-  calc();
-}
-
 // ------------------------------------------------------------------ SETTINGS
 async function renderSettingsStatic(view) {
   const s = await api("/api/settings"); S.settings = s;
   const P = local.get(), G = s.research.gates;
-  view.innerHTML = `<div class="stack">
-    <div class="grid g2" style="align-items:start">
-      <div class="card"><div class="hd"><h3>บัญชีของคุณ (บันทึกในเครื่องนี้)</h3></div><div class="bd stack" style="gap:12px">
+  view.innerHTML = `<div class="page narrow">
+    <div class="set-grid">
+      <div class="card"><div class="hd"><h3><span class="ic">💼</span>บัญชีของคุณ<span class="desc">บันทึกในเครื่องนี้ (มือถือ / iPad / คอม ตั้งแยกกัน)</span></h3></div><div class="bd stack" style="gap:12px">
         <div class="fgrid" style="grid-template-columns:1fr 1fr">
           <label class="f">ทุนในบัญชี (USD)<input class="inp num" type="number" id="pBal" value="${P.account_balance}"></label>
           <label class="f">ความเสี่ยงต่อไม้ (% ของทุน)<input class="inp num" type="number" step="0.05" id="pRisk" value="${P.risk_pct || s.risk_per_trade_pct || ""}"></label>
@@ -942,14 +1011,15 @@ async function renderSettingsStatic(view) {
         <div class="fgrid" style="grid-template-columns:repeat(4,minmax(0,1fr))">${S.symbols.map((x) => `<label class="f">${x.symbol}<input class="inp" data-map="${x.symbol}" value="${esc(P.mt5_symbol_map[x.symbol] || s.mt5_symbol_map[x.symbol] || x.symbol)}"></label>`).join("")}</div>
         <div class="row" style="justify-content:flex-end"><button class="btn primary" id="pSave">💾 บันทึก</button></div>
       </div></div>
-      <div class="card"><div class="hd"><h3>การแจ้งเตือนบนมือถือ</h3></div><div class="bd md">${md(`
+      <div class="card"><div class="hd"><h3><span class="ic">🔔</span>การแจ้งเตือนบนมือถือ<span class="desc">ผ่านแอป ntfy · ส่งจากคลาวด์ทุกชั่วโมง</span></h3></div><div class="bd md">${md(`
 - คลาวด์ (GitHub Actions) สแกนทุกชั่วโมง แล้วส่งแจ้งเตือนผ่านแอป **ntfy** เมื่อระบบ **ACTIVE**${s.alerts.watch ? " และ WATCH" : ""} มีสัญญาณ
 - ติดตั้งแอป **ntfy** → กด **+** → Subscribe topic ที่ตั้งไว้ใน GitHub secret \`NTFY_TOPIC\`
 - topic ไม่แสดงบนเว็บนี้ เพื่อไม่ให้คนอื่นส่งแจ้งเตือนปลอมเข้ามือถือคุณได้
-- ทดสอบได้ที่ GitHub → Actions → **Run workflow** (scan)`)}</div></div>
+- **ทดสอบเสียงแจ้งเตือน:** GitHub → Actions → TradingLab → **Run workflow** → เลือก \`test\` → Run
+- ถ้าเด้งแต่ไม่มีเสียง: ตรวจ การตั้งค่า → การแจ้งเตือน → ntfy → เสียง, สวิตช์ปิดเสียง และโหมดโฟกัส`)}</div></div>
     </div>
-    <div class="card"><div class="hd"><h3>การวิเคราะห์อัตโนมัติ (ระบบจัดการเอง)</h3><div class="right"><a class="btn sm" href="${actionsUrl()}" target="_blank" rel="noopener">GitHub Actions ↗</a></div></div><div class="bd stack">
-      <div class="kpis">${kpi("วิเคราะห์ใหม่", "ทุกเสาร์", "09:30 น. + ปุ่มเดียว")}${kpi("Walk-Forward", `${s.research.is_months}/${s.research.oos_months} m`, "+ ทดสอบอีก 4 หน้าต่าง")}${kpi("TF", s.research.timeframes.join(" / "))}${kpi("ปิดออเดอร์เมื่อ", "TP / SL / กลับทิศ", "ไม่จำกัดเวลาถือ")}${kpi("DD เป้าหมาย", s.target_max_dd_pct + "%", "MC 95%")}</div>
+    <div class="card"><div class="hd"><h3><span class="ic">🤖</span>การวิเคราะห์อัตโนมัติ<span class="desc">ระบบจัดการเองทั้งหมด — ดูอย่างเดียว</span></h3><div class="right"><a class="btn sm" href="${actionsUrl()}" target="_blank" rel="noopener">GitHub Actions ↗</a></div></div><div class="bd stack">
+      <div class="kpis">${kpi("วิเคราะห์ใหม่", "ทุกเสาร์", "09:30 น. + ปุ่มเดียว")}${kpi("Walk-Forward", `${s.research.is_months}/${s.research.oos_months} m`, "+ ทดสอบอีก 4 หน้าต่าง")}${kpi("TF", s.research.timeframes.join(" / "))}${kpi("ปิดออเดอร์", "TP·SL·กลับทิศ", "ไม่จำกัดเวลาถือ")}${kpi("DD เป้าหมาย", s.target_max_dd_pct + "%", "MC 95%")}</div>
       <div class="formsec">เกณฑ์ ACTIVE (ห้ามลดเพื่อให้มีสัญญาณ)</div>
       <div class="gates">${[["OOS ไม้", G.min_oos_trades], ["Expectancy", G.min_expectancy + "R"], ["t-stat", G.min_t], ["MC PF@95%", G.min_mc_pf_p5], ["ชนะสุ่ม", G.min_random_pct + "%"], ["Plateau", G.min_plateau], ["Robustness", G.min_robust_score]].map(([k, v]) => `<span class="gate p">${k} ≥ ${v}</span>`).join("")}</div>
       ${s.force_off?.length ? `<div class="hint">ปิดโดย AI/ผู้ใช้: ${s.force_off.join(", ")}</div>` : ""}
@@ -967,7 +1037,7 @@ async function renderSettings(view) {
   const s = await api("/api/settings"); S.settings = s;
   const R = s.research, G = R.gates;
   const ov = s.symbol_overrides || {};
-  view.innerHTML = `<div class="stack" id="setForm">
+  view.innerHTML = `<div class="page narrow" id="setForm">
     <div class="grid g2" style="align-items:start">
       <div class="card"><div class="hd"><h3>บัญชีและความเสี่ยง</h3></div><div class="bd fgrid" style="grid-template-columns:1fr 1fr">
         <label class="f">ทุนในบัญชี (USD)<input class="inp num" type="number" data-k="account_balance" value="${s.account_balance}"></label>
@@ -1025,7 +1095,7 @@ async function renderSettings(view) {
       <label class="f">PIN สำหรับเข้าเว็บ (ว่าง = ไม่ใช้)<input class="inp" type="password" data-k="access_pin" value="${esc(s.access_pin)}"></label>
       <label class="f">สแกนทุก (วินาที)<input class="inp num" type="number" data-k="scan_interval_sec" value="${s.scan_interval_sec}"></label>
       <div class="hint" style="align-self:end">ถ้าเปิดให้เข้าจากนอกบ้าน (Tailscale/Cloudflare) ควรตั้ง PIN</div></div></div>
-    <div class="row" style="position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));justify-content:flex-end"><button class="btn primary" id="saveSet">💾 บันทึกการตั้งค่า</button></div>
+    <div class="row" style="position:sticky;bottom:12px;justify-content:flex-end"><button class="btn primary" id="saveSet">💾 บันทึกการตั้งค่า</button></div>
   </div>`;
   const setPath = (obj, path, val) => { const ks = path.split("."); let o = obj; ks.slice(0, -1).forEach((k) => { o[k] = o[k] || {}; o = o[k]; }); o[ks[ks.length - 1]] = val; };
   $("#saveSet").onclick = async () => {
@@ -1109,22 +1179,27 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - วิธีตรวจ: ใน MT5 ตั้ง SL ตามการ์ด แล้วดูว่าขาดทุนถ้าชน SL ≈ $${fnum(riskUsd, 2)} หรือไม่
   - ถ้าไม่ตรง บอก Claude ให้แก้ค่า contract ของสินทรัพย์นั้น`],
     ["pages", "5. หน้าต่าง ๆ ในเว็บ", `
-- **📡 สัญญาณ:** สัญญาณที่เข้าได้ตอนนี้, ตารางระบบที่ใช้ในแต่ละสินทรัพย์, ผล forward test, ประวัติสัญญาณ
-- **🧪 ระบบเทรด:** ผลวิเคราะห์ล่าสุดของทั้ง 8 สินทรัพย์ (ดูความหมายป้ายในข้อ 7)
-  - **ACTIVE** = ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริง
-  - **WATCH** = ผลบวกแต่ยังพิสูจน์ไม่พอ → ติดตามเงียบ ๆ ไม่แจ้งเตือน
-  - **OFF** = ไม่พบความได้เปรียบ → ไม่เทรด
-  - กดการ์ดเพื่อดูรายละเอียด: เกณฑ์ที่ผ่าน/ไม่ผ่าน, Robustness 8 ข้อ, Walk-Forward แต่ละช่วง, Monte Carlo และ **บันทึกจาก AI**
-- **📈 กราฟ:** แท่งเทียน H1/H4/D1 พร้อม indicator ของระบบ, ลูกศรจุดเข้า และวงกลมจุดออกของไม้ในอดีต
-  - ออเดอร์ที่ระบบถืออยู่จะมีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อมป้ายราคาและ Lot ด้านขวา
-  - เส้นยืดออกไปตามแท่งใหม่จนกว่าจะชน SL/TP หรือหมดเวลา
-  - **เลือกกลยุทธ์อื่นได้** จากช่องเลือกเหนือกราฟ (★ = ระบบจริง) เพื่อดูหน้าตาและผลของแต่ละกลยุทธ์ — เป็น **โหมดดูอย่างเดียว ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน**
-  - ใต้กราฟเรียงเป็น: **Equity curve** (สลับได้ระหว่าง Walk-Forward OOS กับ Backtest ทั้งช่วง) → **ระบบบนกราฟนี้** → **เทรดล่าสุดของระบบ**
-  - ซูมกราฟด้วยสองนิ้วได้ ส่วนหน้าเว็บจะไม่ซูมตามแล้ว
-  - **ดูย้อนหลังไกล ๆ:** เลื่อนกราฟไปทางซ้ายเรื่อย ๆ ข้อมูลปีก่อนหน้าจะโหลดมาต่อเองทีละปี (ใต้กราฟบอกว่ามีข้อมูลถึงปีไหน) ลูกศรเข้า/ออกของระบบแสดงได้ตลอดช่วง ส่วนเส้น indicator แสดงช่วงล่าสุด
-- **🔬 Strategy Lab:** มีปุ่ม **สั่งวิเคราะห์ใหม่ทันที** และสรุปการวิเคราะห์อัตโนมัติ ส่วนการทดลองตั้งพารามิเตอร์เองใช้ได้เมื่อเปิด \`start_server.bat\` บนคอม
-- **🧮 เครื่องคำนวณ:** คำนวณ Lot / R:R / SL-TP เองสำหรับเทรดนอกระบบ
-- **⚙️ ตั้งค่า:** ทุน, ความเสี่ยงต่อไม้, ชื่อสัญลักษณ์ MT5, เกณฑ์ที่ใช้ตัดสิน (ดูอย่างเดียว)`],
+เมนูอยู่ทางซ้าย (มือถืออยู่ด้านบน) เป็นไอคอนเรียงตามนี้ — เปิดเว็บมาจะเข้าหน้า **กราฟ** ของสินทรัพย์ / TF / ระบบที่ดูล่าสุดเสมอ
+### 📈 กราฟ
+- กลางจอคือกราฟ ด้านขวาคือแถบเลือก: **H1 / H4 / D1** → **เลขระบบ** (กดเพื่อเลือก 1–${S.strategies.length || 50}, ★ = ระบบจริง) → **สินทรัพย์** (EU = EURUSD, GU = GBPUSD, UJ = USDJPY, XAU = ทอง, NAS = Nasdaq, SPX = S&P 500, BTC, ETH)
+- จุดสีบนปุ่มสินทรัพย์: 🟢 ACTIVE · 🟠 WATCH · ไม่มีจุด = OFF
+- แท่งล่าสุดอยู่กลางกราฟ · ซูมด้วยสองนิ้ว · **เลื่อนไปทางซ้ายเพื่อดูย้อนหลัง** ข้อมูลปีก่อนหน้าจะโหลดมาต่อเอง
+- ออเดอร์ที่ระบบถืออยู่มีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อม Lot
+- แท็บ **เทรดล่าสุด** แสดงรายการเทรดของระบบที่เลือก · แถบล่างบอกพารามิเตอร์ สัญญาณล่าสุด และออเดอร์ที่เปิดอยู่
+- เลือกระบบอื่นที่ไม่ใช่ ★ = **ดูอย่างเดียว** ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน
+### 🧠 ระบบเทรด
+- แท็บ **Equity curve**: ผลของระบบที่เลือก สลับ **WF OOS** (ใช้ตัดสิน) / **Backtest** ทั้งช่วง · แถบล่างสรุปกำไร PF Max DD
+- แท็บ **รายละเอียดระบบ**: indicator ที่ใช้, เงื่อนไข LONG / SHORT / ออกออเดอร์ และตารางพารามิเตอร์
+- แท็บ **รายชื่อระบบ**: ทั้ง ${S.strategies.length || 50} ระบบพร้อมเลข ค้นหาได้ กดการ์ดเพื่อดูรายละเอียด
+### 🧪 Strategy Lab
+- เปิดมาจะแสดง **ระบบที่ดีที่สุด** ของสินทรัพย์ที่เลือก ผลทดสอบเรียงเป็นขั้น 1–8 (ข้อมูล → Backtest → Walk-Forward → หักค่าโชค → สุ่ม → Robustness → Monte Carlo → ผลตัดสิน)
+- เปลี่ยน TF / ระบบ / สินทรัพย์ ทางขวาเพื่อดูผลของระบบอื่น · แท็บ **ภาพรวมทุกสินทรัพย์** และ **บันทึกจาก AI**
+- ปุ่ม **▶ สั่งวิเคราะห์ใหม่ทันที** อยู่มุมขวาบนของหน้านี้
+### 🔔 สัญญาณ · 🧮 เครื่องคำนวณ · ⚙️ ตั้งค่า · 📘 คู่มือ
+- **สัญญาณ:** สัญญาณที่เข้าได้ตอนนี้ (Lot / SL / TP), สถานะระบบของทั้ง 8 สินทรัพย์, ออเดอร์ที่กำลังติดตาม และประวัติ
+- **เครื่องคำนวณ:** เลือกสินทรัพย์และฝั่ง ใส่ราคาเข้า + SL → ได้ Lot สำหรับ MT5 ทันที
+- **ตั้งค่า:** ทุน ความเสี่ยงต่อไม้ และชื่อสัญลักษณ์ใน MT5 ของโบรกเกอร์คุณ
+- ปุ่ม 🔄 มุมขวาบนใช้โหลดข้อมูลใหม่ทั้งหมด`],
     ["method", "6. ระบบทดสอบกลยุทธ์อย่างไร (ทีละขั้น)", `
 เปรียบเหมือน **คัดนักกีฬาเข้าทีมชาติ**: ไม่ได้ดูแค่ผลซ้อม (backtest) แต่ให้ลงแข่งสนามจริงที่ไม่เคยเห็น (walk-forward) แล้วเทียบกับคนที่ “เดาสุ่ม” และลองให้เล่นในสภาพแย่ ๆ (robustness) ก่อนจะเรียกติดทีม
 ### ขั้นที่ 1 — เตรียมข้อมูลและกติกาการเทรด
@@ -1222,15 +1297,111 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   ];
 }
 
+// ------------------------------------------------------------------ SIGNALS
+async function renderSignals(view) {
+  const [sigs, syms, fwd] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward")]);
+  S.symbols = syms;
+  const now = new Date();
+  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
+  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s));
+  const closed = sigs.filter((s) => s.outcome !== "open");
+  S.newCount = actionable.length; renderNav(S.newCount);
+  const active = syms.filter((x) => x.status === "ACTIVE");
+  const fa = fwd.all;
+  const openOf = (sym) => sigs.find((s) => s.symbol === sym && s.outcome === "open");
+  const tile = (x) => {
+    const st = stratById(x.strategy), op = openOf(x.symbol);
+    return `<a class="sys-tile ${x.status}" href="#/chart?symbol=${x.symbol}&tf=${x.tf || "H1"}${x.strategy ? "&strategy=" + x.strategy : ""}">
+      <div class="t-top"><span class="ab">${ABBR[x.symbol] || ""}</span><b>${x.symbol}</b>${statusBadge(x.status)}</div>
+      <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${x.tf || ""}</span></div>
+      <div class="t-foot">${op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : '<span class="muted">○ รอสัญญาณ</span>'}
+        ${x.oos ? `<span class="mono muted">${fr(x.oos.expectancy, 2)}/ไม้</span>` : ""}</div></a>`;
+  };
+  view.innerHTML = `<div class="page">
+    <div class="hero">
+      <div class="hero-main"><div class="hero-k">สัญญาณที่เข้าได้ตอนนี้</div><div class="hero-v">${actionable.length}</div>
+        <div class="hero-s">${STATIC ? `คลาวด์สแกนทุกชั่วโมง · ล่าสุด ${ago(STATIC.last_scan)}` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} · แจ้งเตือนเข้ามือถือเมื่อระบบ ACTIVE มีสัญญาณ</div></div>
+      <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.length, active.map((x) => x.symbol).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
+        ${kpi("กำลังติดตาม", tracking.length, "ออเดอร์ที่ยังไม่ปิด")}
+        ${kpi("Forward test", fa ? fr(fa.net_r, 1) : "–", fa ? `${fa.trades} ไม้ · ชนะ ${fa.win_rate}%` : "ยังไม่มีไม้ที่จบ", fa ? cls(fa.net_r) : "")}
+        <div class="kpi act"><button class="btn sm" id="scanBtn">${ICONS.refresh} ${STATIC ? "โหลดใหม่" : "สแกนตอนนี้"}</button></div></div>
+    </div>
+    ${actionable.length ? `<div class="sec-h"><h2>🔔 เข้าได้ตอนนี้</h2></div><div class="sig-grid">${actionable.map((s) => signalCard(s)).join("")}</div>`
+      : `<div class="calm"><div class="big">🔕</div><div><b>ยังไม่มีสัญญาณใหม่</b><div class="muted small">ระบบกำลังเฝ้าตลาดให้ — เมื่อมีสัญญาณ มือถือจะเด้งแจ้งเตือนพร้อม Lot / SL / TP</div></div></div>`}
+    <div class="sec-h"><h2>ระบบที่เฝ้าสัญญาณ</h2><a class="muted small" href="#/systems">รายละเอียดระบบ →</a></div>
+    <div class="tiles">${syms.map(tile).join("")}</div>
+    ${tracking.length ? `<div class="sec-h"><h2>กำลังติดตาม</h2><span class="badge">${tracking.length}</span></div><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div>` : ""}
+    <div class="sec-h"><h2>ประวัติสัญญาณ</h2><span class="badge">${closed.length}</span>${fa ? `<span class="muted small" style="margin-left:auto">Expectancy ${fr(fa.expectancy, 3)} · PF ${fnum(fa.pf, 2)} · Max DD ${fnum(fa.max_dd_r, 1)}R</span>` : ""}</div>
+    <div class="card"><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
+      ${closed.length ? closed.map((s) => `<tr><td>${fdt(s.bar_time)}</td><td><b>${s.symbol}</b> <span class="muted">${s.tf}</span></td><td>${statusBadge(s.side)}</td><td class="small">${stratById(s.strategy) ? "#" + stratById(s.strategy).no + " " : ""}${esc(s.strategy_name || "")}</td>
+        <td class="num">${fnum(s.lots, 2)}</td><td><span class="badge ${s.outcome}">${s.exit_reason && !["SL", "TP"].includes(s.exit_reason) ? reasonTh(s.exit_reason) : { win: "TP", loss: "SL", time: "หมดเวลา" }[s.outcome]}</span></td><td class="num ${cls(s.outcome_r)}">${fr(s.outcome_r)}</td>
+        <td>${s.user_status === "new" ? '<span class="faint">–</span>' : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิด" : "ข้าม"}</span>`}</td></tr>`).join("")
+        : `<tr><td colspan="8" class="muted" style="text-align:center;padding:22px">ยังไม่มีประวัติ — ทุกสัญญาณจะถูกติดตามผลด้วยกติกาเดียวกับ backtest</td></tr>`}</tbody></table></div></div>
+  </div>`;
+  bindSignalCards(view, sigs);
+  $("#scanBtn").onclick = async (e) => { if (STATIC) { hardRefresh(); return; } e.currentTarget.disabled = true; const r = await api("/api/scan", { method: "POST" }); toast(r.new.length ? `พบ ${r.new.length} สัญญาณใหม่` : "สแกนแล้ว ไม่มีสัญญาณใหม่"); navigate(); };
+}
+
+// ------------------------------------------------------------------ CALCULATOR
+async function renderCalc(view) {
+  const saved = store.get("calc", {});
+  const sym = saved.symbol || "XAUUSD";
+  const side = +(saved.side || 1);
+  view.innerHTML = `<div class="page narrow"><div class="calc">
+    <div class="card"><div class="hd"><h3>ข้อมูลออเดอร์</h3></div><div class="bd stack" style="gap:16px">
+      <div><div class="lbl">สินทรัพย์</div><div class="pills" id="kSym">${S.symbols.map((x) => `<button class="pill ${x.symbol === sym ? "on" : ""}" data-v="${x.symbol}">${ABBR[x.symbol] || ""} <small>${x.symbol}</small></button>`).join("")}</div></div>
+      <div><div class="lbl">ฝั่ง</div><div class="seg wide" id="kSide"><button data-v="1" class="${side > 0 ? "active long" : ""}">▲ BUY / LONG</button><button data-v="-1" class="${side < 0 ? "active short" : ""}">▼ SELL / SHORT</button></div></div>
+      <div class="fgrid" style="grid-template-columns:1fr 1fr">
+        <label class="f">ทุน (USD)<input class="inp num" type="number" id="kBal" value="${saved.balance ?? myBalance()}"></label>
+        <label class="f">ความเสี่ยงต่อไม้ (%)<input class="inp num" type="number" step="0.05" id="kRisk" value="${saved.risk ?? effRisk(0.25)}"></label>
+        <label class="f full">ราคาเข้า (Entry)<input class="inp num big" type="number" step="any" id="kEntry" value="${saved.entry ?? ""}" placeholder="เช่น 4008.50"></label>
+        <label class="f">Stop Loss <select class="inp mini" id="kSlMode"><option value="price">ราคา</option><option value="pips" ${saved.slMode === "pips" ? "selected" : ""}>pips</option></select><input class="inp num" type="number" step="any" id="kSl" value="${saved.sl ?? ""}"></label>
+        <label class="f">Take Profit <select class="inp mini" id="kTpMode"><option value="rr">R:R</option><option value="price" ${saved.tpMode === "price" ? "selected" : ""}>ราคา</option></select><input class="inp num" type="number" step="any" id="kTp" value="${saved.tp ?? 2}"></label>
+      </div>
+      <div class="hint" id="kSpec"></div>
+    </div></div>
+    <div class="card result"><div class="hd"><h3>ผลลัพธ์สำหรับ MT5</h3></div><div class="bd" id="kOut"><div class="calm"><div class="big">🧮</div><div class="muted">กรอกราคาเข้าและ Stop Loss</div></div></div></div>
+  </div></div>`;
+  let curSym = sym, curSide = side;
+  $("#kSym").onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; curSym = b.dataset.v; $$("#kSym .pill").forEach((x) => x.classList.toggle("on", x === b)); calc(); };
+  $("#kSide").onclick = (e) => { const b = e.target.closest("[data-v]"); if (!b) return; curSide = +b.dataset.v; $$("#kSide button").forEach((x) => x.className = x === b ? `active ${curSide > 0 ? "long" : "short"}` : ""); calc(); };
+  const calc = debounce(async () => {
+    const s = curSym, sp = specOf(s), dir = curSide, e = parseFloat($("#kEntry").value);
+    $("#kSpec").textContent = `${s}: 1 pip = ${sp.pip} · 1 lot = ${sp.contract} หน่วย · ${sp.digits} ตำแหน่ง · ชื่อใน MT5: ${sp.mt5_symbol || s}`;
+    const slIn = parseFloat($("#kSl").value), tpIn = parseFloat($("#kTp").value);
+    store.set("calc", { symbol: s, side: dir, balance: $("#kBal").value, risk: $("#kRisk").value, entry: $("#kEntry").value, sl: $("#kSl").value, tp: $("#kTp").value, slMode: $("#kSlMode").value, tpMode: $("#kTpMode").value });
+    if (!e || !slIn) return;
+    const sl = $("#kSlMode").value === "pips" ? e - dir * slIn * sp.pip : slIn;
+    if ((e - sl) * dir <= 0) { $("#kOut").innerHTML = `<div class="banner"><span class="ic">⚠️</span><div>SL ต้องอยู่${dir > 0 ? "ต่ำกว่า" : "สูงกว่า"}ราคาเข้า</div></div>`; return; }
+    const tp = $("#kTpMode").value === "rr" ? e + dir * Math.abs(e - sl) * (tpIn || 0) : tpIn;
+    const r = await api(`/api/size?symbol=${s}&entry=${e}&sl=${sl}&tp=${tp || ""}&risk_pct=${$("#kRisk").value}&balance=${$("#kBal").value}`);
+    const span = Math.abs((tp || e) - sl) || 1, pos = (v) => (Math.abs(v - sl) / span * 100).toFixed(1);
+    $("#kOut").innerHTML = `<div class="lot-big"><div class="k">LOT ที่ต้องใส่ใน MT5</div><div class="v">${fnum(r.lots, 2)}</div><div class="s">${dir > 0 ? "BUY" : "SELL"} ${esc(sp.mt5_symbol || s)} · เสี่ยงจริง $${fnum(r.actual_risk_usd, 2)} (เป้า $${fnum(r.risk_usd, 2)})</div></div>
+      ${tp ? `<div class="ladder"><div class="bar"><i class="sl" style="width:${pos(e)}%"></i><i class="tp" style="left:${pos(e)}%;width:${100 - pos(e)}%"></i></div>
+        <div class="lbls"><span class="neg">SL ${fpx(sl, sp.digits)}</span><span>Entry ${fpx(e, sp.digits)}</span><span class="pos">TP ${fpx(tp, sp.digits)}</span></div></div>` : ""}
+      <div class="kpis">${kpi("Stop Loss", fnum(r.sl_pips, 1) + " pips", "-$" + fnum(r.actual_risk_usd, 2), "neg")}${kpi("Take Profit", r.tp_pips ? fnum(r.tp_pips, 1) + " pips" : "–", r.reward_usd ? "+$" + fnum(r.reward_usd, 2) : "", "pos")}${kpi("R:R", r.rr ? "1 : " + fnum(r.rr, 2) : "–")}${kpi("$ ต่อจุดต่อ 1 lot", fnum(r.value_per_point_per_lot, 2), r.mt5 ? "จาก MT5" : "ค่ามาตรฐาน")}</div>
+      ${r.below_min_lot ? `<div class="banner" style="margin-top:12px"><span class="ic">⚠️</span><div>ต่ำกว่า 0.01 lot — ถ้าเปิด 0.01 lot จะเสี่ยง $${fnum(r.min_lot_risk_usd, 2)} · เพิ่มทุน/ความเสี่ยง หรือขยับ SL ให้ใกล้ขึ้น</div></div>` : ""}
+      <div class="hint" style="margin-top:12px">สูตร: Lot = (ทุน × ความเสี่ยง%) ÷ (ระยะ SL × มูลค่าต่อ 1 หน่วยราคาต่อ 1 lot) แล้วปัดลงทีละ 0.01${s.endsWith("JPY") ? " · คู่ JPY แปลงเป็น USD ด้วยการหารราคา USDJPY" : ""}</div>`;
+  }, 250);
+  $$("#view input, #view select").forEach((i) => i.addEventListener("input", calc));
+  calc();
+}
+
+// ------------------------------------------------------------------ GUIDE: sticky table of contents + chapters, the contents follow the scroll
 async function renderGuide(view) {
   const ch = manualChapters();
-  view.innerHTML = `<div class="stack">
-    <div class="card"><div class="hd"><h3>📘 คู่มือการใช้งาน TradingLab</h3></div><div class="bd stack" style="gap:10px">
-      <div class="hint">อ่านข้อ 1–4 ก่อนเริ่มใช้ · ข้อ 6–8 อธิบายวิธีทดสอบกลยุทธ์และความน่าเชื่อถือ · · ตัวเลขในคู่มือคำนวณจากทุนและความเสี่ยงที่ตั้งไว้ในเครื่องนี้</div>
-      <div class="chips">${ch.map(([id, title]) => `<button class="chip" data-go="${id}">${esc(title)}</button>`).join("")}</div></div></div>
-    ${ch.map(([id, title, body]) => `<div class="card" id="man-${id}"><div class="hd"><h3>${esc(title)}</h3></div><div class="bd md">${md(body)}</div></div>`).join("")}
+  view.innerHTML = `<div class="page guide">
+    <nav class="toc" id="toc"><div class="toc-h">📘 คู่มือ TradingLab</div>${ch.map(([id, title]) => `<a href="javascript:void 0" data-go="${id}">${esc(title)}</a>`).join("")}
+      <div class="toc-note">ตัวเลขในคู่มือคำนวณจากทุนและความเสี่ยงที่ตั้งไว้ในเครื่องนี้</div></nav>
+    <div class="chapters">${ch.map(([id, title, body]) => `<article class="chapter" id="man-${id}"><h2>${esc(title)}</h2><div class="md">${md(body)}</div></article>`).join("")}</div>
   </div>`;
-  $$("[data-go]", view).forEach((b) => b.onclick = () => $(`#man-${b.dataset.go}`).scrollIntoView({ behavior: "smooth", block: "start" }));
+  const links = $$("[data-go]", view);
+  links.forEach((b) => b.onclick = () => $(`#man-${b.dataset.go}`).scrollIntoView({ behavior: "smooth", block: "start" }));
+  const io = new IntersectionObserver((ents) => {
+    ents.forEach((en) => { if (en.isIntersecting) links.forEach((a) => a.classList.toggle("on", "man-" + a.dataset.go === en.target.id)); });
+  }, { root: view, rootMargin: "0px 0px -70% 0px" });
+  $$(".chapter", view).forEach((c) => io.observe(c));
+  links[0]?.classList.add("on");
 }
 
 // ------------------------------------------------------------------ updates & full refresh

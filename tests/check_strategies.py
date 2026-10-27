@@ -15,6 +15,7 @@ import pandas as pd
 from app.data import resample
 from app.engine import run
 from app.strategies import STRATEGIES, defaults, grid, signals
+from app.strategy_docs import D as DOCS
 
 
 def walk(seed: int, n: int = 30000, start="2016-01-04") -> pd.DataFrame:
@@ -36,7 +37,7 @@ def main() -> int:
     for sid in STRATEGIES:
         t0 = time.time()
         p = defaults(sid)
-        problems = []
+        problems = [] if sid in DOCS else ["no documentation in app/strategy_docs.py"]
         # 1. causality on H1 and H4
         for tf in ("H1", "H4"):
             df = resample(base, tf)
