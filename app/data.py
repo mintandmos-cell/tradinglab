@@ -153,6 +153,12 @@ def _seed(sym: str) -> pd.DataFrame | None:
         d = pd.read_csv(f)
         d.index = pd.to_datetime(d.pop("time"), unit="s", utc=True)
         d["volume"] = 0.0
+        # brokers pad old history with DAILY bars stored as H1 (~250 a year, e.g. EURUSD 1971-1998): start at the
+        # first year that really has hourly bars (> 3000 a year), otherwise ATR / signals would mix daily and hourly
+        per_year = d.index.year.value_counts()
+        dense = per_year[per_year > 3000]
+        if len(dense):
+            d = d[d.index.year >= int(dense.index.min())]
         return _clean(d.astype(float))
     except Exception as e:
         log.warning("history %s unreadable: %s", sym, e)
