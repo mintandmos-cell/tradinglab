@@ -118,6 +118,12 @@ def candles(symbol: str, tf: str = "H1", limit: int = 1500, strategy: str | None
     return ok(charts.candles(symbol, tf, limit, cfg, system))
 
 
+@app.get("/api/candles_year")
+def candles_year(symbol: str, tf: str = "H1", year: int = 2020, before: int | None = None):
+    _check(symbol, tf)
+    return ok(charts.candles_year(symbol, tf, year, before))
+
+
 @app.get("/api/system")
 def system(symbol: str, tf: str = "H1", strategy: str = "", params: str | None = None, limit: int = 1500):
     """One strategy on the chart page (view-only: never changes the live system or alerts)."""

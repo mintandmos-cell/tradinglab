@@ -42,16 +42,35 @@ def trade_out(t: dict, digits: int) -> dict:
             "exit": round(t["exit"], digits), "reason": t["reason"], "r": round(t["r"], 3), "bars": t["bars"]}
 
 
+def _bars(times, df: pd.DataFrame, d: int) -> list[dict]:
+    r = d + 1
+    return [{"time": int(t), "open": round(float(o), r), "high": round(float(h), r), "low": round(float(l), r), "close": round(float(c), r)}
+            for t, o, h, l, c in zip(times, df.open.values, df.high.values, df.low.values, df.close.values)]
+
+
+def candles_year(symbol: str, tf: str, year: int, before: int | None = None) -> dict:
+    """Older candles of one calendar year (chart page: loaded when the user scrolls back). before = unix time cut-off."""
+    df = data.get_bars(symbol, tf, closed_only=False)
+    df = df[df.index.year == int(year)]
+    times = data.to_unix(df.index)
+    if before is not None:
+        keep = times < int(before)
+        df, times = df[keep], times[keep]
+    return {"symbol": symbol, "tf": tf, "year": int(year), "candles": _bars(times, df, symbol_spec(symbol)["digits"])}
+
+
 def candles(symbol: str, tf: str, limit: int = 1500, cfg: dict | None = None, system: bool = True) -> dict:
     """cfg = {"strategy", "params"} to overlay a custom system; else the researched system when its TF matches."""
     df = data.get_bars(symbol, tf, closed_only=False)
     spec = symbol_spec(symbol)
     d = spec["digits"]
     times = data.to_unix(df.index)
+    first = int(times[-limit]) if len(times) > limit else (int(times[0]) if len(times) else None)
+    older = sorted({y for y in df.index[:-limit].year}) if len(times) > limit else []
     out = {"symbol": symbol, "tf": tf, "digits": d, "source": data.source_for(symbol),
-           "candles": [{"time": int(t), "open": float(o), "high": float(h), "low": float(l), "close": float(c)}
-                       for t, o, h, l, c in zip(times[-limit:], df.open.values[-limit:], df.high.values[-limit:],
-                                                df.low.values[-limit:], df.close.values[-limit:])]}
+           "first_time": first, "older_years": older,           # the chart page loads these on demand when scrolled left
+           "history_from": df.index[0].isoformat() if len(df) else None,
+           "candles": _bars(times[-limit:], df.iloc[-limit:], d)}
     if cfg is None and system:
         r = research.latest().get("symbols", {}).get(symbol)
         if r and r.get("params") and r.get("tf") == tf:
@@ -108,7 +127,6 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
     closed = data.drop_unclosed(data.get_bars(symbol, tf, closed_only=False), tf)
     res = run(closed, strategy, params, spec, tf, with_lines=True)
     t = data.to_unix(closed.index)
-    cut = t[-limit] if len(t) > limit else t[0]
     tr = res["trades"]
     r = [x["r"] for x in tr]
     yrs = data.years_of(closed)
@@ -116,7 +134,6 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
     m["long"] = summarize([x["r"] for x in tr if x["dir"] > 0], yrs)["expectancy"]
     m["short"] = summarize([x["r"] for x in tr if x["dir"] < 0], yrs)["expectancy"]
     eq = [[int(pd.Timestamp(x["exit_time"]).timestamp()), round(float(x["r"]), 3)] for x in tr]
-    recent = [x for x in tr if pd.Timestamp(x["exit_time"]).timestamp() >= cut]
     out = {
         "symbol": symbol, "tf": tf, "strategy": strategy, "name": STRATEGIES[strategy]["name"],
         "family": STRATEGIES[strategy]["family"], "params": params, "params_source": src,
@@ -125,7 +142,7 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
         "t": [int(x) for x in t[-limit:]],
         "lines": {k: [None if not np.isfinite(v) else round(float(v), d + 1) for v in arr[-limit:]] for k, arr in res["lines"].items()},
         "metrics": m, "equity": eq,
-        "trades": [trade_out(x, d) for x in recent[-200:]],
+        "trades": [trade_out(x, d) for x in tr[-1500:]],          # whole history (markers when scrolling back)
         "last_signal": res["last_signal"], "open_trade": None, "oos": None,
     }
     ot = res["open_trade"]

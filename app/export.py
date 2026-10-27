@@ -68,7 +68,10 @@ def build(repo: str = "", chart_limit: int = 1200) -> None:
     for sym in SYMBOLS:
         for tf in ("H1", "H4", "D1"):
             try:
-                _dump(d / "chart" / f"{sym}_{tf}.json", charts.candles(sym, tf, chart_limit, system=False))
+                cd = charts.candles(sym, tf, chart_limit, system=False)
+                _dump(d / "chart" / f"{sym}_{tf}.json", cd)
+                for y in cd["older_years"]:     # older history in yearly files, fetched only when the chart is scrolled back
+                    _dump(d / "chart" / f"{sym}_{tf}" / f"{y}.json", charts.candles_year(sym, tf, y, cd["first_time"]))
             except Exception as e:
                 log.warning("chart %s %s failed: %s", sym, tf, e)
                 continue

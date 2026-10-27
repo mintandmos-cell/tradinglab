@@ -80,6 +80,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/forward") return staticGet("forward.json");
   if (p === "/api/scan") return { new: [] };
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
+  if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
   if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`);
   if (p === "/api/size") return sizeLocal(qp.symbol, +qp.entry, +qp.sl, +qp.risk_pct, +(qp.balance || P.account_balance), qp.tp ? +qp.tp : null);
   if (p.startsWith("/api/signals/") && post) {  // taken / skipped is remembered on this device only
@@ -540,7 +541,7 @@ async function renderChart(view) {
       <div class="tiny muted"><span class="dot on"></span> ACTIVE = ผ่านทุกเกณฑ์ ส่งแจ้งเตือนจริง · <span class="dot mid"></span> WATCH = ผลดีแต่ยังพิสูจน์ไม่พอ เฝ้าดูเงียบ ๆ ไม่แจ้งเตือน · ไม่มีจุด = OFF · ★ = กลยุทธ์ที่ระบบจริงใช้</div>
     </div>
     <div id="viewOnly"></div>
-    <div class="card"><div class="hd"><h3 id="chTitle">${sym} · ${tf}</h3><div class="right legend" id="chLegend"></div></div><div class="chart" id="mainChart"></div></div>
+    <div class="card"><div class="hd"><h3 id="chTitle">${sym} · ${tf}</h3><div class="right legend" id="chLegend"></div></div><div class="chart" id="mainChart"></div><div class="tiny muted" id="chHist" style="padding:6px 14px 10px"></div></div>
     <div class="card"><div class="hd"><h3>Equity curve</h3><div class="right"><div class="seg" id="eqSeg"></div></div></div>
       <div class="bd stack" style="gap:12px"><div class="kpis" id="eqKpis"></div><div class="chart md" id="eqChart"></div><div class="hint" id="eqHint"></div></div></div>
     <div class="card"><div class="hd"><h3>ระบบบนกราฟนี้</h3></div><div class="bd" id="chInfo"><span class="spinner"></span></div></div>
@@ -563,11 +564,37 @@ async function renderChart(view) {
   }
 
   // ---- main chart (candles + the chosen strategy)
-  let ch = null;
-  const draw = async (keepRange) => {
-    const [cd, sigs] = await Promise.all([api(`/api/candles?symbol=${sym}&tf=${tf}&limit=1500&system=false`), api("/api/signals?limit=50")]);
+  let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
+  // scrolling back: older candles come in yearly chunks, prepended to the chart without moving the view
+  const loadOlder = async () => {
+    if (loadingOld || !yearsLeft?.length) return;
+    loadingOld = true;
+    const y = yearsLeft[yearsLeft.length - 1];
+    $("#chHist").textContent = `กำลังโหลดปี ${y}…`;
+    try {
+      const firstT = (older[0] || last.cd.candles[0])?.time;
+      const r = await api(`/api/candles_year?symbol=${sym}&tf=${tf}&year=${y}&before=${firstT}`);
+      yearsLeft.pop();
+      const add = (r.candles || []).filter((c) => c.time < firstT);
+      older = add.concat(older);
+      await draw(true, add.length, true);
+    } catch (e) { toast("โหลดข้อมูลย้อนหลังไม่ได้: " + e.message); } finally { loadingOld = false; histLabel(); }
+  };
+  const histLabel = () => {
+    const el = $("#chHist"); if (!el || !last) return;
+    const from = (older[0] || last.cd.candles[0])?.time;
+    el.textContent = yearsLeft?.length ? `◀ เลื่อนกราฟไปทางซ้ายเพื่อดูย้อนหลัง (มีถึงปี ${yearsLeft[0]}) · ตอนนี้ตั้งแต่ ${fdt(from, true).split(",")[0]}`
+      : `ข้อมูลทั้งหมดตั้งแต่ ${fdt(from, true).split(",")[0]}`;
+  };
+  const draw = async (keepRange, shiftBy = 0, reuse = false) => {
+    const [cd0, sigs] = reuse && last ? [last.cd, last.sigs] : await Promise.all([api(`/api/candles?symbol=${sym}&tf=${tf}&limit=1500&system=false`), api("/api/signals?limit=50")]);
     if (route() !== "chart" || S.chartToken !== token || !$("#mainChart")) return;
-    const range = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
+    last = { cd: cd0, sigs };
+    if (yearsLeft === null) yearsLeft = (cd0.older_years || []).slice();
+    const cut = cd0.candles[0]?.time ?? Infinity;
+    const cd = { ...cd0, candles: older.filter((c) => c.time < cut).concat(cd0.candles) };
+    const range0 = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
+    const range = range0 ? { from: range0.from + shiftBy, to: range0.to + shiftBy } : null;
     if (ch) { S.charts = S.charts.filter((c) => c !== ch); ch.remove(); }
     const dg = sp.digits ?? cd.digits;
     ch = makeChart($("#mainChart"), { localization: { priceFormatter: (p) => p.toFixed(dg) } });
@@ -595,6 +622,8 @@ async function renderChart(view) {
     ch.timeScale().setVisibleLogicalRange(range || { from: Math.max(0, n - 220), to: n + 8 });
     $("#chLegend").innerHTML = legend.join("") + `<span class="faint">${esc(cd.source)}</span>`;
     $("#chTitle").textContent = `${sym} · ${tf} · ${fpx(cd.candles[n - 1]?.close, dg)}`;
+    ch.timeScale().subscribeVisibleLogicalRangeChange((r) => { if (r && r.from < 40) loadOlder(); });
+    histLabel();
   };
   await draw(false);
   const timer = setInterval(() => { if (route() !== "chart" || S.chartToken !== token) return clearInterval(timer); if (!document.hidden) draw(true).catch(() => {}); },
@@ -1092,6 +1121,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - **เลือกกลยุทธ์อื่นได้** จากช่องเลือกเหนือกราฟ (★ = ระบบจริง) เพื่อดูหน้าตาและผลของแต่ละกลยุทธ์ — เป็น **โหมดดูอย่างเดียว ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน**
   - ใต้กราฟเรียงเป็น: **Equity curve** (สลับได้ระหว่าง Walk-Forward OOS กับ Backtest ทั้งช่วง) → **ระบบบนกราฟนี้** → **เทรดล่าสุดของระบบ**
   - ซูมกราฟด้วยสองนิ้วได้ ส่วนหน้าเว็บจะไม่ซูมตามแล้ว
+  - **ดูย้อนหลังไกล ๆ:** เลื่อนกราฟไปทางซ้ายเรื่อย ๆ ข้อมูลปีก่อนหน้าจะโหลดมาต่อเองทีละปี (ใต้กราฟบอกว่ามีข้อมูลถึงปีไหน) ลูกศรเข้า/ออกของระบบแสดงได้ตลอดช่วง ส่วนเส้น indicator แสดงช่วงล่าสุด
 - **🔬 Strategy Lab:** มีปุ่ม **สั่งวิเคราะห์ใหม่ทันที** และสรุปการวิเคราะห์อัตโนมัติ ส่วนการทดลองตั้งพารามิเตอร์เองใช้ได้เมื่อเปิด \`start_server.bat\` บนคอม
 - **🧮 เครื่องคำนวณ:** คำนวณ Lot / R:R / SL-TP เองสำหรับเทรดนอกระบบ
 - **⚙️ ตั้งค่า:** ทุน, ความเสี่ยงต่อไม้, ชื่อสัญลักษณ์ MT5, เกณฑ์ที่ใช้ตัดสิน (ดูอย่างเดียว)`],
