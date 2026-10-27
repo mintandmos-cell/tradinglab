@@ -50,6 +50,7 @@ DEFAULT_SETTINGS = {
     "account_balance": 5000.0,
     "account_currency": "USD",
     "risk_per_trade_pct": 0.25,         # fixed risk per signal (0 = use each system's Monte Carlo risk)
+    "portfolio_risk_pct": 0.10,         # risk per trade of fund-style portfolio systems (user's choice 27 Oct 2026)
     "max_symbol_risk_pct": 0.75,        # cap on the open risk of ALL systems of one symbol (several ACTIVE systems allowed)
     "default_risk_pct": 0.5,
     "max_risk_pct": 1.0,

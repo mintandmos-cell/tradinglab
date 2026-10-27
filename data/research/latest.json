@@ -50,7 +50,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 0.95,
@@ -80461,7 +80461,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": -0.41,
@@ -140678,7 +140678,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 1.93,
@@ -180686,7 +180686,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 1.97,
@@ -212688,7 +212688,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 0.47,
@@ -244342,7 +244342,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 2.7,
@@ -279145,7 +279145,7 @@
       "max_hold_h": 120
      },
      "status": "ACTIVE",
-     "risk_pct": 0.25,
+     "risk_pct": 0.1,
      "kept": false,
      "source": "portfolio",
      "t": 1.31,

@@ -84,6 +84,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Portfolio test (user's choice 27 Oct 2026): `research.portfolio_research` pools each strategy × TF across all symbols (monthly R,
   gates: ≥36 months, monthly t ≥ Šidák for all candidates ever, ≥60% symbols positive, pooled MC PF@95% ≥ 1, median random pct ≥ 75,
   mean robustness ≥ 50). ACTIVE portfolio systems are appended to every symbol's `systems` with `source: "portfolio"`.
+  They risk `portfolio_risk_pct` (0.10%, user's choice 27 Oct 2026) per trade instead of 0.25%.
   The multiple-testing gate then asks OOS t ≥ ~3.4. More strategies make passing harder, not easier — say so when the user asks for more.
   `python -m tests.check_strategies` must pass for every strategy (no look-ahead: future price changes never alter past signals;
   random-walk mean R ≈ 0; every grid combo runs). Volume-based indicators are avoided (Yahoo FX volume is empty).

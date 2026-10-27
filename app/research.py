@@ -343,7 +343,7 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
             if any(x["strategy"] == pc["strategy"] and x["tf"] == pc["tf"] for x in syst):
                 continue
             syst.append({"strategy": pc["strategy"], "strategy_name": pc["name"], "tf": pc["tf"], "params": leg["params"],
-                         "status": "ACTIVE", "risk_pct": risk, "kept": bool(pc.get("kept")), "source": "portfolio",
+                         "status": "ACTIVE", "risk_pct": float(settings.get("portfolio_risk_pct") or 0.1), "kept": bool(pc.get("kept")), "source": "portfolio",
                          "t": leg["t"], "exp": leg["exp"], "trades": leg["trades"], "robust": leg["robust"]})
             if r.get("status") != "ACTIVE":
                 r["status"] = "ACTIVE"
@@ -437,7 +437,8 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
                     "strategy": r.get("strategy"), "strategy_name": r.get("strategy_name"), "tf": r.get("tf"),
                     "params": r.get("params"), "risk_pct": r.get("risk_pct"), "oos": r.get("oos"),
                     "robust_score": (r.get("robustness") or {}).get("score"),
-                    "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False)} for x in live_systems(r)
+                    "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False), "source": x.get("source", "single"),
+                                 "risk_pct": x.get("risk_pct")} for x in live_systems(r)
                                 if x.get("status") == "ACTIVE"],
                     "quarter": r.get("quarter")})
     return out

@@ -52,8 +52,8 @@ function sizeLocal(sym, entry, sl, riskPct, balance, tp) {
 // risk % per trade: this device's choice (cloud site) → the shared fixed risk → the system's Monte Carlo risk
 const effRisk = (r) => +((STATIC && local.get().risk_pct) || S.settings?.risk_per_trade_pct || r) || 0;
 const myBalance = () => +(STATIC ? local.get().account_balance : S.settings?.account_balance) || 0;
-function lotLabel(sym, entry, sl, sysRisk) {  // lots for an open position on the chart, same maths as the signal cards
-  const z = sizeLocal(sym, entry, sl, effRisk(sysRisk), myBalance());
+function lotLabel(sym, entry, sl, sysRisk, fixed = false) {  // lots for an open position on the chart, same maths as the signal cards
+  const z = sizeLocal(sym, entry, sl, fixed ? sysRisk : effRisk(sysRisk), myBalance());
   return z.below_min_lot ? "<0.01 lot" : `${z.lots.toFixed(2)} lot`;
 }
 
@@ -90,7 +90,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/signals") {
     const marks = store.get("sigMarks", {}), sigs = await staticGet("signals.json");
     return sigs.slice(0, +(qp.limit || 200)).map((s) => {
-      const risk = effRisk(s.risk_pct), z = sizeLocal(s.symbol, s.entry, s.sl, risk, P.account_balance, s.tp);
+      const risk = s.source === "portfolio" ? s.risk_pct : effRisk(s.risk_pct), z = sizeLocal(s.symbol, s.entry, s.sl, risk, P.account_balance, s.tp);
       return { ...s, ...(marks[s.id] || {}), mt5_symbol: P.mt5_symbol_map[s.symbol] || s.mt5_symbol, risk_pct: risk,
         lots: z.lots, raw_lots: z.raw_lots, risk_usd: z.actual_risk_usd, reward_usd: z.reward_usd, below_min_lot: z.below_min_lot,
         balance: P.account_balance, min_lot_risk_usd: z.min_lot_risk_usd, min_lot_risk_pct: +(100 * z.min_lot_risk_usd / P.account_balance).toFixed(2) };
@@ -479,6 +479,7 @@ const sysOf = (sym) => S.symbols.find((x) => x.symbol === sym) || {};
 // the symbol's ACTIVE systems this quarter (several allowed); old data without "systems": the single system
 const liveSystems = (sym) => { const r = sysOf(sym); return r.systems || (r.status === "ACTIVE" && r.strategy ? [{ strategy: r.strategy, tf: r.tf }] : []); };
 const isLiveSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && (!tf || x.tf === tf));
+const isPortfolioSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && x.tf === tf && x.source === "portfolio");
 const stratLabel = (id) => { const s = stratById(id); return s ? `#${s.no} ${s.name}` : id; };
 function pickSel(q, key, fallbackStrategy) {
   const prev = store.get(key, store.get("sel", {}));
@@ -770,7 +771,7 @@ async function renderChart(view) {
   if (route() !== "chart" || S.chartToken !== token) return;
   const strat = stratById(sid) || {};
   const live = sp.is_live;
-  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} <span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
+  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} ${isPortfolioSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="ระบบพอร์ต: เทรดทุกสินทรัพย์ เสี่ยง 0.10%/ไม้">★<span class="hide-sm"> พอร์ต 0.10%</span></span>' : '<span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>'}` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
 
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
@@ -837,7 +838,8 @@ async function renderChart(view) {
       });
       const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.strategy === sid && s.outcome === "open") : [];
       open = live ? openPosition(sp, liveSigs) : (sp.open_trade ? { ...sp.open_trade, from: sp.open_trade.entry_time, pending: false } : null);
-      if (open) open.lot = live ? lotLabel(sym, open.entry, open.sl, sys.risk_pct) : "ทดลอง";
+      const psys = liveSystems(sym).find((x) => x.strategy === sid && x.tf === tf && x.source === "portfolio");
+      if (open) open.lot = live ? (psys ? lotLabel(sym, open.entry, open.sl, psys.risk_pct || S.settings?.portfolio_risk_pct || 0.1, true) : lotLabel(sym, open.entry, open.sl, sys.risk_pct)) : "ทดลอง";
       const markers = drawTradeLevels(ch, { candles: cd.candles, trades: sp.trades, digits: dg }, open);
       markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
     }
@@ -1377,7 +1379,7 @@ function portfolioHtml(P) {
   return `<div class="pane-hd" style="margin-top:18px"><b>ทดสอบแบบพอร์ต (แบบกองทุน)</b><span class="muted small">หนึ่งระบบเทรดทั้ง 8 สินทรัพย์พร้อมกัน ตัดสินจากผลรวมรายเดือน · ผู้สมัคร ${P.n_candidates} · ต้องได้ t ≥ ${fnum(P.t_needed, 2)}</span></div>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>สถานะ</th><th>ระบบ</th><th>TF</th><th class="num">เดือน</th><th class="num">ไม้</th><th class="num">Exp/ไม้</th><th class="num">t เดือน / ต้องการ</th><th class="num">สินทรัพย์บวก</th><th class="num">Max DD</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
-    <div class="hint pad-x">ระบบพอร์ตที่ ACTIVE จะเทรดทุกสินทรัพย์ (★ บนกราฟ) · ความเสี่ยงต่อไม้เท่าเดิม และยังจำกัดรวมต่อสินทรัพย์ 0.75% · กดแถวเพื่อดูผลของระบบนั้นบนสินทรัพย์ที่เลือกอยู่</div>`;
+    <div class="hint pad-x">ระบบพอร์ตที่ ACTIVE จะเทรดทุกสินทรัพย์ (★ บนกราฟ) · เสี่ยง 0.10%/ไม้ และยังจำกัดรวมต่อสินทรัพย์ 0.75% · กดแถวเพื่อดูผลของระบบนั้นบนสินทรัพย์ที่เลือกอยู่</div>`;
 }
 function renderSyncCard() {
   const box = $("#syncBody"); if (!box) return;
@@ -1704,7 +1706,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 ### ขั้นที่ 9 — ทดสอบแบบพอร์ต (แบบกองทุน)
 - กองทุนตามแนวโน้ม (CTA) ไม่ได้ดูระบบทีละตลาด แต่ใช้ระบบเดียวกับหลายตลาดพร้อมกันแล้วดูผลรวม — แต่ละตลาดเดี่ยว ๆ กำไรน้อยและแกว่ง แต่รวมกันแล้วเรียบขึ้นมาก (Moskowitz, Ooi & Pedersen 2012; Hurst, Ooi & Pedersen 2017)
 - ระบบจึงนำผล Walk-Forward OOS ของ **ระบบเดียวกันบนทั้ง 8 สินทรัพย์** มารวมเป็นผลรายเดือน (ทุกไม้เสี่ยงเท่ากัน) แล้วตัดสินด้วยเกณฑ์: OOS ≥ 36 เดือน · t รายเดือน ≥ เกณฑ์หักค่าโชค (นับผู้สมัครทุกระบบ × ทุก TF รวมระบบที่เลิกใช้) · สินทรัพย์ที่เป็นบวก ≥ 60% · MC PF@95% ≥ 1 · ชนะการสุ่มจุดเข้า (มัธยฐาน) ≥ 75% · Robustness เฉลี่ย ≥ 50
-- ระบบพอร์ตที่ ACTIVE **เทรดทุกสินทรัพย์** (★ บนกราฟ) ยังเสี่ยง 0.25%/ไม้ และรวมไม่เกิน 0.75% ต่อสินทรัพย์ · ดูตารางในหน้า Strategy Lab → ภาพรวมทุกสินทรัพย์
+- ระบบพอร์ตที่ ACTIVE **เทรดทุกสินทรัพย์** (★ พอร์ต บนกราฟ) เสี่ยง **0.10%/ไม้** (ผู้ใช้เลือก เพราะไม้เยอะและ DD ของพอร์ตลึก) และรวมไม่เกิน 0.75% ต่อสินทรัพย์ · ดูตารางในหน้า Strategy Lab → ภาพรวมทุกสินทรัพย์
 ### คลังระบบ (ปรับ ต.ค. 2026)
 - เลิกใช้ 17 ระบบที่ขาดทุนแทบทุกสินทรัพย์ (ส่วนใหญ่เป็นระบบสวนเทรนด์ เช่น Z-score, Bollinger Fade, RSI 2) — **แต่ยังนับรวมในเกณฑ์หักค่าโชค** การตัดตัวแพ้ทิ้งจึงไม่ทำให้เกณฑ์ต่ำลง
 - เพิ่ม 7 ระบบจากงานวิจัย/กองทุน: EWMAC หลายความเร็ว (Carver), Time-Series Momentum 1/3/12 เดือน (AQR), Turtle, Faber 10-month SMA, Clenow Trend, Volatility Breakout (Crabel), 52-Week High (George & Hwang) — เลขระบบใหม่ #51–57 (เลขเดิมไม่เปลี่ยน)

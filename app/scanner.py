@@ -55,7 +55,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     rr = float(p["rr"])
     sl, tp = entry - d * sl_dist, (entry + d * rr * sl_dist if rr > 0 else None)      # rr 0 = no take-profit
     info = data.mt5_symbol_info(sym)
-    risk_pct = (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
+    risk_pct = (float(settings.get("portfolio_risk_pct") or 0.1) if cfg.get("source") == "portfolio" else 0) or \
+               (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
                 or settings["default_risk_pct"] / 2)
     balance = float(settings["account_balance"])
     size = lots_for(sym, entry, sl, balance, risk_pct, info, settings)
@@ -75,7 +76,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "valid_until": (bar_t + pd.Timedelta(minutes=2 * tfm)).isoformat(),
         "symbol": sym, "mt5_symbol": settings["mt5_symbol_map"].get(sym, sym), "tf": cfg["tf"],
         "strategy": cfg["strategy"], "strategy_name": cfg.get("strategy_name"), "params": p,
-        "system_status": cfg["status"], "side": "LONG" if d > 0 else "SHORT", "dir": d,
+        "system_status": cfg["status"], "source": cfg.get("source", "single"), "side": "LONG" if d > 0 else "SHORT", "dir": d,
         "entry": round(entry, spec["digits"]), "sl": round(sl, spec["digits"]), "tp": round(tp, spec["digits"]) if tp is not None else None,
         "sl_dist": round(sl_dist, spec["digits"]), "tp_dist": round(sl_dist * rr, spec["digits"]) if tp is not None else None,
         "sl_pips": round(sl_dist / spec["pip"], 1), "tp_pips": round(sl_dist * rr / spec["pip"], 1) if tp is not None else None,
