@@ -87,7 +87,7 @@ def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost
     n = len(o)
     entry = o[e] + d * cost
     sl = entry - d * sl_dist
-    tp = entry + d * rr * sl_dist
+    tp = entry + d * rr * sl_dist if rr > 0 else None      # rr <= 0: no take-profit (exit by SL / opposite signal)
     fri = last is not None and last + 1 < e + H
     end = min(e + H, n, last + 1) if fri else min(e + H, n)
     j_opp = None
@@ -98,9 +98,9 @@ def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost
             end = j_opp + 1                       # SL / TP can still hit up to and including the signal bar
     hh, ll, oo = h[e:end], l[e:end], o[e:end]
     if d > 0:
-        sl_hit, tp_hit = ll <= sl, hh >= tp
+        sl_hit, tp_hit = ll <= sl, (hh >= tp if tp is not None else np.zeros(len(hh), bool))
     else:
-        sl_hit, tp_hit = hh >= sl, ll <= tp
+        sl_hit, tp_hit = hh >= sl, (ll <= tp if tp is not None else np.zeros(len(ll), bool))
     i_sl = int(np.argmax(sl_hit)) if sl_hit.any() else None
     i_tp = int(np.argmax(tp_hit)) if tp_hit.any() else None
     if i_sl is not None and (i_tp is None or i_sl <= i_tp):
@@ -154,7 +154,7 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
             if wcut is not None:
                 close_by = min(close_by, wcut[e]) if close_by is not None else wcut[e]
             open_trade = {"signal_i": int(i), "entry_i": e, "entry_time": times[e], "dir": d,
-                          "entry": entry, "sl_dist": sl_dist, "sl": entry - d * sl_dist, "tp": entry + d * rr * sl_dist,
+                          "entry": entry, "sl_dist": sl_dist, "sl": entry - d * sl_dist, "tp": entry + d * rr * sl_dist if rr > 0 else None,
                           "close_by": close_by,
                           # an opposite signal on the last closed bar: close this one and reverse at the next open
                           "reverse_pending": bool(opp is not None and n and sig[-1] == -d and n - 1 >= e)}

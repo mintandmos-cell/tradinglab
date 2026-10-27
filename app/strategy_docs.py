@@ -2,7 +2,7 @@
 Shown on the Systems page ("รายละเอียดระบบ" / "รายชื่อระบบ"). Keep in sync with app/strategies.py —
 tests/check_strategies.py fails if a strategy has no entry here.
 
-Every system shares the same exits: SL = sl_atr x ATR14 from the entry, TP = rr x the SL distance,
+Every system shares the same exits: SL = sl_atr x ATR14 from the entry, TP = rr x the SL distance (rr = 0: no TP),
 or an opposite signal (close at the next bar's open and reverse). Signals are read on the bar close
 and entered at the next bar's open.
 """
@@ -84,9 +84,22 @@ D: dict[str, tuple[list[str], str, str]] = {
     "elder_ray": (["EMA (ema_len)", "Bull Power = High − EMA", "Bear Power = Low − EMA"],
                   "EMA กำลังขึ้น · Bear Power ยังติดลบแต่สูงขึ้น · Bull Power > 0 · ราคาปิดตัดขึ้นเหนือ EMA",
                   "EMA กำลังลง · Bull Power ยังเป็นบวกแต่ลดลง · Bear Power < 0 · ราคาปิดตัดลงใต้ EMA"),
+    "ewmac": (["EMA 16/64, 32/128, 64/256 (ตามชุด speeds)", "ส่วนเบี่ยงเบนมาตรฐานของการเปลี่ยนแปลงราคา 36 แท่ง"],
+              "ผลรวมของ (EMA เร็ว − EMA ช้า) ÷ ความผันผวน เปลี่ยนจากลบเป็นบวก — ถือขาขึ้นจนกว่าจะกลับเป็นลบ",
+              "ผลรวมเปลี่ยนจากบวกเป็นลบ"),
+    "tsmom_blend": (["ผลตอบแทนย้อนหลัง 1 / 3 / 12 เดือน (mode 1 = เฉพาะ 3 / 12 เดือน)"],
+                    "เสียงส่วนใหญ่ของเครื่องหมายผลตอบแทนย้อนหลังเปลี่ยนเป็นบวก", "เสียงส่วนใหญ่เปลี่ยนเป็นลบ"),
+    "turtle": (["ช่องทาง Donchian N แท่ง (entry_n)"], "ราคาปิดเหนือ High สูงสุด N แท่งก่อนหน้า (กลับจากฝั่งขาย/ยังไม่มีสถานะ)",
+               "ราคาปิดใต้ Low ต่ำสุด N แท่งก่อนหน้า"),
+    "faber_sma": (["SMA ยาว months เดือน (≈ 22 แท่ง D1 ต่อเดือน)"], "ราคาปิดตัดขึ้นเหนือ SMA", "ราคาปิดตัดลงใต้ SMA"),
+    "clenow_trend": (["EMA50", "EMA100", "กรอบสูง/ต่ำ breakout_n แท่ง"], "EMA50 > EMA100 และราคาปิดทะลุ High สูงสุด breakout_n แท่ง (แท่งแรก)",
+                     "EMA50 < EMA100 และราคาปิดหลุด Low ต่ำสุด breakout_n แท่ง"),
+    "vol_breakout": (["ATR14", "EMA100"], "ราคาปิดสูงกว่าราคาปิดก่อนหน้าเกิน k_atr × ATR และอยู่เหนือ EMA100",
+                     "ราคาปิดต่ำกว่าราคาปิดก่อนหน้าเกิน k_atr × ATR และอยู่ใต้ EMA100"),
+    "high52": (["High / Low สูงสุด-ต่ำสุดรอบ months เดือน"], "ราคาปิดทะลุ High สูงสุดรอบ 6 / 12 เดือน (แท่งแรก)", "ราคาปิดหลุด Low ต่ำสุดรอบ 6 / 12 เดือน"),
 }
 
-COMMON_EXITS = ("ทุกระบบออกด้วยกติกาเดียวกัน: SL = sl_atr × ATR14 จากราคาเข้า · TP = rr × ระยะ SL · "
+COMMON_EXITS = ("ทุกระบบออกด้วยกติกาเดียวกัน: SL = sl_atr × ATR14 จากราคาเข้า · TP = rr × ระยะ SL (rr = 0 คือไม่มี TP ถือจนชน SL หรือมีสัญญาณกลับทิศ) · "
                 "หรือมีสัญญาณตรงข้าม → ปิดที่ราคาเปิดแท่งถัดไปแล้วกลับทิศ · อ่านสัญญาณตอนแท่งปิด เข้าที่ราคาเปิดแท่งถัดไป")
 
 

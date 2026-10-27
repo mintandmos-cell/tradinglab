@@ -588,7 +588,7 @@ function signalCard(s, compact = false) {
     <div class="levels">
       <div class="lv"><div class="k">ENTRY ≈</div><div class="v" data-f="entry">${fpx(s.entry, d)}</div><div class="s">${s.price_source}</div></div>
       <div class="lv sl"><div class="k">STOP LOSS</div><div class="v" data-f="sl">${fpx(s.sl, d)}</div><div class="s">${fnum(s.sl_pips, 1)} pips</div></div>
-      <div class="lv tp"><div class="k">TAKE PROFIT</div><div class="v" data-f="tp">${fpx(s.tp, d)}</div><div class="s">${fnum(s.tp_pips, 1)} pips</div></div>
+      <div class="lv tp"><div class="k">TAKE PROFIT</div><div class="v" data-f="tp">${s.tp == null ? "ไม่ตั้ง" : fpx(s.tp, d)}</div><div class="s">${s.tp == null ? "ออกด้วย SL / กลับทิศ" : fnum(s.tp_pips, 1) + " pips"}</div></div>
     </div>
     <div class="lotbar">
       <div><div class="lbl">LOT (MT5)</div><div class="lot" data-f="lots">${fnum(s.lots, 2)}</div></div>
@@ -625,10 +625,10 @@ function bindSignalCards(root, sigs) {
         $(".adj", card).classList.toggle("show");
       } else if (a === "recalc") {
         const p = parseFloat($(".adj input", card).value); if (!p) return toast("ใส่ราคาก่อน");
-        const sl = p - s.dir * s.sl_dist, tp = p + s.dir * s.tp_dist;
-        const r = await api(`/api/size?symbol=${s.symbol}&entry=${p}&sl=${sl}&tp=${tp}&risk_pct=${s.risk_pct}`);
+        const sl = p - s.dir * s.sl_dist, tp = s.tp_dist == null ? null : p + s.dir * s.tp_dist;
+        const r = await api(`/api/size?symbol=${s.symbol}&entry=${p}&sl=${sl}${tp == null ? "" : "&tp=" + tp}&risk_pct=${s.risk_pct}`);
         $("[data-f=entry]", card).textContent = fpx(p, d); $("[data-f=sl]", card).textContent = fpx(sl, d);
-        $("[data-f=tp]", card).textContent = fpx(tp, d); $("[data-f=lots]", card).textContent = fnum(r.lots, 2);
+        $("[data-f=tp]", card).textContent = tp == null ? "ไม่ตั้ง" : fpx(tp, d); $("[data-f=lots]", card).textContent = fnum(r.lots, 2);
         $("[data-f=risk]", card).innerHTML = `$${fnum(r.actual_risk_usd, 2)} <span class="muted">(${s.risk_pct}%)</span>`;
         toast("คำนวณ SL/TP/Lot ใหม่จากราคา MT5 แล้ว (ระยะ SL/TP เท่าเดิม)");
       } else if (a === "taken" || a === "skipped") {
@@ -686,7 +686,7 @@ function drawTradeLevels(ch, d, open) {
   (d.trades || []).filter((t) => t.exit_time >= times[Math.max(0, n - 500)]).slice(-20).forEach((t) => {
     const a = idx(t.entry_time), b = Math.min(idx(t.exit_time), n - 1);
     if (a >= n) return;
-    [[t.entry, "rgba(96,165,250,.55)", 2], [t.sl, "rgba(239,68,68,.55)", 0], [t.tp, "rgba(22,199,132,.55)", 0]].forEach(([v, color, style]) =>
+    [[t.entry, "rgba(96,165,250,.55)", 2], [t.sl, "rgba(239,68,68,.55)", 0], [t.tp, "rgba(22,199,132,.55)", 0]].filter(([v]) => v != null).forEach(([v, color, style]) =>
       line(color, style, 1).setData(times.slice(a, b + 1).map((x) => ({ time: shiftT(x), value: v }))));
   });
   (d.trades || []).forEach((t) => {
@@ -699,7 +699,7 @@ function drawTradeLevels(ch, d, open) {
     const a = Math.min(idx(open.from), n - 1), pts = [];
     for (let i = a; i < n; i++) pts.push(times[i]);
     for (let j = 1; j <= 6; j++) pts.push(times[n - 1] + j * step);
-    const lv = [["ENTRY", open.entry, "#60a5fa", 2, ` · ${open.lot}`], ["SL", open.sl, "#ef4444", 0, ""], ["TP", open.tp, "#16c784", 0, ""]];
+    const lv = [["ENTRY", open.entry, "#60a5fa", 2, ` · ${open.lot}`], ["SL", open.sl, "#ef4444", 0, ""], ["TP", open.tp, "#16c784", 0, ""]].filter((x) => x[1] != null);
     lv.forEach(([title, v, color, style, extra]) => line(color, style, 2, `${title}${extra}`).setData(pts.map((t) => ({ time: shiftT(t), value: v }))));
     const side = open.dir > 0 ? "BUY" : "SELL";
     markers.push({ time: shiftT(times[a]), position: open.dir > 0 ? "belowBar" : "aboveBar", color: open.dir > 0 ? "#16c784" : "#ef4444",
@@ -874,7 +874,7 @@ async function renderChart(view) {
     $("#wsFoot").innerHTML = `
       <span class="fi strat"><b>#${strat.no}</b> ${esc(sp.name)} <span class="muted">· ${esc(paramText(sp.params))}</span></span>
       ${footItem("สัญญาณแท่งล่าสุด", sp.last_signal > 0 ? "LONG" : sp.last_signal < 0 ? "SHORT" : "ไม่มี", sp.last_signal > 0 ? "pos" : sp.last_signal < 0 ? "neg" : "")}
-      ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`, "", true) : footItem("ออเดอร์", "ไม่มี")}
+      ${o ? footItem(live ? "ออเดอร์ที่เปิดอยู่" : "ออเดอร์ (ทดลอง)", `<span class="${o.dir > 0 ? "pos" : "neg"}">${o.dir > 0 ? "LONG" : "SHORT"}</span> ${o.lot} @ ${fpx(o.entry, dg)} · SL <span class="neg">${fpx(o.sl, dg)}</span> · TP <span class="pos">${o.tp == null ? "ไม่ตั้ง" : fpx(o.tp, dg)}</span>${o.reverse_pending ? ' · <span class="warn">กลับทิศแท่งถัดไป</span>' : ""}`, "", true) : footItem("ออเดอร์", "ไม่มี")}
       ${legend.length ? `<span class="fi legend">${legend.join("")}</span>` : ""}
       ${LB.some((b) => b.color) ? '<span class="fi faint"><i style="display:inline-block;width:8px;height:10px;background:rgba(139,147,161,.7);border-radius:2px"></i> แท่งเทา = สร้างจากราคาสดตั้งแต่เปิดหน้า (ยังไม่ครบ)</span>' : ""}
       <span class="fi faint">${esc(source || "")}</span>`;
@@ -1087,8 +1087,12 @@ async function renderLab(view) {
     ${syms.map((s) => { const o = s.oos || {}; const sx = stratById(s.strategy); return `<tr class="click" data-go="${s.symbol}"><td><b>${s.symbol}</b></td><td>${statusBadge(s.status)}</td><td>${sx ? `<b>#${sx.no}</b> ${esc(sx.name)}` : "–"}</td><td>${s.tf || "–"}</td>
       <td class="num">${s.data_from ? s.data_from.slice(0, 4) : "–"}</td><td class="num">${o.trades ?? "–"}</td><td class="num ${cls(o.expectancy)}">${o.expectancy != null ? fnum(o.expectancy, 3) : "–"}</td>
       <td class="num">${fnum(o.t_stat, 2)} / ${fnum(s.t_needed, 2)}</td><td class="num">${s.robustness?.score ?? "–"}</td></tr>`; }).join("")}</tbody></table></div>
-    <div class="hint pad-x">กดแถวเพื่อดูผลทดสอบทีละขั้นของระบบที่ดีที่สุดของสินทรัพย์นั้น</div>`;
-  $("#ovPane").onclick = (e) => { const r = e.target.closest("[data-go]"); if (!r) return; const s = res.symbols[r.dataset.go]; store.set("labTab2", "steps"); goSel("lab", { symbol: s.symbol, tf: s.tf || "H1", strategy: s.strategy || sid }); };
+    <div class="hint pad-x">กดแถวเพื่อดูผลทดสอบทีละขั้นของระบบที่ดีที่สุดของสินทรัพย์นั้น</div>
+    ${portfolioHtml(res.portfolio)}`;
+  $("#ovPane").onclick = (e) => {
+    const ps = e.target.closest("[data-go-sys]");
+    if (ps) { const [strategy, ptf] = ps.dataset.goSys.split("|"); store.set("labTab2", "steps"); goSel("lab", { symbol: sym, tf: ptf, strategy }); return; }
+    const r = e.target.closest("[data-go]"); if (!r) return; const s = res.symbols[r.dataset.go]; store.set("labTab2", "steps"); goSel("lab", { symbol: s.symbol, tf: s.tf || "H1", strategy: s.strategy || sid }); };
   $("#notesPane").innerHTML = notes ? md(notes) : '<div class="hint">ยังไม่มีบันทึก</div>';
 
   // ---- step by step
@@ -1360,6 +1364,20 @@ function personalSettingsHtml() {
     </div></div>
     <div class="card"><div class="hd"><h3><span class="ic">ℹ️</span>เกี่ยวกับระบบ</h3></div><div class="bd"><div class="kv2" id="aboutBox"></div></div></div>
   </div>`;
+}
+// fund-style basket test: one system on all 8 symbols, judged on the pooled monthly OOS result
+function portfolioHtml(P) {
+  if (!P?.candidates?.length) return "";
+  const top = P.candidates.filter((c) => c.status !== "OFF").slice(0, 15);
+  const rows = (top.length ? top : P.candidates.slice(0, 8)).map((c) => { const st = stratById(c.strategy);
+    return `<tr class="click" data-go-sys="${c.strategy}|${c.tf}"><td>${statusBadge(c.status)}${c.kept ? ' <span class="badge ghost">คงไว้</span>' : ""}</td>
+      <td>${st ? `<b>#${st.no}</b> ` : ""}${esc(c.name)}</td><td>${c.tf}</td><td class="num">${c.months}</td><td class="num">${c.trades}</td>
+      <td class="num ${cls(c.exp)}">${fr(c.exp, 3)}</td><td class="num">${fnum(c.t_month, 2)} / ${fnum(P.t_needed, 2)}</td>
+      <td class="num">${Math.round(c.breadth * 100)}%</td><td class="num neg">${fnum(c.max_dd_r, 1)}R</td></tr>`; }).join("");
+  return `<div class="pane-hd" style="margin-top:18px"><b>ทดสอบแบบพอร์ต (แบบกองทุน)</b><span class="muted small">หนึ่งระบบเทรดทั้ง 8 สินทรัพย์พร้อมกัน ตัดสินจากผลรวมรายเดือน · ผู้สมัคร ${P.n_candidates} · ต้องได้ t ≥ ${fnum(P.t_needed, 2)}</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>สถานะ</th><th>ระบบ</th><th>TF</th><th class="num">เดือน</th><th class="num">ไม้</th><th class="num">Exp/ไม้</th><th class="num">t เดือน / ต้องการ</th><th class="num">สินทรัพย์บวก</th><th class="num">Max DD</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <div class="hint pad-x">ระบบพอร์ตที่ ACTIVE จะเทรดทุกสินทรัพย์ (★ บนกราฟ) · ความเสี่ยงต่อไม้เท่าเดิม และยังจำกัดรวมต่อสินทรัพย์ 0.75% · กดแถวเพื่อดูผลของระบบนั้นบนสินทรัพย์ที่เลือกอยู่</div>`;
 }
 function renderSyncCard() {
   const box = $("#syncBody"); if (!box) return;
@@ -1682,7 +1700,15 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - **ACTIVE:** ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริงตลอดไตรมาส (★ ในหน้าเว็บ)
 - **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ไม่เทรด ไม่แจ้งเตือน (ดูผลได้ในปุ่ม ⚡ ด่วน)
 - **OFF:** ไม่พบ edge → ไม่เทรด
-- หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF`],
+- หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF
+### ขั้นที่ 9 — ทดสอบแบบพอร์ต (แบบกองทุน)
+- กองทุนตามแนวโน้ม (CTA) ไม่ได้ดูระบบทีละตลาด แต่ใช้ระบบเดียวกับหลายตลาดพร้อมกันแล้วดูผลรวม — แต่ละตลาดเดี่ยว ๆ กำไรน้อยและแกว่ง แต่รวมกันแล้วเรียบขึ้นมาก (Moskowitz, Ooi & Pedersen 2012; Hurst, Ooi & Pedersen 2017)
+- ระบบจึงนำผล Walk-Forward OOS ของ **ระบบเดียวกันบนทั้ง 8 สินทรัพย์** มารวมเป็นผลรายเดือน (ทุกไม้เสี่ยงเท่ากัน) แล้วตัดสินด้วยเกณฑ์: OOS ≥ 36 เดือน · t รายเดือน ≥ เกณฑ์หักค่าโชค (นับผู้สมัครทุกระบบ × ทุก TF รวมระบบที่เลิกใช้) · สินทรัพย์ที่เป็นบวก ≥ 60% · MC PF@95% ≥ 1 · ชนะการสุ่มจุดเข้า (มัธยฐาน) ≥ 75% · Robustness เฉลี่ย ≥ 50
+- ระบบพอร์ตที่ ACTIVE **เทรดทุกสินทรัพย์** (★ บนกราฟ) ยังเสี่ยง 0.25%/ไม้ และรวมไม่เกิน 0.75% ต่อสินทรัพย์ · ดูตารางในหน้า Strategy Lab → ภาพรวมทุกสินทรัพย์
+### คลังระบบ (ปรับ ต.ค. 2026)
+- เลิกใช้ 17 ระบบที่ขาดทุนแทบทุกสินทรัพย์ (ส่วนใหญ่เป็นระบบสวนเทรนด์ เช่น Z-score, Bollinger Fade, RSI 2) — **แต่ยังนับรวมในเกณฑ์หักค่าโชค** การตัดตัวแพ้ทิ้งจึงไม่ทำให้เกณฑ์ต่ำลง
+- เพิ่ม 7 ระบบจากงานวิจัย/กองทุน: EWMAC หลายความเร็ว (Carver), Time-Series Momentum 1/3/12 เดือน (AQR), Turtle, Faber 10-month SMA, Clenow Trend, Volatility Breakout (Crabel), 52-Week High (George & Hwang) — เลขระบบใหม่ #51–57 (เลขเดิมไม่เปลี่ยน)
+- ระบบตามเทรนด์ / เบรกเอาต์ ทดสอบทั้ง **มี TP และไม่มี TP** (ออกเมื่อชน SL หรือมีสัญญาณกลับทิศ แบบที่กองทุนตามเทรนด์ปล่อยกำไรวิ่ง) — Walk-Forward เลือกเองจากช่วงฝึก`],
     ["watch", "7. ป้าย ACTIVE / WATCH / OFF คืออะไร", `
 เปรียบเหมือน **นักฟุตบอลในทีม**:
 - **ACTIVE (ตัวจริง)** — ผ่านการคัดเลือกทุกด่าน ลงเล่นจริงทั้งไตรมาส → ระบบส่งแจ้งเตือนให้คุณเปิดออเดอร์ · มีตัวจริงได้หลายคนพร้อมกัน (หลายระบบต่อสินทรัพย์) — บัญชี Hedging จึงอาจมีทั้ง Buy และ Sell ของสินทรัพย์เดียวกันจากคนละระบบ

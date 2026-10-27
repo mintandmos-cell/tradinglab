@@ -77,11 +77,17 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 7. Report to the user in a few lines; do not claim profitability the data does not show.
 
 ## Improving the strategy library — rules
-- Library: 50 strategies (Oct 2026: 4 → 10 → 20 → 50, user's request) × H1 / H4 / D1 = 150 candidates per symbol; 428 combos per TF.
+- Library: 40 active strategies (Oct 2026: 4 → 10 → 20 → 50; then 17 losers retired to `RETIRED` and 7 research-backed added, #51–57).
+  System numbers are STABLE (`STRATEGIES[id]["no"]`, used in MT5 comments) — never renumber. Retired candidates stay counted in
+  the Šidák gate (`research.n_retired_candidates`). Trend / breakout / momentum families also try rr = 0 (no TP: exit by SL or
+  opposite signal; user's choice 27 Oct 2026) — grids up to 24 combos for those.
+- Portfolio test (user's choice 27 Oct 2026): `research.portfolio_research` pools each strategy × TF across all symbols (monthly R,
+  gates: ≥36 months, monthly t ≥ Šidák for all candidates ever, ≥60% symbols positive, pooled MC PF@95% ≥ 1, median random pct ≥ 75,
+  mean robustness ≥ 50). ACTIVE portfolio systems are appended to every symbol's `systems` with `source: "portfolio"`.
   The multiple-testing gate then asks OOS t ≥ ~3.4. More strategies make passing harder, not easier — say so when the user asks for more.
   `python -m tests.check_strategies` must pass for every strategy (no look-ahead: future price changes never alter past signals;
   random-walk mean R ≈ 0; every grid combo runs). Volume-based indicators are avoided (Yahoo FX volume is empty).
-- New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos. Every addition raises the trial count; mention it.
+- New strategy = economic rationale first (written in `rationale`), ≤ 3 signal params, grid ≤ 16 combos (24 with the no-TP option). Every addition raises the trial count; mention it.
 - Judge only on walk-forward OOS + random benchmark + robustness + MC of OOS trades. Never tune on OOS results, never re-run folds until something passes.
 - Never lower `research.gates` or change exit rules on your own to manufacture signals.
 - Keep costs realistic (spread + slippage + commission per symbol in `app/config.py` / `symbol_overrides`).

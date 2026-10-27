@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timezone
 from statistics import NormalDist
 
+import numpy as np
 import pandas as pd
 
 from . import data
@@ -26,7 +27,7 @@ from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_
 from .metrics import equity_points
 from .montecarlo import run_mc
 from .robustness import robustness
-from .strategies import STRATEGIES
+from .strategies import RETIRED, STRATEGIES
 from .walkforward import random_benchmark, walk_forward
 
 log = logging.getLogger("tradinglab.research")
@@ -122,6 +123,85 @@ def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
     return out
 
 
+def n_retired_candidates(settings: dict) -> int:
+    return len(RETIRED) * len(settings["research"].get("timeframes", ["H1", "H4", "D1"]))
+
+
+PORT_MIN_MONTHS = 36
+PORT_MIN_BREADTH = 0.6        # share of symbols (with >= 10 OOS trades) whose own OOS expectancy is positive
+
+
+def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict | None = None) -> dict:
+    """Fund-style test (user's request, 27 Oct 2026): one strategy x TF traded on ALL symbols at the same risk per trade,
+    judged on the pooled walk-forward OOS of the whole basket. Monthly portfolio R (sum over symbols) -> t-stat, so
+    correlation between markets is priced in. Trend-following CTAs are judged like this (Moskowitz et al. 2012;
+    Hurst, Ooi & Pedersen 2017): each market alone is weak, the diversified basket is not.
+    Gates: >= 36 OOS months, monthly t >= Sidak threshold for ALL strategy x TF candidates ever tested (retired included),
+    >= 60% of markets positive, pooled MC PF@95% >= 1, median random-entry percentile >= 75, mean robustness >= 50."""
+    from collections import defaultdict
+    tfs = settings["research"].get("timeframes", ["H1", "H4", "D1"])
+    n_port = (len(STRATEGIES) + len(RETIRED)) * len(tfs)
+    t_need = adjusted_t(n_port)
+    cands = []
+    for sid in STRATEGIES:
+        for tf in tfs:
+            legs, monthly, pooled, first = [], defaultdict(float), [], None
+            for sym, parts in by_sym.items():
+                part = next((p for p in parts if p["tf"] == tf), None)
+                c = next((x for x in (part or {}).get("candidates", []) if x["strategy"] == sid), None)
+                if not c:
+                    continue
+                eq = part["heavy"].get(sid, {}).get("oos_eq", [])
+                folds = part["heavy"].get(sid, {}).get("folds", [])
+                if folds:
+                    f0 = pd.Timestamp(folds[0]["oos_start"])
+                    first = f0 if first is None else min(first, f0)
+                for t_, r in eq:
+                    m = pd.Timestamp(int(t_), unit="s", tz="UTC").strftime("%Y-%m")
+                    monthly[m] += r
+                    pooled.append(r)
+                legs.append({"symbol": sym, "trades": c["oos"]["trades"], "exp": c["oos"]["expectancy"], "t": c["oos"]["t_stat"],
+                             "params": c["current_params"], "pct": (c.get("random_benchmark") or {}).get("percentile"),
+                             "robust": (c.get("robustness") or {}).get("score")})
+            if not pooled or first is None:
+                continue
+            cutoff = pd.Timestamp(next(iter(by_sym.values()))[0].get("cutoff") or research_cutoff(settings))
+            months = pd.period_range(first.tz_convert(None).to_period("M"), (cutoff - pd.Timedelta(seconds=1)).tz_convert(None).to_period("M"), freq="M")
+            mr = np.array([monthly.get(str(m), 0.0) for m in months])
+            sd = mr.std(ddof=1) if len(mr) > 2 else 0
+            t_m = float(mr.mean() / sd * np.sqrt(len(mr))) if sd > 0 else 0.0
+            pr = np.array(pooled)
+            active_legs = [x for x in legs if x["trades"] >= 10]
+            breadth = (sum(x["exp"] > 0 for x in active_legs) / len(active_legs)) if active_legs else 0.0
+            pcts = [x["pct"] for x in legs if x["pct"] is not None]
+            robs = [x["robust"] for x in legs if x["robust"] is not None]
+            mc = run_mc(list(pr), 1.0, n_trades=len(pr), sims=2000) if len(pr) >= 20 else {}
+            gates = [
+                {"name": "เดือน OOS", "value": len(mr), "need": PORT_MIN_MONTHS, "pass": len(mr) >= PORT_MIN_MONTHS},
+                {"name": f"t รายเดือนของพอร์ต (ปรับตาม {n_port} ผู้สมัคร)", "value": round(t_m, 2), "need": t_need, "pass": t_m >= t_need},
+                {"name": "สินทรัพย์ที่เป็นบวก", "value": round(breadth * 100), "need": round(PORT_MIN_BREADTH * 100), "pass": breadth >= PORT_MIN_BREADTH},
+                {"name": "MC PF @95% (ไม้รวม)", "value": mc.get("pf_p5"), "need": 1.0, "pass": (mc.get("pf_p5") or 0) >= 1.0},
+                {"name": "ชนะการสุ่มจุดเข้า (มัธยฐาน %)", "value": float(np.median(pcts)) if pcts else None, "need": 75,
+                 "pass": bool(pcts) and float(np.median(pcts)) >= 75},
+                {"name": "Robustness เฉลี่ย", "value": round(float(np.mean(robs))) if robs else None, "need": 50,
+                 "pass": bool(robs) and float(np.mean(robs)) >= 50},
+            ]
+            ok = all(g["pass"] for g in gates)
+            status = "ACTIVE" if ok else ("WATCH" if t_m >= 2 and pr.mean() > 0 else "OFF")
+            cands.append({"strategy": sid, "name": STRATEGIES[sid]["name"], "tf": tf, "status": status, "t_month": round(t_m, 2),
+                          "months": len(mr), "trades": len(pr), "exp": round(float(pr.mean()), 4), "net_r": round(float(pr.sum()), 1),
+                          "r_month": round(float(mr.mean()), 3), "breadth": round(breadth, 2), "gates": gates, "legs": legs,
+                          "max_dd_r": round(float(np.max(np.maximum.accumulate(np.cumsum(mr)) - np.cumsum(mr))), 1) if len(mr) else None})
+    # same quarter: portfolio systems already ACTIVE stay until the quarter ends
+    if prev and (prev.get("cutoff") == (next(iter(by_sym.values()))[0].get("cutoff"))):
+        was = {(x["strategy"], x["tf"]) for x in prev.get("candidates", []) if x.get("status") == "ACTIVE"}
+        for c in cands:
+            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE":
+                c["status"], c["kept"] = "ACTIVE", True
+    cands.sort(key=lambda c: ({"ACTIVE": 2, "WATCH": 1, "OFF": 0}[c["status"]], c["t_month"]), reverse=True)
+    return {"cutoff": next(iter(by_sym.values()))[0].get("cutoff"), "n_candidates": n_port, "t_needed": t_need, "candidates": cands}
+
+
 def research_cutoff(settings: dict | None = None, now: datetime | None = None) -> pd.Timestamp:
     """The research cut-off = start of the current quarter on the broker clock (1 Jan / 1 Apr / 1 Jul / 1 Oct).
     A run in the middle of a quarter (new strategies, button) uses the same cut-off, so it sees exactly the same data.
@@ -148,7 +228,8 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": [], "systems": []}
     cutoff = pd.Timestamp(parts[0].get("cutoff") or research_cutoff(settings))
     until = data.add_months(cutoff, cfg.get("oos_months", 3))
-    n_cand = sum(1 for c in cands if c["oos"]["trades"] >= 10)
+    # retired strategies stay in the count (user's rule): dropping losers must never lower the bar for the rest
+    n_cand = sum(1 for c in cands if c["oos"]["trades"] >= 10) + n_retired_candidates(settings)
     for c in cands:
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
@@ -156,7 +237,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     # carry-over: same quarter -> systems that were ACTIVE stay ACTIVE until the quarter ends
     same_q = bool(prev) and (prev.get("quarter") or {}).get("cutoff") == cutoff.isoformat()
     if same_q:
-        was = {(x["strategy"], x["tf"]) for x in prev.get("systems", [])}
+        was = {(x["strategy"], x["tf"]) for x in prev.get("systems", []) if x.get("source", "single") == "single"}
         for c in cands:
             if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and c["current_params"]:
                 c["status"], c["kept"] = "ACTIVE", True
@@ -171,7 +252,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     status = best["status"]
     risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
     systems = [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
-                "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")),
+                "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")), "source": "single",
                 "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
                 "robust": (c["robustness"] or {}).get("score")} for c in active]
     mc = best["mc_1y"] or {}
@@ -241,6 +322,32 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
             res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct", "quarter")} | {
                 "generated": prev.get("generated"), "systems": [(x["strategy"], x["tf"]) for x in old.get("systems", [])]}
         out["symbols"][sym] = res
+    # fund-style basket test; its ACTIVE systems trade on every symbol (marked source = "portfolio")
+    if len(by_sym) >= 4:
+        try:
+            out["portfolio"] = portfolio_research(by_sym, settings, prev.get("portfolio"))
+        except Exception:
+            log.exception("portfolio research failed")
+    elif prev.get("portfolio"):
+        out["portfolio"] = prev["portfolio"]
+    risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
+    for pc in (out.get("portfolio") or {}).get("candidates", []):
+        if pc["status"] != "ACTIVE":
+            continue
+        for leg in pc["legs"]:
+            r = out["symbols"].get(leg["symbol"])
+            if not r or not leg.get("params") or f"{leg['symbol']}:{pc['strategy']}:{pc['tf']}" in settings.get("force_off", []) \
+                    or leg["symbol"] in settings.get("force_off", []):
+                continue
+            syst = r.setdefault("systems", [])
+            if any(x["strategy"] == pc["strategy"] and x["tf"] == pc["tf"] for x in syst):
+                continue
+            syst.append({"strategy": pc["strategy"], "strategy_name": pc["name"], "tf": pc["tf"], "params": leg["params"],
+                         "status": "ACTIVE", "risk_pct": risk, "kept": bool(pc.get("kept")), "source": "portfolio",
+                         "t": leg["t"], "exp": leg["exp"], "trades": leg["trades"], "robust": leg["robust"]})
+            if r.get("status") != "ACTIVE":
+                r["status"] = "ACTIVE"
+                r["risk_pct"] = risk
     out["generated"] = datetime.now(timezone.utc).isoformat()
     write_json(LATEST_RESEARCH, out)
     write_json(RESEARCH_DIR / "history" / f"{datetime.now(timezone.utc):%Y%m%d_%H%M}.json",

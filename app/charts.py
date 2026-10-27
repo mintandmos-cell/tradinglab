@@ -38,7 +38,7 @@ def _line(times, arr):
 
 def trade_out(t: dict, digits: int) -> dict:
     return {"entry_time": int(pd.Timestamp(t["entry_time"]).timestamp()), "exit_time": int(pd.Timestamp(t["exit_time"]).timestamp()),
-            "dir": t["dir"], "entry": round(t["entry"], digits), "sl": round(t["sl"], digits), "tp": round(t["tp"], digits),
+            "dir": t["dir"], "entry": round(t["entry"], digits), "sl": round(t["sl"], digits), "tp": round(t["tp"], digits) if t["tp"] is not None else None,
             "exit": round(t["exit"], digits), "reason": t["reason"], "r": round(t["r"], 3), "bars": t["bars"]}
 
 
@@ -87,7 +87,7 @@ def candles(symbol: str, tf: str, limit: int = 1500, cfg: dict | None = None, sy
         ot = res["open_trade"]
         if ot:  # the system's position that is still running: drawn from entry to the latest candle
             out["open_trade"] = {"entry_time": int(pd.Timestamp(ot["entry_time"]).timestamp()), "dir": ot["dir"],
-                                 "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d),
+                                 "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d) if ot["tp"] is not None else None,
                                  "close_by": int(pd.Timestamp(ot["close_by"]).timestamp()) if ot.get("close_by") is not None else None,
                                  "reverse_pending": bool(ot.get("reverse_pending"))}
     return out
@@ -149,7 +149,7 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
     ot = res["open_trade"]
     if ot:
         out["open_trade"] = {"entry_time": int(pd.Timestamp(ot["entry_time"]).timestamp()), "dir": ot["dir"],
-                             "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d),
+                             "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d) if ot["tp"] is not None else None,
                              "close_by": int(pd.Timestamp(ot["close_by"]).timestamp()) if ot.get("close_by") is not None else None,
                                  "reverse_pending": bool(ot.get("reverse_pending"))}
     oos_eq = (research.heavy(symbol, tf).get(strategy) or {}).get("oos_eq") if cand else None

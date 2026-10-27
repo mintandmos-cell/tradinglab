@@ -52,7 +52,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     d = int(res["last_signal"])
     entry = float(df.close.iloc[-1])
     sl_dist = float(p["sl_atr"]) * res["atr_last"]
-    sl, tp = entry - d * sl_dist, entry + d * float(p["rr"]) * sl_dist
+    rr = float(p["rr"])
+    sl, tp = entry - d * sl_dist, (entry + d * rr * sl_dist if rr > 0 else None)      # rr 0 = no take-profit
     info = data.mt5_symbol_info(sym)
     risk_pct = (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
                 or settings["default_risk_pct"] / 2)
@@ -75,11 +76,11 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "symbol": sym, "mt5_symbol": settings["mt5_symbol_map"].get(sym, sym), "tf": cfg["tf"],
         "strategy": cfg["strategy"], "strategy_name": cfg.get("strategy_name"), "params": p,
         "system_status": cfg["status"], "side": "LONG" if d > 0 else "SHORT", "dir": d,
-        "entry": round(entry, spec["digits"]), "sl": round(sl, spec["digits"]), "tp": round(tp, spec["digits"]),
-        "sl_dist": round(sl_dist, spec["digits"]), "tp_dist": round(sl_dist * float(p["rr"]), spec["digits"]),
-        "sl_pips": round(sl_dist / spec["pip"], 1), "tp_pips": round(sl_dist * float(p["rr"]) / spec["pip"], 1),
-        "rr": float(p["rr"]), "risk_pct": risk_pct, "lots": size["lots"], "risk_usd": size["actual_risk_usd"],
-        "reward_usd": round(size["actual_risk_usd"] * float(p["rr"]), 2), "below_min_lot": size["below_min_lot"],
+        "entry": round(entry, spec["digits"]), "sl": round(sl, spec["digits"]), "tp": round(tp, spec["digits"]) if tp is not None else None,
+        "sl_dist": round(sl_dist, spec["digits"]), "tp_dist": round(sl_dist * rr, spec["digits"]) if tp is not None else None,
+        "sl_pips": round(sl_dist / spec["pip"], 1), "tp_pips": round(sl_dist * rr / spec["pip"], 1) if tp is not None else None,
+        "rr": rr, "risk_pct": risk_pct, "lots": size["lots"], "risk_usd": size["actual_risk_usd"],
+        "reward_usd": round(size["actual_risk_usd"] * rr, 2) if tp is not None else None, "below_min_lot": size["below_min_lot"],
         "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk,
         "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
         "max_hold_h": p["max_hold_h"], "close_by": close_by.isoformat() if close_by is not None else None,
@@ -182,7 +183,7 @@ def scan_once() -> list[dict]:
 def alert_text(s: dict, d: int) -> tuple[str, str]:
     """Push title + body: lot first, then the levels to type into MT5."""
     side = "🟢 BUY" if s["dir"] > 0 else "🔴 SELL"
-    no = list(STRATEGIES).index(s["strategy"]) + 1 if s["strategy"] in STRATEGIES else s["strategy"]
+    no = STRATEGIES[s["strategy"]]["no"] if s["strategy"] in STRATEGIES else s["strategy"]
     tag = f"TL{no}-{s['tf']}"
 
     if s["below_min_lot"]:
@@ -193,11 +194,13 @@ def alert_text(s: dict, d: int) -> tuple[str, str]:
         title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — เปิด {s['lots']:.2f} lot"
         lot_line = f"📦 LOT {s['lots']:.2f} · เสี่ยง ${s['risk_usd']} ({s['risk_pct']}% ของทุน ${s['balance']:,.0f})"
     reward = f"${s['reward_usd']}" if not s["below_min_lot"] else f"${round(s['min_lot_risk_usd'] * s['rr'], 2)} (ที่ 0.01 lot)"
+    tp_line = (f"TP {_fmt(s['tp'], d)} ({s['tp_pips']} pips) · R:R 1:{s['rr']} · กำไรเป้า {reward}" if s.get("tp") is not None
+               else "TP: ไม่ตั้ง — ระบบตามเทรนด์ ปล่อยกำไรวิ่ง ออกเมื่อชน SL หรือมีสัญญาณกลับทิศ")
     close_by = (f"ปิดภายใน {datetime.fromisoformat(s['close_by']).astimezone(BKK).strftime('%d/%m %H:%M')} น." if s.get("close_by")
                 else "ถือจนชน TP / SL หรือมีสัญญาณกลับทิศ")
     rev = (f"🔁 ปิดออเดอร์ {s['reverse_of']} เดิมของระบบนี้ (comment {tag}) ก่อน แล้วเปิดไม้นี้\n" if s.get("reverse_of") else "")
     msg = (f"{rev}{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
-           f"TP {_fmt(s['tp'], d)} ({s['tp_pips']} pips) · R:R 1:{s['rr']} · กำไรเป้า {reward}\n"
+           f"{tp_line}\n"
            f"{close_by} · ระบบ: {s['strategy_name']} ({s['tf']}) · {s['system_status']}\n🏷️ ใส่ comment ใน MT5: {tag}")
     return title, msg
 

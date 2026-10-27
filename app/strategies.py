@@ -16,7 +16,7 @@ from . import indicators as ta
 
 EXIT_PARAMS = [
     {"key": "sl_atr", "label": "SL (x ATR14)", "type": "float", "default": 2.0, "min": 0.5, "max": 6, "step": 0.1},
-    {"key": "rr", "label": "TP (x ระยะ SL = R:R)", "type": "float", "default": 2.0, "min": 0.5, "max": 6, "step": 0.1},
+    {"key": "rr", "label": "TP (x ระยะ SL = R:R) · 0 = ไม่มี TP (ออกด้วย SL หรือสัญญาณกลับทิศ)", "type": "float", "default": 2.0, "min": 0, "max": 10, "step": 0.1},
     {"key": "max_hold_h", "label": "ถือสูงสุด (ชม.) — ใช้เมื่อเปิดกฎจำกัดเวลา", "type": "int", "default": 120, "min": 4, "max": 120, "step": 1},
 ]
 
@@ -544,6 +544,97 @@ def _elder_ray(df, p):
                 falling & (bull > 0) & (bull < ta.shift(bull)) & (bear < 0) & _cross_up(e, c)), {f"EMA{n}": e}
 
 
+# ---------------------------------------------------------------- research-backed additions (Oct 2026, user's request)
+def _bars_per_month(df) -> int:
+    """~520 trading hours a month (FX / gold / indices ~22 days x 24 h); D1 -> ~22 bars, H4 -> ~130, H1 -> ~520."""
+    return max(1, int(round(520 / max(_bar_hours(df), 1e-9))))
+
+
+def _flip(state):
+    """Signal on the bar where a +1/-1 state changes sign (0 = no opinion keeps the previous state)."""
+    st = pd.Series(np.asarray(state, float)).replace(0, np.nan).ffill().fillna(0).to_numpy()
+    prev = ta.shift(st)
+    prev = np.where(np.isnan(prev), 0, prev)
+    return _sig((st > 0) & (prev <= 0), (st < 0) & (prev >= 0))
+
+
+EWMAC_SETS = {1: [(16, 64)], 2: [(32, 128)], 3: [(16, 64), (32, 128), (64, 256)]}
+
+
+def _ewmac(df, p):
+    """Carver (2015) EWMAC: (EMA fast - EMA slow) / price volatility, several speeds averaged; trade the sign."""
+    c = df.close.to_numpy()
+    vol = ta.stdev(np.diff(c, prepend=np.nan), 36)
+    fc = np.zeros(len(c))
+    for f, s_ in EWMAC_SETS[int(p["speeds"])]:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            fc = fc + (ta.ema(c, f) - ta.ema(c, s_)) / vol
+    fc = np.where(np.isfinite(fc), fc, 0)
+    f0, s0 = EWMAC_SETS[int(p["speeds"])][0]
+    return _flip(np.sign(fc)), {f"EMA{f0}": ta.ema(c, f0), f"EMA{s0}": ta.ema(c, s0)}
+
+
+def _tsmom_blend(df, p):
+    """Hurst, Ooi & Pedersen (2017) / Moskowitz et al. (2012): average sign of the 1-, 3- and 12-month returns."""
+    c = df.close.to_numpy()
+    m = _bars_per_month(df)
+    looks = [1, 3, 12] if int(p["mode"]) == 0 else [3, 12]
+    vote = np.zeros(len(c))
+    for k in looks:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r = c / ta.shift(c, k * m) - 1
+        vote = vote + np.sign(np.where(np.isfinite(r), r, 0))
+    return _flip(np.sign(vote)), {}
+
+
+def _turtle(df, p):
+    """Turtle-style always-in breakout (Faith 2007): long on an N-bar high, short on an N-bar low, no trend filter."""
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    n = int(p["entry_n"])
+    hi, lo = ta.shift(ta.highest(h, n)), ta.shift(ta.lowest(l, n))
+    state = np.where(c > hi, 1, np.where(c < lo, -1, 0))
+    return _flip(state), {"Channel High": hi, "Channel Low": lo}
+
+
+def _faber(df, p):
+    """Faber (2007) tactical timing: price above / below its ~10-month simple moving average."""
+    c = df.close.to_numpy()
+    n = int(p["months"]) * _bars_per_month(df)
+    ma = ta.sma(c, n)
+    state = np.where(np.isnan(ma), 0, np.where(c > ma, 1, -1))
+    return _flip(state), {f"SMA {int(p['months'])}m": ma}
+
+
+def _clenow(df, p):
+    """Clenow (2013) 'Following the Trend': EMA50 vs EMA100 regime, enter on an N-bar breakout in that direction."""
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    e50, e100 = ta.ema(c, 50), ta.ema(c, 100)
+    n = int(p["breakout_n"])
+    hi, lo = ta.shift(ta.highest(h, n)), ta.shift(ta.lowest(l, n))
+    pc = ta.shift(c)
+    return _sig((e50 > e100) & (c > hi) & (pc <= ta.shift(hi)), (e50 < e100) & (c < lo) & (pc >= ta.shift(lo))), \
+        {"EMA50": e50, "EMA100": e100}
+
+
+def _vol_breakout(df, p):
+    """Crabel (1990) / L. Williams volatility breakout: a close more than k x ATR away from the previous close."""
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    a = ta.shift(ta.atr(h, l, c, 14))
+    pc = ta.shift(c)
+    k = float(p["k_atr"])
+    trend = ta.ema(c, 100)
+    return _sig((c > pc + k * a) & (c > trend), (c < pc - k * a) & (c < trend)), {"EMA100": trend}
+
+
+def _high52(df, p):
+    """George & Hwang (2004) 52-week-high anchor: break of the 6- / 12-month high (low) in trend direction."""
+    c, h, l = df.close.to_numpy(), df.high.to_numpy(), df.low.to_numpy()
+    n = int(p["months"]) * _bars_per_month(df)
+    hi, lo = ta.shift(ta.highest(h, n)), ta.shift(ta.lowest(l, n))
+    pc = ta.shift(c)
+    return _sig((c > hi) & (pc <= ta.shift(hi)), (c < lo) & (pc >= ta.shift(lo))), {"High N": hi, "Low N": lo}
+
+
 STRATEGIES: dict[str, dict] = {
     "donchian_trend": {
         "name": "Donchian Breakout + EMA200",
@@ -954,7 +1045,84 @@ STRATEGIES: dict[str, dict] = {
         "params": [{"key": "ema_len", "label": "EMA Length", "type": "int", "default": 13, "min": 8, "max": 50, "step": 1}],
         "grid": {"ema_len": [13, 21], "sl_atr": [1.5, 2.5], "rr": [1.5, 2.5]},
     },
+    "ewmac": {
+        "name": "EWMAC Multi-speed Trend",
+        "family": "Trend following",
+        "rationale": "ระบบตามแนวโน้มแบบกองทุน CTA: ส่วนต่าง EMA เร็ว-ช้าหารด้วยความผันผวน หลายความเร็วเฉลี่ยกัน — Carver (2015) Systematic Trading; AQR 'A Century of Evidence on Trend-Following' (Hurst, Ooi & Pedersen 2017)",
+        "fn": _ewmac,
+        "params": [{"key": "speeds", "label": "ชุดความเร็ว (1=16/64, 2=32/128, 3=รวม 3 ความเร็ว)", "type": "int", "default": 3, "min": 1, "max": 3, "step": 1}],
+        "grid": {"speeds": [1, 2, 3], "sl_atr": [2.5, 4.0], "rr": [3.0, 0]},
+    },
+    "tsmom_blend": {
+        "name": "Time-Series Momentum 1/3/12m",
+        "family": "Trend following",
+        "rationale": "โหวตทิศจากผลตอบแทนย้อนหลัง 1, 3, 12 เดือน — Moskowitz, Ooi & Pedersen (2012) พบใน 58 ตลาด; Hurst, Ooi & Pedersen (2017) ใช้ส่วนผสม 1/3/12 เดือน ย้อนหลัง 110 ปี",
+        "fn": _tsmom_blend,
+        "params": [{"key": "mode", "label": "ช่วงที่ใช้ (0 = 1/3/12 เดือน, 1 = 3/12 เดือน)", "type": "int", "default": 0, "min": 0, "max": 1, "step": 1}],
+        "grid": {"mode": [0, 1], "sl_atr": [2.5, 4.0], "rr": [3.0, 0]},
+    },
+    "turtle": {
+        "name": "Turtle Breakout (always in)",
+        "family": "Trend following",
+        "rationale": "กฎเต่า (Richard Dennis 1983, Faith 2007): ซื้อเมื่อทำ High ใหม่ N แท่ง ขายเมื่อทำ Low ใหม่ N แท่ง ไม่มีตัวกรอง อยู่ในตลาดตลอด",
+        "fn": _turtle,
+        "params": [{"key": "entry_n", "label": "ช่องทาง N แท่ง", "type": "int", "default": 55, "min": 10, "max": 300, "step": 1}],
+        "grid": {"entry_n": [20, 55], "sl_atr": [2.0, 3.0], "rr": [3.0, 0]},
+    },
+    "faber_sma": {
+        "name": "Faber 10-month SMA Timing",
+        "family": "Trend following",
+        "rationale": "อยู่ฝั่งเดียวกับเส้นค่าเฉลี่ยราว 10 เดือน — Faber (2007) 'A Quantitative Approach to Tactical Asset Allocation' ลด drawdown ของหุ้น พันธบัตร สินค้าโภคภัณฑ์",
+        "fn": _faber,
+        "params": [{"key": "months", "label": "SMA (เดือน)", "type": "int", "default": 10, "min": 2, "max": 24, "step": 1}],
+        "grid": {"months": [6, 10], "sl_atr": [2.5, 4.0], "rr": [3.0, 0]},
+    },
+    "clenow_trend": {
+        "name": "Clenow Trend (EMA50/100 + Breakout)",
+        "family": "Trend following",
+        "rationale": "ระบบในหนังสือ 'Following the Trend' (Clenow 2013) ของผู้จัดการกองทุนตามแนวโน้ม: EMA50 เทียบ EMA100 เป็นทิศ แล้วเข้าเมื่อทะลุกรอบ N แท่ง",
+        "fn": _clenow,
+        "params": [{"key": "breakout_n", "label": "Breakout N แท่ง", "type": "int", "default": 50, "min": 10, "max": 300, "step": 1}],
+        "grid": {"breakout_n": [50, 100], "sl_atr": [2.0, 3.0], "rr": [3.0, 0]},
+    },
+    "vol_breakout": {
+        "name": "Volatility Breakout (Crabel)",
+        "family": "Volatility breakout",
+        "rationale": "แท่งที่วิ่งเกิน k × ATR จากราคาปิดก่อนหน้าบอกแรงซื้อขายใหม่ — Crabel (1990) 'Day Trading with Short Term Price Patterns', Larry Williams; กรองด้วย EMA100",
+        "fn": _vol_breakout,
+        "params": [{"key": "k_atr", "label": "k × ATR", "type": "float", "default": 1.0, "min": 0.3, "max": 3, "step": 0.1}],
+        "grid": {"k_atr": [1.0, 1.5], "sl_atr": [1.5, 2.5], "rr": [2.0, 0]},
+    },
+    "high52": {
+        "name": "52-Week High / Low Breakout",
+        "family": "Trend following",
+        "rationale": "ราคาที่ทำจุดสูงสุดรอบปีมักไปต่อเพราะนักลงทุนยึดจุดอ้างอิง — George & Hwang (2004) 'The 52-Week High and Momentum Investing'",
+        "fn": _high52,
+        "params": [{"key": "months", "label": "กรอบ (เดือน)", "type": "int", "default": 12, "min": 3, "max": 24, "step": 1}],
+        "grid": {"months": [6, 12], "sl_atr": [2.5, 4.0], "rr": [3.0, 0]},
+    },
 }
+
+
+# Stable system numbers: shown to the user and written into MT5 comments (TL{no}-{TF}) — never renumber.
+for _i, _k in enumerate(list(STRATEGIES)):
+    STRATEGIES[_k]["no"] = _i + 1
+
+# Retired Oct 2026 (user's request): negative across all 8 symbols x 3 TFs in the Q4/2026 research (mean OOS t < -0.5 and
+# no candidate t >= 1.5). They stay counted in the multiple-testing gate (research.n_retired_candidates), so removing
+# losers never lowers the bar for the rest.
+RETIRED = {k: STRATEGIES[k]["no"] for k in [
+    "rsi_reversion", "bb_reversion", "tsmom", "adx_trend", "ema_pullback", "range_fade", "stoch_pullback",
+    "zscore_reversion", "trix_cross", "cci_reversion", "keltner_pullback", "three_bar_pullback", "engulfing_reversal",
+    "donchian_fade", "rsi_divergence", "turn_of_month", "london_fix_fade"] if k in STRATEGIES}
+for _k in RETIRED:
+    STRATEGIES.pop(_k)
+
+# "No TP" variant (user's choice): trend / breakout / momentum systems also try rr = 0 (exit only by SL or an opposite
+# signal, how trend-following funds let winners run). Walk-forward picks it in-sample like any other parameter.
+for _k, _v in STRATEGIES.items():
+    if _v["family"] in ("Trend following", "Volatility breakout", "Momentum") and 0 not in _v["grid"].get("rr", []):
+        _v["grid"]["rr"] = list(_v["grid"]["rr"]) + [0]
 
 
 def schema(strategy_id: str) -> list[dict]:
@@ -989,6 +1157,6 @@ def signals(strategy_id: str, df: pd.DataFrame, params: dict):
 
 def public_list() -> list[dict]:
     from .strategy_docs import doc
-    return [{"id": k, "no": i + 1, "name": v["name"], "family": v["family"], "rationale": v["rationale"],
+    return [{"id": k, "no": v["no"], "name": v["name"], "family": v["family"], "rationale": v["rationale"],
              "params": schema(k), "grid": v["grid"], "grid_size": len(grid(k, 120)), **doc(k)}
             for i, (k, v) in enumerate(STRATEGIES.items())]
