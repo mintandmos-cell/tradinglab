@@ -667,7 +667,7 @@ function drawTradeLevels(ch, d, open) {
     for (let i = a; i < n; i++) pts.push(times[i]);
     for (let j = 1; j <= 6; j++) pts.push(times[n - 1] + j * step);
     const lv = [["ENTRY", open.entry, "#60a5fa", 2, ` · ${open.lot}`], ["SL", open.sl, "#ef4444", 0, ""], ["TP", open.tp, "#16c784", 0, ""]];
-    lv.forEach(([title, v, color, style, extra]) => line(color, style, 2, `${title} ${fpx(v, d.digits)}${extra}`).setData(pts.map((t) => ({ time: shiftT(t), value: v }))));
+    lv.forEach(([title, v, color, style, extra]) => line(color, style, 2, `${title}${extra}`).setData(pts.map((t) => ({ time: shiftT(t), value: v }))));
     const side = open.dir > 0 ? "BUY" : "SELL";
     markers.push({ time: shiftT(times[a]), position: open.dir > 0 ? "belowBar" : "aboveBar", color: open.dir > 0 ? "#16c784" : "#ef4444",
       shape: open.dir > 0 ? "arrowUp" : "arrowDown", text: `${open.pending ? "สัญญาณ " : ""}${side} ${open.lot} @ ${fpx(open.entry, d.digits)}` });
@@ -817,8 +817,18 @@ async function renderChart(view) {
       try { cs.update({ ...liveBar, time: shiftT(liveBar.time) }); } catch { /* out of order */ }
     }
     const n = cd.candles.length, half = Math.max(20, Math.round((prefs.get().bars || 220) / 2));
-    // latest candle in the middle of the chart, room on the right for the open position's labels
-    ch.timeScale().setVisibleLogicalRange(range || { from: n - 1 - half, to: n - 1 + half });
+    // the chart reopens where the user left it (per symbol × TF): position kept relative to the latest candle,
+    // so new candles keep the same view; first visit = latest candle in the middle
+    const vkey = `${sym}|${tf}`, views = store.get("chartView", {}), sv = views[vkey];
+    ch.timeScale().setVisibleLogicalRange(range || (sv && isFinite(sv.toOff) && isFinite(sv.width)
+      ? { from: n - 1 - sv.toOff - sv.width, to: n - 1 - sv.toOff } : { from: n - 1 - half, to: n - 1 + half }));
+    let vt = null;
+    ch.timeScale().subscribeVisibleLogicalRangeChange((r) => {
+      if (!r) return;
+      clearTimeout(vt);
+      vt = setTimeout(() => { const nn = liveSeries ? n + Math.max(0, LB.filter((b) => b.time > cd.candles[n - 1].time).length) : n;
+        const all = store.get("chartView", {}); all[vkey] = { toOff: nn - 1 - r.to, width: r.to - r.from }; store.set("chartView", all); }, 400);
+    });
     $("#chTitle").textContent = sym;
     $("#chSub").innerHTML = `${tf} · <b class="mono">${fpx(cd.candles[n - 1]?.close, dg)}</b>`;
     $("#chHist").innerHTML = "";
