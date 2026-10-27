@@ -67,7 +67,7 @@ def candles(symbol: str, tf: str, limit: int = 1500, cfg: dict | None = None, sy
     times = data.to_unix(df.index)
     first = int(times[-limit]) if len(times) > limit else (int(times[0]) if len(times) else None)
     older = sorted({y for y in df.index[:-limit].year}) if len(times) > limit else []
-    out = {"symbol": symbol, "tf": tf, "digits": d, "source": data.source_for(symbol),
+    out = {"symbol": symbol, "tf": tf, "digits": d, "source": data.price_source(symbol),
            "first_time": first, "older_years": older,           # the chart page loads these on demand when scrolled left
            "history_from": df.index[0].isoformat() if len(df) else None,
            "candles": _bars(times[-limit:], df.iloc[-limit:], d)}

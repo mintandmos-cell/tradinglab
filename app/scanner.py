@@ -86,7 +86,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
         "max_hold_h": p["max_hold_h"], "close_by": close_by.isoformat() if close_by is not None else None,
         "reverse_of": ("SHORT" if d > 0 else "LONG") if rev else None,
-        "price_source": data.source_for(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
+        "price_source": data.price_source(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
         "outcome": "open", "outcome_r": None, "exit_time": None, "user_status": "new",
     }
 

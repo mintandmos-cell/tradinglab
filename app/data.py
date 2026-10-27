@@ -6,6 +6,7 @@ History is cached on disk and merged on refresh, so free-data history grows over
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import threading
@@ -217,6 +218,84 @@ def with_history(sym: str, live: pd.DataFrame) -> pd.DataFrame:
     return _clean(pd.concat([seed, tail]))
 
 
+# ---------------------------------------------------------------- Twelve Data (spot FX / gold) — user's request 27 Oct 2026
+# Yahoo gold is a futures contract (a few dollars off the broker's spot price) and its FX bars are rough, so with the
+# repository secret TWELVE_DATA_KEY the newest H1 bars of these symbols come from Twelve Data's spot feed instead —
+# the same feed the chart page shows. Free plan: 800 requests a day, so each symbol is fetched at most once per hour.
+TWELVE = {"EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY", "XAUUSD": "XAU/USD"}
+PRICE_SOURCE: dict[str, str] = {}
+
+
+def _twelve_key() -> str:
+    return os.environ.get("TWELVE_DATA_KEY", "").strip()
+
+
+def twelve_h1(sym: str) -> pd.DataFrame | None:
+    if sym not in TWELVE:
+        return None
+    path = CACHE_DIR / f"twelve_{sym}_H1.pkl"
+    meta = CACHE_DIR / f"twelve_{sym}_H1.json"
+    cached = pd.read_pickle(path) if path.exists() else None
+    key = _twelve_key()
+    if not key or os.environ.get("TL_OFFLINE"):
+        return cached
+    try:
+        last = json.loads(meta.read_text()).get("fetched") if meta.exists() else None
+    except Exception:
+        last = None
+    now = datetime.now(timezone.utc)
+    if cached is not None and last and pd.Timestamp(last).floor("h") >= pd.Timestamp(now).floor("h"):
+        return cached                                    # already fetched after the latest hourly close
+    try:
+        r = requests.get("https://api.twelvedata.com/time_series", timeout=30, params={
+            "symbol": TWELVE[sym], "interval": "1h", "timezone": "UTC", "apikey": key,
+            "outputsize": 5000 if cached is None or cached.empty else 80})
+        j = r.json()
+        if j.get("status") == "error" or "values" not in j:
+            raise RuntimeError(j.get("message") or "no data")
+        d = pd.DataFrame(j["values"])
+        d.index = pd.to_datetime(d.pop("datetime"), utc=True)
+        d = d[["open", "high", "low", "close"]].astype(float)
+        d["volume"] = 0.0
+        d = d[d.high > d.low]                            # flat bars = market closed (weekends, holidays)
+        df = _clean(pd.concat([cached, d]) if cached is not None else d)
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        df.to_pickle(path)
+        meta.write_text(json.dumps({"fetched": now.isoformat()}))
+        return df
+    except Exception as e:
+        log.warning("Twelve Data %s failed (%s); using %s", sym, e, "cache" if cached is not None else "Yahoo")
+        return cached
+
+
+def with_twelve(sym: str, df: pd.DataFrame) -> pd.DataFrame:
+    """MT5 history (+ Yahoo where needed) with the Twelve Data spot bars as the newest part."""
+    tw = twelve_h1(sym)
+    if tw is None or tw.empty:
+        return df
+    seed = _seed(sym)
+    ratio = 1.0
+    if seed is not None and not seed.empty:
+        common = seed.index.intersection(tw.index)[-500:]
+        if len(common) >= 20:
+            ratio = float(np.median(seed.close.loc[common].to_numpy() / tw.close.loc[common].to_numpy()))
+            if not np.isfinite(ratio) or abs(ratio - 1) > 0.02:     # spot vs broker spot: should be ~1
+                ratio = 1.0
+    tw = tw.copy()
+    for k in ("open", "high", "low", "close"):
+        tw[k] = tw[k] * ratio
+    cut = seed.index[-1] if seed is not None and not seed.empty and seed.index[-1] >= tw.index[0] else tw.index[0] - pd.Timedelta(seconds=1)
+    PRICE_SOURCE[sym] = "twelve"
+    return _clean(pd.concat([df[df.index <= cut], tw[tw.index > cut]]))
+
+
+def price_source(sym: str, settings=None) -> str:
+    """Where the newest bars of a symbol come from (shown on signals / chart)."""
+    src = source_for(sym, settings)
+    return PRICE_SOURCE.get(sym, src) if src == "yahoo" else src
+
+
+
 def source_for(sym: str, settings=None) -> str:
     settings = settings or load_settings()
     if settings["data_source"] in ("auto", "mt5") and _mt5_init(settings):
@@ -262,6 +341,7 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
             df = cached
         if src == "yahoo":
             df = with_history(sym, df)       # cache keeps the raw Yahoo bars; the history file is joined on read
+            df = with_twelve(sym, df)        # spot FX / gold from Twelve Data when the key is configured
         df = market_hours(sym, df, settings)
         _mem[key] = (time.time(), df)
         return df

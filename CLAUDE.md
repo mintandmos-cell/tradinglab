@@ -12,7 +12,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
     (8 symbols × 3 TF, `python -m app.cloud part SYM TF`, offline `TL_OFFLINE=1`) → job `run` (`app.cloud merge` = gates/status + scan + site).
     Research has its own concurrency group so queued hourly scans never cancel it. Mode `test` = one ntfy test push.
   - push to `main` touching app/web/research/settings: rebuild the site only.
-  - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
+  - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC`, `TWELVE_DATA_KEY` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
 - Exits (user's rule, 26 Oct 2026): **only TP, SL or an opposite signal** (exit at the next bar's open and reverse, reason "Rev").
   No time limit and no Friday close — `research.exit_max_hold` / `exit_friday_close` stay false unless the user asks again
@@ -42,7 +42,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout
-- `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance. H1 cached in `data/cache`, H4/D1 resampled.
+- `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance.
+  With the repo secret `TWELVE_DATA_KEY` (user's request 27 Oct 2026) the newest FX/gold H1 bars come from Twelve Data spot
+  (`data.with_twelve`, fetched at most once per hour per symbol, cache in data/cache, falls back to Yahoo); `data.price_source` labels it. H1 cached in `data/cache`, H4/D1 resampled.
   Long history: `data/history/{SYM}_H1.csv.gz` (from `export_mt5_history.bat` on the PC; Dukascopy blocks GitHub runners — `tools/fetch_history.js`
   / workflow History kept for manual retry) is joined with Yahoo bars by `with_history` (ratio-scaled at the overlap). A push touching
   `data/history/` makes the cloud run the full research. MT5 bar times are broker server time ("NY close" = New York + 7 h); `server_to_utc`

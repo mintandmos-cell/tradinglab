@@ -38,6 +38,7 @@ jobs:
     outputs:
       mode: ${{ steps.m.outputs.mode }}
     env:
+      TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
       PYTHONWARNINGS: ignore
     steps:
       - id: m
@@ -140,6 +141,7 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     env:
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      TWELVE_DATA_KEY: ${{ secrets.TWELVE_DATA_KEY }}
       TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       TL_ACCOUNT_BALANCE: ${{ vars.ACCOUNT_BALANCE }}
