@@ -268,7 +268,7 @@ def settings_set(body: dict = Body(...)):
 
 @app.post("/api/notify/test")
 def notify_test():
-    return ok(notify.send("TradingLab ทดสอบการแจ้งเตือน", "ถ้าเห็นข้อความนี้ แปลว่าการแจ้งเตือนบนมือถือทำงานแล้ว ✅", priority=3, tags=["white_check_mark"]))
+    return ok(notify.send("TradingLab ทดสอบการแจ้งเตือน", "ถ้าเห็นข้อความนี้ แปลว่าการแจ้งเตือนบนมือถือทำงานแล้ว ✅", priority=5, tags=["white_check_mark"]))
 
 
 # ----------------------------------------------------------------------------- web app
