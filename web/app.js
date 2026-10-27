@@ -218,6 +218,13 @@ function brokerShift(t) {
   return (_nyOff[h] + 7) * 3600;
 }
 function bucketStart(t, tfs) { if (tfs <= 3600) return t - (t % tfs); const sh = brokerShift(t), x = t + sh; return x - (x % tfs) - sh; }
+// Twelve Data keeps printing flat "candles" while the market is shut (weekends, holidays): drop them like MT5 does.
+// A bar is kept only if it traded (high > low) and falls Monday–Friday on the broker clock (FX week = Mon 00:00 – Fri 24:00 server).
+function marketOpen(b) {
+  if (!(b.high > b.low)) return false;
+  const wd = new Date((b.time + brokerShift(b.time)) * 1000).getUTCDay();
+  return wd >= 1 && wd <= 5;
+}
 function aggregate(h1, tfs) {
   if (tfs <= 3600) return h1;
   const out = [];
@@ -246,7 +253,8 @@ async function recentBars(sym) {
       const j = await get(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(TWELVE_SYM[sym])}&interval=1h&outputsize=1000&timezone=UTC&apikey=${encodeURIComponent(P.twelve)}`);
       if (j.status === "error" || !j.values) v = { src: "Twelve Data", error: j.message || "ไม่มีข้อมูล", bars: [] };
       else v = { src: "Twelve Data", bars: j.values.map((x) => ({ time: Math.round(Date.parse(x.datetime.replace(" ", "T") + "Z") / 1000),
-        open: +x.open, high: +x.high, low: +x.low, close: +x.close })).filter((b) => isFinite(b.time) && b.close > 0).sort((a, b) => a.time - b.time) };
+        open: +x.open, high: +x.high, low: +x.low, close: +x.close })).filter((b) => isFinite(b.time) && b.close > 0 && marketOpen(b))
+        .sort((a, b) => a.time - b.time) };
     }
   } catch (e) { v = { src: BINANCE_LIVE[sym] ? "Binance" : "Twelve Data", error: e.message, bars: [] }; }
   S.recent[sym] = { at: Date.now(), v };
