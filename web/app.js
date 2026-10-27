@@ -479,6 +479,11 @@ const sysOf = (sym) => S.symbols.find((x) => x.symbol === sym) || {};
 // the symbol's ACTIVE systems this quarter (several allowed); old data without "systems": the single system
 const liveSystems = (sym) => { const r = sysOf(sym); return r.systems || (r.status === "ACTIVE" && r.strategy ? [{ strategy: r.strategy, tf: r.tf }] : []); };
 const isLiveSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && (!tf || x.tf === tf));
+// positions the systems hold right now = alerted signals still being tracked (outcome "open", not skipped by the risk cap)
+const heldOf = (sym, sid, tf) => (S.sigs || []).filter((x) => x.outcome === "open" && !x.capped && (!sym || x.symbol === sym)
+  && (!sid || x.strategy === sid) && (!tf || x.tf === tf));
+const heldBadge = (list, short = false) => list.length ? list.map((x) => `<span class="held ${x.dir > 0 ? "long" : "short"}" data-tip="ถืออยู่: ${x.side} @ ${x.entry} · ${x.user_status === "taken" ? "คุณกดเปิดแล้ว" : "ยังไม่ได้กดยืนยันว่าเปิด"}">${x.dir > 0 ? "▲" : "▼"}${short ? " ถือ" : " ถือ " + x.side}</span>`).join("") : "";
+async function loadHeld() { try { S.sigs = await api("/api/signals"); } catch { S.sigs = S.sigs || []; } }
 const isPortfolioSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && x.tf === tf && x.source === "portfolio");
 const stratLabel = (id) => { const s = stratById(id); return s ? `#${s.no} ${s.name}` : id; };
 function pickSel(q, key, fallbackStrategy) {
@@ -503,8 +508,8 @@ function railHtml(sel) {
   return `<div class="rail">
     <div class="rail-grp"><button class="rb qbtn" id="qBtn" data-tip="เลือกด่วน: ระบบ ACTIVE / WATCH เรียงตามความสำคัญ">⚡<small>ด่วน</small></button></div>
     <div class="rail-grp">${["H1", "H4", "D1"].map((t) => `<button class="rb ${t === sel.tf ? "on" : ""}" data-tf="${t}" data-tip="Timeframe ${t}">${t}</button>`).join("")}</div>
-    <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${isLiveSys(sel.symbol, sel.strategy, sel.tf) ? '<i class="star">★</i>' : ""}</button></div>
-    <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i></button>`).join("")}</div>
+    <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${isLiveSys(sel.symbol, sel.strategy, sel.tf) ? '<i class="star">★</i>' : ""}${heldOf(sel.symbol, sel.strategy, sel.tf).length ? '<i class="hd"></i>' : ""}</button></div>
+    <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i>${heldOf(x.symbol).length ? `<i class="hd" data-n="${heldOf(x.symbol).length}"></i>` : ""}</button>`).join("")}</div>
   </div>`;
 }
 function bindRail(root, sel, onChange) {
@@ -520,7 +525,7 @@ async function openQuickPicker(anchor, sel, pick) {
   const pop = document.createElement("div"); pop.className = "syspop quick";
   const row = (p) => { const st = stratById(p.strategy) || {}; const on = p.symbol === sel.symbol && p.tf === sel.tf && p.strategy === sel.strategy;
     return `<button data-i="${list.indexOf(p)}" class="${on ? "on" : ""}"><b class="ab">${ABBR[p.symbol] || p.symbol.slice(0, 3)}</b>
-      <span><em class="ql">${statusBadge(p.status)}${p.portfolio ? ' <span class="badge ghost">พอร์ต</span>' : ""} <i class="mono">${p.tf}</i> · #${st.no ?? "?"} ${esc(st.name || p.strategy)}${p.live ? ' <i class="star">★</i>' : ""}</em>
+      <span><em class="ql">${heldBadge(heldOf(p.symbol, p.strategy, p.tf), true)}${statusBadge(p.status)}${p.portfolio ? ' <span class="badge ghost">พอร์ต</span>' : ""} <i class="mono">${p.tf}</i> · #${st.no ?? "?"} ${esc(st.name || p.strategy)}${p.live ? ' <i class="star">★</i>' : ""}</em>
       <small>${p.symbol} · OOS ${p.trades ?? "–"} ไม้ · ${fr(p.exp, 3)}/ไม้ · t ${fnum(p.t, 2)}${p.robust != null ? " · Robust " + p.robust : ""}</small></span></button>`; };
   const act = list.filter((p) => p.status === "ACTIVE"), wat = list.filter((p) => p.status === "WATCH"), rest = list.filter((p) => !["ACTIVE", "WATCH"].includes(p.status));
   pop.innerHTML = `<div class="syspop-hd"><b>⚡ เลือกด่วน</b><span class="muted small">กดครั้งเดียว เปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน · ACTIVE = ระบบที่ส่งแจ้งเตือนจริง (★) รวมระบบพอร์ตที่เทรดทุกสินทรัพย์ · WATCH = ยังไม่ผ่านเกณฑ์ ไม่เทรด</span></div>
@@ -557,7 +562,7 @@ function openSysPicker(anchor, sel, pick) {
   pop.innerHTML = `<div class="syspop-hd"><b>เลือกระบบเทรด</b><span class="muted small">${S.strategies.length} ระบบ · ★ = ระบบที่เทรดจริงของ ${sel.symbol} ${sel.tf} ไตรมาสนี้</span>
       <input class="inp" id="sysQ" placeholder="ค้นหาเลข ชื่อ หรือกลุ่ม…" autocomplete="off"></div>
     <div class="syspop-list">${S.strategies.map((s) => `<button data-sid="${s.id}" class="${s.id === sel.strategy ? "on" : ""}" data-q="${esc((s.no + " " + s.name + " " + s.family).toLowerCase())}">
-      <b>${s.no}</b><span>${esc(s.name)}<small>${esc(s.family)}</small></span>${live.has(s.id) ? '<i class="star">★</i>' : ""}</button>`).join("")}</div>`;
+      <b>${s.no}</b><span>${esc(s.name)}<small>${esc(s.family)}</small></span>${heldBadge(heldOf(sel.symbol, s.id, sel.tf), true)}${live.has(s.id) ? '<i class="star">★</i>' : ""}</button>`).join("")}</div>`;
   document.body.append(bg, pop);
   const r = anchor.getBoundingClientRect();
   if (window.innerWidth > 760) {
@@ -757,7 +762,7 @@ async function renderChart(view) {
   const overlay = store.get("chartOverlay", true);
   let tab = store.get("chartTab", "chart");
   view.innerHTML = wsHtml({
-    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="liveTag"></span><span id="chBadge"></span>`,
+    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="liveTag"></span><span id="chBadge"></span>${heldBadge(heldOf(sym, sid, tf))}`,
     tabs: [["chart", "กราฟ"], ["trades", "เทรดล่าสุด"]], tab,
     actions: `<button class="ibtn ${overlay ? "on" : ""}" id="ovl" data-tip="แสดง/ซ่อน indicator และจุดเข้าออกของระบบ">${ICONS.ind}</button>`,
     main: `<div class="chart-box" id="chartBox"><div class="chart fill" id="mainChart"></div><div class="hist-note" id="chHist"></div></div><div class="ws-pane" id="trPane" hidden></div>`,
@@ -1647,6 +1652,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - จุดสีบนปุ่มสินทรัพย์: 🟢 ACTIVE · 🟠 WATCH · ไม่มีจุด = OFF
 - แท่งล่าสุดอยู่กลางกราฟ · ซูมด้วยสองนิ้ว · **เลื่อนไปทางซ้ายเพื่อดูย้อนหลัง** ข้อมูลปีก่อนหน้าจะโหลดมาต่อเอง
 - ออเดอร์ที่ระบบถืออยู่มีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อม Lot
+- **ป้ายถือออเดอร์:** ระบบที่กำลังถือออเดอร์มีป้าย **▲ ถือ LONG / ▼ ถือ SHORT** (บนหัวกราฟ, รายการ ⚡ ด่วน, รายการเลือกระบบ) และจุดสี่เหลี่ยมฟ้าที่มุมซ้ายของปุ่มสินทรัพย์ทางขวา · หน้าสัญญาณแสดงรายการออเดอร์ที่ถือของแต่ละสินทรัพย์ พร้อมบอกว่าคุณกด “เปิดแล้ว” หรือยัง
 - แท็บ **เทรดล่าสุด** แสดงรายการเทรดของระบบที่เลือก · แถบล่างบอกพารามิเตอร์ สัญญาณล่าสุด และออเดอร์ที่เปิดอยู่
 - เลือกระบบอื่นที่ไม่ใช่ ★ = **ดูอย่างเดียว** ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน
 ### 🧠 ระบบเทรด
@@ -1777,6 +1783,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 // ------------------------------------------------------------------ SIGNALS
 async function renderSignals(view) {
   const [sigs, syms, fwd] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward")]);
+  S.sigs = sigs;
   S.symbols = syms;
   const now = new Date();
   const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
@@ -1796,7 +1803,9 @@ async function renderSignals(view) {
       <div class="t-top"><span class="ab">${ABBR[x.symbol] || ""}</span><b>${x.symbol}</b>${statusBadge(x.status)}</div>
       <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${tf || ""}</span>${main?.source === "portfolio" ? ' <span class="badge ghost">พอร์ต</span>' : ""}${more}
         ${!sy.length ? '<div class="tiny muted">ยังไม่มีระบบผ่านเกณฑ์ — แสดงตัวที่ดีที่สุด ไม่เทรด</div>' : ""}</div>
-      <div class="t-foot">${op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : sy.length ? '<span class="muted">○ รอสัญญาณ</span>' : '<span class="muted">— ไม่เทรด</span>'}
+      ${heldOf(x.symbol).length ? `<div class="t-held">${heldOf(x.symbol).map((h) => `<div class="hrow"><span class="held ${h.dir > 0 ? "long" : "short"}">${h.dir > 0 ? "▲" : "▼"} ${h.side}</span>
+        <b>#${stratById(h.strategy)?.no ?? "?"}</b> <span class="muted">${h.tf}</span> <span class="mono">@ ${h.entry}</span>${h.source === "portfolio" ? ' <span class="badge ghost">พอร์ต</span>' : ""}<span class="tiny ${h.user_status === "taken" ? "pos" : "muted"}" style="margin-left:auto">${h.user_status === "taken" ? "เปิดแล้ว" : "ยังไม่ยืนยัน"}</span></div>`).join("")}</div>` : ""}
+      <div class="t-foot">${heldOf(x.symbol).length ? `<span class="pos">● ถืออยู่ ${heldOf(x.symbol).length} ออเดอร์</span>` : op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : sy.length ? '<span class="muted">○ รอสัญญาณ</span>' : '<span class="muted">— ไม่เทรด</span>'}
         ${exp != null ? `<span class="mono muted">${fr(exp, 2)}/ไม้</span>` : ""}</div></a>`;
   };
   view.innerHTML = `<div class="page">
@@ -1933,6 +1942,7 @@ async function boot() {
   $("#themeBtn").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; store.set("theme", t); navigate(); };
   try {
     [S.symbols, S.strategies, S.settings] = await Promise.all([api("/api/symbols"), api("/api/strategies"), api("/api/settings")]);
+    await loadHeld();
   } catch (e) { $("#view").innerHTML = `<div class="banner"><span class="ic">⚠️</span><div>${STATIC ? "โหลดข้อมูลไม่ได้" : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"}: ${esc(e.message)}</div></div>`; return; }
   await refreshStatus();
   window.addEventListener("hashchange", navigate);
