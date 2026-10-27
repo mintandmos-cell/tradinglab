@@ -670,8 +670,10 @@ async function pollResearch() {
 // ------------------------------------------------------------------ CHART
 function openPosition(d, openSigs) {
   // the system's own running position (exact backtest rules) first, else a fresh signal waiting for its entry bar
-  if (d.open_trade) return { ...d.open_trade, from: d.open_trade.entry_time, pending: false };
-  const s = openSigs[0];
+  // a live signal newer than the backtest's running trade (e.g. a reversal waiting for the next open) wins: that is
+  // what the alert told the user to do
+  const s = [...openSigs].sort((a, b) => new Date(b.bar_time) - new Date(a.bar_time))[0];
+  if (d.open_trade && !(s && Math.floor(new Date(s.bar_time).getTime() / 1000) >= d.open_trade.entry_time)) return { ...d.open_trade, from: d.open_trade.entry_time, pending: false };
   return s ? { dir: s.dir, entry: s.entry, sl: s.sl, tp: s.tp, from: Math.floor(new Date(s.bar_time).getTime() / 1000), close_by: Math.floor(new Date(s.close_by).getTime() / 1000), pending: true } : null;
 }
 

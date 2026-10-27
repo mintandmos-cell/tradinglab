@@ -2,7 +2,10 @@ name: TradingLab
 
 on:
   schedule:
-    - cron: "4 * * * *"     # every hour, just after the H1 candle closes: scan + alerts + site
+    # scan + alerts + site every 10 minutes: GitHub delays scheduled runs by 25-45 min at busy times, so a single
+    # ":04" trigger pushed signals ~40 min after the candle closed. Frequent triggers mean one runs soon after each close;
+    # the scan is idempotent (one signal per system and bar), extra runs just find nothing new.
+    - cron: "1,11,21,31,41,51 * * * *"
     - cron: "30 2 1 1,4,7,10 *"   # 1 Jan / Apr / Jul / Oct 09:30 Bangkok: quarterly research (all systems, same cut-off)
     - cron: "30 2 * * 6"    # Saturday 09:30 Bangkok: safety net — research ONLY if this quarter's run is still missing
   workflow_dispatch:

@@ -146,6 +146,11 @@ def scan_once() -> list[dict]:
                         s = _make_signal(sym, cfg, df, res, settings)
                         if s["id"] in known:
                             continue
+                        # "close your old order first" only if we actually alerted that order (a system that just became
+                        # ACTIVE may hold a backtest-only position the user never saw)
+                        if s.get("reverse_of") and not any(x["symbol"] == sym and x["strategy"] == cfg["strategy"] and x["tf"] == cfg["tf"]
+                                                           and x.get("outcome") == "open" and x.get("dir") == -s["dir"] for x in sigs):
+                            s["reverse_of"] = None
                         # total risk cap per symbol (user's rule): open ACTIVE alerts of this symbol, other systems'
                         # positions + this one; a reversal replaces this system's own open order
                         same_sys = lambda x: x["strategy"] == cfg["strategy"] and x["tf"] == cfg["tf"]
@@ -200,7 +205,10 @@ def alert_text(s: dict, d: int) -> tuple[str, str]:
     close_by = (f"ปิดภายใน {datetime.fromisoformat(s['close_by']).astimezone(BKK).strftime('%d/%m %H:%M')} น." if s.get("close_by")
                 else "ถือจนชน TP / SL หรือมีสัญญาณกลับทิศ")
     rev = (f"🔁 ปิดออเดอร์ {s['reverse_of']} เดิมของระบบนี้ (comment {tag}) ก่อน แล้วเปิดไม้นี้\n" if s.get("reverse_of") else "")
-    msg = (f"{rev}{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
+    closed = pd.Timestamp(s["bar_time"]) + pd.Timedelta(minutes=TIMEFRAMES.get(s["tf"], 60))
+    late = max(0, int((pd.Timestamp(s["created"]) - closed).total_seconds() // 60)) if s.get("created") else 0
+    when = f"🕒 แท่งปิด {closed.tz_convert(BKK).strftime('%H:%M')} น." + (f" · แจ้งช้า {late} นาที — เช็คราคาใน MT5 ก่อนเข้า" if late >= 15 else "")
+    msg = (f"{rev}{when}\n{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
            f"{tp_line}\n"
            f"{close_by} · ระบบ: {s['strategy_name']} ({s['tf']}) · {s['system_status']}\n🏷️ ใส่ comment ใน MT5: {tag}")
     return title, msg
