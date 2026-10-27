@@ -428,7 +428,7 @@ async function refreshStatus() {
 async function navigate() {
   const k = route(), r = ROUTES[k];
   S.charts.forEach((c) => { try { c.remove(); } catch { /* already gone */ } }); S.charts = [];
-  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  closeAllPopups(false);
   Live.stop(); clearInterval(S.liveTimer);
   $("#pageTitle").textContent = r.title; $("#pageSub").textContent = r.sub;
   document.title = `${r.title} · TradingLab`;
@@ -444,6 +444,37 @@ async function navigate() {
 // ------------------------------------------------------------------ workspace (chart / systems / lab): main area + right rail
 const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
+// Android back button (user's rule): it closes the open popup first; pages never pile up in the history
+// (navigation replaces the current entry), so with nothing open, back leaves the app / closes the web page.
+const Back = {
+  stack: [], skip: 0, waiters: [],
+  open(close) { Back.stack.push(close); history.pushState({ tlPopup: Back.stack.length }, "", location.href); },
+  release(close) {          // popup closed by a tap: drop its history entry; resolves once the browser has done so
+    const i = Back.stack.lastIndexOf(close);
+    if (i < 0) return Promise.resolve();
+    Back.stack.splice(i, 1); Back.skip++;
+    return new Promise((res) => { Back.waiters.push(res); history.back(); });
+  },
+};
+window.addEventListener("popstate", () => {
+  if (Back.skip) { Back.skip--; const w = Back.waiters.shift(); if (w) w(); return; }
+  const c = Back.stack.pop();
+  if (c) c(true);
+});
+function closeAllPopups(dropHistory = true) {
+  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  const n = Back.stack.length; Back.stack = [];
+  if (n && dropHistory) { Back.skip++; history.go(-n); }
+}
+function go(hash) {          // change page without adding a history entry
+  if (location.hash === hash) { navigate(); return; }
+  history.replaceState(history.state, "", hash); navigate();
+}
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="#/"]');
+  if (!a || a.target || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+  e.preventDefault(); go(a.getAttribute("href"));
+});
 const sysOf = (sym) => S.symbols.find((x) => x.symbol === sym) || {};
 // the symbol's ACTIVE systems this quarter (several allowed); old data without "systems": the single system
 const liveSystems = (sym) => { const r = sysOf(sym); return r.systems || (r.status === "ACTIVE" && r.strategy ? [{ strategy: r.strategy, tf: r.tf }] : []); };
@@ -482,7 +513,7 @@ function bindRail(root, sel, onChange) {
   $("#qBtn", root).onclick = (e) => openQuickPicker(e.currentTarget, sel, (p) => onChange({ symbol: p.symbol, tf: p.tf, strategy: p.strategy }, "pick"));
 }
 async function openQuickPicker(anchor, sel, pick) {
-  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  closeAllPopups();
   const list = S.picks || (S.picks = await api("/api/picks").catch(() => []));
   const bg = document.createElement("div"); bg.className = "syspop-bg";
   const pop = document.createElement("div"); pop.className = "syspop quick";
@@ -499,14 +530,15 @@ async function openQuickPicker(anchor, sel, pick) {
   document.body.append(bg, pop);
   const r = anchor.getBoundingClientRect();
   if (window.innerWidth > 760) { pop.style.top = Math.max(8, Math.min(r.top, window.innerHeight - pop.offsetHeight - 8)) + "px"; pop.style.left = Math.max(8, r.left - pop.offsetWidth - 8) + "px"; }
-  const close = () => { bg.remove(); pop.remove(); };
-  bg.onclick = close;
-  pop.onclick = (e) => { const b = e.target.closest("[data-i]"); if (b) { close(); pick(list[+b.dataset.i]); } };
+  const close = (fromBack) => { bg.remove(); pop.remove(); return fromBack === true ? Promise.resolve() : Back.release(close); };
+  Back.open(close);
+  bg.onclick = () => close();
+  pop.onclick = (e) => { const b = e.target.closest("[data-i]"); if (b) close().then(() => pick(list[+b.dataset.i])); };
 }
 function goSel(page, sel, extra = {}) {
   const p = new URLSearchParams({ symbol: sel.symbol, tf: sel.tf, strategy: sel.strategy, ...extra });
   const h = `#/${page}?${p}`;
-  if (location.hash === h) navigate(); else location.hash = h;
+  go(h);
 }
 function bindTabs(root, key, onTab) {
   const box = $("#wsTabs", root); if (!box) return;
@@ -517,7 +549,7 @@ function bindTabs(root, key, onTab) {
   };
 }
 function openSysPicker(anchor, sel, pick) {
-  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  closeAllPopups();
   const live = new Set(liveSystems(sel.symbol).filter((x) => x.tf === sel.tf).map((x) => x.strategy));
   const bg = document.createElement("div"); bg.className = "syspop-bg";
   const pop = document.createElement("div"); pop.className = "syspop";
@@ -531,11 +563,12 @@ function openSysPicker(anchor, sel, pick) {
     pop.style.top = Math.max(8, Math.min(r.top, window.innerHeight - pop.offsetHeight - 8)) + "px";
     pop.style.left = Math.max(8, r.left - pop.offsetWidth - 8) + "px";
   }
-  const close = () => { bg.remove(); pop.remove(); };
-  bg.onclick = close;
+  const close = (fromBack) => { bg.remove(); pop.remove(); return fromBack === true ? Promise.resolve() : Back.release(close); };
+  Back.open(close);
+  bg.onclick = () => close();
   pop.querySelector(".on")?.scrollIntoView({ block: "center" });
   $("#sysQ", pop).oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$("[data-sid]", pop).forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
-  pop.onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) { close(); pick(b.dataset.sid); } };
+  pop.onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) close().then(() => pick(b.dataset.sid)); };
 }
 const footItem = (k, v, cls = "") => `<span class="fi"><span class="k">${k}</span><span class="v ${cls}">${v}</span></span>`;
 
@@ -1203,7 +1236,7 @@ async function renderLabManual(view) {   // local server only: free experiments 
     const tick = async () => {
       const st = await api("/api/research/state");
       if (st.running) { btn.innerHTML = `<span class="spinner"></span> ${esc(st.progress || "กำลังวิเคราะห์…")}`; return setTimeout(tick, 2000); }
-      S.symbols = await api("/api/symbols"); toast(`วิเคราะห์ ${sym || "ทุกสินทรัพย์"} เสร็จแล้ว`); location.hash = "#/systems";
+      S.symbols = await api("/api/symbols"); toast(`วิเคราะห์ ${sym || "ทุกสินทรัพย์"} เสร็จแล้ว`); go("#/systems");
     };
     tick();
   };

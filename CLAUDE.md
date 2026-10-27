@@ -28,6 +28,8 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Chart: latest candle centred, tabs chart / latest trades. Systems: equity curve / system details (indicators, params, rules
   from `app/strategy_docs.py`) / catalogue. Lab: step-by-step results of one system, default = the symbol's best; the
   "re-run research now" button lives only here. Page must not pinch-zoom on iPad (only charts zoom).
+  Back button (Android, user's rule): closes the open popup (`Back` in web/app.js); pages never add history entries (`go()` replaces),
+  so with nothing open, back leaves the app.
   ⚡ quick pick at the top of the rail = ACTIVE → WATCH candidates (any strategy/TF) sorted by status then t (`research.picks`, static `picks.json`).
 - Live prices (display only, never used for signals): forming candle updated every 1 s — BTC/ETH from the Binance WebSocket, FX/gold/indices
   from Finnhub (user pastes a free key in Settings; OANDA symbols). Device prefs (theme, home page, candle colours, bars, live, key) live in
