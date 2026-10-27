@@ -31,6 +31,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Live prices (display only, never used for signals): forming candle updated every 1 s — BTC/ETH from the Binance WebSocket, FX/gold/indices
   from Finnhub (user pastes a free key in Settings; OANDA symbols). Device prefs (theme, home page, candle colours, bars, live, key) live in
   browser localStorage `tl.prefs` with a backup code — nothing personal is committed.
+  The chart tail is replaced by real recent H1 candles from the live feed's family (Binance klines for BTC/ETH; Twelve Data with the
+  user's optional free key for FX/gold) — `recentBars` / `aggregate` in `web/app.js`. H4/D1 are cut on the BROKER clock everywhere
+  (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time, a day = New York close.
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout

@@ -246,13 +246,30 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
         return df
 
 
-def resample(h1: pd.DataFrame, tf: str) -> pd.DataFrame:
-    if tf == "H1":
+def utc_to_server(idx, settings=None) -> pd.DatetimeIndex:
+    """Inverse of server_to_utc: UTC → naive broker server time (NY close = New York + 7 h)."""
+    mode = (settings or load_settings()).get("mt5_server_time", "ny_close")
+    idx = pd.DatetimeIndex(idx)
+    idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
+    if mode == "utc":
+        return idx.tz_localize(None)
+    if mode != "ny_close":
+        return idx.tz_localize(None) + pd.Timedelta(hours=float(mode))
+    return idx.tz_convert("America/New_York").tz_localize(None) + pd.Timedelta(hours=7)
+
+
+def resample(h1: pd.DataFrame, tf: str, settings=None) -> pd.DataFrame:
+    """H4 / D1 candles cut on the BROKER clock (like MT5: H4 = 00/04/08… server time, a day = New York close),
+    so the shapes match the user's MT5 chart. Labels are returned in UTC."""
+    if tf == "H1" or h1.empty:
         return h1
     rule = {"H4": "4h", "D1": "1D"}[tf]
-    out = h1.resample(rule, origin="epoch", label="left", closed="left").agg(
-        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
-    return out.dropna(subset=["open"])
+    srv = h1.copy()
+    srv.index = utc_to_server(h1.index, settings)
+    out = srv.resample(rule, origin="epoch", label="left", closed="left").agg(
+        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna(subset=["open"])
+    out.index = server_to_utc(out.index, settings)
+    return _clean(out) if out.index.has_duplicates else out
 
 
 def drop_unclosed(df: pd.DataFrame, tf: str, now: datetime | None = None) -> pd.DataFrame:

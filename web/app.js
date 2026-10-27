@@ -188,13 +188,70 @@ function dedupeTimes(points) {
 }
 
 // ------------------------------------------------------------------ personal display preferences (this device) + live prices
-const PREF_DEF = { candle: "classic", bars: 220, live: true, finnhub: "", liveMap: {}, home: "chart" };
+const PREF_DEF = { candle: "classic", bars: 220, live: true, finnhub: "", twelve: "", liveMap: {}, home: "chart" };
 const prefs = { get() { return { ...PREF_DEF, ...store.get("prefs", {}) }; }, set(v) { store.set("prefs", { ...prefs.get(), ...v }); } };
 const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขียว / แดง" }, tv: { up: "#26a69a", down: "#ef5350", name: "แบบ TradingView" },
   blue: { up: "#3b82f6", down: "#f59e0b", name: "ฟ้า / ส้ม (ตาบอดสีอ่านง่าย)" }, mono: { up: "#e6e9ef", down: "#6b7280", name: "ขาว / เทา" } };
 const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
   NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD" };
 const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
+const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX" };
+
+// Broker clock: MT5 "New York close" servers run New York time + 7 h (GMT+2 / GMT+3). H4 and D1 candles are cut on
+// that clock (same as the Python side), so their shapes match the user's MT5 chart.
+const _nyOff = {};
+const NY_FMT = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit" });
+function brokerShift(t) {
+  const m = S.settings?.mt5_server_time ?? "ny_close";
+  if (m === "utc") return 0;
+  if (m !== "ny_close" && isFinite(+m)) return +m * 3600;
+  const h = Math.floor(t / 3600);
+  if (_nyOff[h] === undefined) {
+    let off = -5;
+    try {
+      const d = new Date(h * 3600000);
+      const x = Object.fromEntries(NY_FMT.formatToParts(d).map((q) => [q.type, q.value]));
+      off = Math.round((Date.UTC(+x.year, +x.month - 1, +x.day, +x.hour % 24) - d.getTime()) / 3600000);
+    } catch { /* very old browser: assume EST */ }
+    _nyOff[h] = off;
+  }
+  return (_nyOff[h] + 7) * 3600;
+}
+function bucketStart(t, tfs) { if (tfs <= 3600) return t - (t % tfs); const sh = brokerShift(t), x = t + sh; return x - (x % tfs) - sh; }
+function aggregate(h1, tfs) {
+  if (tfs <= 3600) return h1;
+  const out = [];
+  for (const b of h1) {
+    const t = bucketStart(b.time, tfs), o = out[out.length - 1];
+    if (o && o.time === t) { o.high = Math.max(o.high, b.high); o.low = Math.min(o.low, b.low); o.close = b.close; }
+    else out.push({ time: t, open: b.open, high: b.high, low: b.low, close: b.close, _first: b.time });
+  }
+  if (out.length && out[0]._first !== out[0].time) out.shift();          // first bucket is only partly covered
+  return out.map(({ _first, ...b }) => b);
+}
+// Recent real H1 candles from the same family of feed as the live price (display only): Binance for BTC/ETH (free),
+// Twelve Data for FX / gold (free key, optional). Replaces the tail of the chart so the shapes match the live market.
+async function recentBars(sym) {
+  const P = prefs.get(); if (!P.live) return null;
+  const c = (S.recent ||= {})[sym], ttl = BINANCE_LIVE[sym] ? 60000 : 300000;
+  if (c && Date.now() - c.at < ttl) return c.v;
+  let v = null;
+  const get = async (url) => { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
+  try {
+    if (BINANCE_LIVE[sym]) {
+      const q = `/api/v3/klines?symbol=${BINANCE_LIVE[sym].toUpperCase()}&interval=1h&limit=1000`;
+      const k = await get("https://api.binance.com" + q).catch(() => get("https://data-api.binance.vision" + q));
+      v = { src: "Binance", bars: k.map((x) => ({ time: Math.round(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4] })) };
+    } else if (P.twelve && TWELVE_SYM[sym]) {
+      const j = await get(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(TWELVE_SYM[sym])}&interval=1h&outputsize=1000&timezone=UTC&apikey=${encodeURIComponent(P.twelve)}`);
+      if (j.status === "error" || !j.values) v = { src: "Twelve Data", error: j.message || "ไม่มีข้อมูล", bars: [] };
+      else v = { src: "Twelve Data", bars: j.values.map((x) => ({ time: Math.round(Date.parse(x.datetime.replace(" ", "T") + "Z") / 1000),
+        open: +x.open, high: +x.high, low: +x.low, close: +x.close })).filter((b) => isFinite(b.time) && b.close > 0).sort((a, b) => a.time - b.time) };
+    }
+  } catch (e) { v = { src: BINANCE_LIVE[sym] ? "Binance" : "Twelve Data", error: e.message, bars: [] }; }
+  S.recent[sym] = { at: Date.now(), v };
+  return v;
+}
 // Real-time price for the chart's forming candle (display only: systems still decide on closed bars).
 // BTC/ETH: Binance trade stream (free, no key). FX / gold / indices: Finnhub websocket with the user's free API key.
 const Live = {
@@ -580,6 +637,8 @@ async function renderChart(view) {
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
   let liveSeries = null, liveBar = null, liveDigits = 2;
+  const TFS = { H1: 3600, H4: 14400, D1: 86400 }[tf];
+  const LB = ((S.liveBars ||= {})[sym + tf] ||= []);
   const histLabel = () => {
     const el = $("#chHist"); if (!el || !last) return;
     const from = (older[0] || last.cd.candles[0])?.time;
@@ -606,6 +665,14 @@ async function renderChart(view) {
     if (yearsLeft === null) yearsLeft = (cd0.older_years || []).slice();
     const cut = cd0.candles[0]?.time ?? Infinity;
     const cd = { ...cd0, candles: older.filter((c) => c.time < cut).concat(cd0.candles) };
+    const rec = await recentBars(sym);
+    if (route() !== "chart" || S.chartToken !== token || !$("#mainChart")) return;
+    const tail = rec?.bars?.length ? aggregate(rec.bars, TFS) : [];
+    if (tail.length) {
+      const from = tail[0].time;
+      cd.candles = cd.candles.filter((c) => c.time < from).concat(tail);
+      cd.source = `${cd0.source || ""} · ${tail.length} แท่งล่าสุดจาก ${rec.src}`;
+    } else if (rec?.error) cd.source = `${cd0.source || ""} · ${rec.src}: ${rec.error}`;
     const range0 = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
     const range = range0 ? { from: range0.from + shiftBy, to: range0.to + shiftBy } : null;
     if (ch) { S.charts = S.charts.filter((c) => c !== ch); ch.remove(); }
@@ -632,6 +699,12 @@ async function renderChart(view) {
     }
     S.chartOpen = open;
     liveSeries = cs; liveBar = { ...cd.candles[cd.candles.length - 1] }; liveDigits = dg;
+    // candles built from live ticks since the page opened survive the periodic redraw
+    for (const b of LB) {
+      if (b.time < liveBar.time) continue;
+      liveBar = b.time === liveBar.time ? { ...liveBar, high: Math.max(liveBar.high, b.high), low: Math.min(liveBar.low, b.low), close: b.close } : { ...b };
+      try { cs.update({ ...liveBar, time: shiftT(liveBar.time) }); } catch { /* out of order */ }
+    }
     const n = cd.candles.length, half = Math.max(20, Math.round((prefs.get().bars || 220) / 2));
     // latest candle in the middle of the chart, room on the right for the open position's labels
     ch.timeScale().setVisibleLogicalRange(range || { from: n - 1 - half, to: n - 1 + half });
@@ -653,7 +726,6 @@ async function renderChart(view) {
   };
   await draw(false);
   // live price: the forming candle moves every second (display only)
-  const TFS = { H1: 3600, H4: 14400, D1: 86400 }[tf];
   Live.start(sym);
   const tag = () => {
     const st = Live.state, el = $("#liveTag"); if (!el) return;
@@ -665,9 +737,12 @@ async function renderChart(view) {
     if (route() !== "chart" || S.chartToken !== token) return clearInterval(S.liveTimer);
     tag();
     const p = Live.price; if (!p || !liveSeries || !liveBar) return;
-    const t = Math.floor((Live.ts || Date.now()) / 1000), start = t - (t % TFS);
-    if (start > liveBar.time) liveBar = { time: start, open: liveBar.close, high: Math.max(liveBar.close, p), low: Math.min(liveBar.close, p), close: p };
+    const t = Math.floor((Live.ts || Date.now()) / 1000), start = bucketStart(t, TFS);
+    if (start < liveBar.time) return;
+    // a new candle opens at its own first trade (not at an old close, which drew fake bodies after a data gap)
+    if (start > liveBar.time) liveBar = { time: start, open: p, high: p, low: p, close: p };
     else liveBar = { ...liveBar, high: Math.max(liveBar.high, p), low: Math.min(liveBar.low, p), close: p };
+    if (LB.length && LB[LB.length - 1].time === liveBar.time) LB[LB.length - 1] = liveBar; else { LB.push(liveBar); if (LB.length > 60) LB.shift(); }
     try { liveSeries.update({ ...liveBar, time: shiftT(liveBar.time) }); } catch { /* chart rebuilding */ }
     $("#chSub").innerHTML = `${tf} · <b class="mono">${fpx(p, liveDigits)}</b>`;
   }, 1000);
@@ -1096,7 +1171,9 @@ function personalSettingsHtml() {
     <div class="card"><div class="hd"><h3><span class="ic">⚡</span>ราคาสด (ขยับทุก 1 วินาที)<span class="desc">ใช้แสดงแท่งที่กำลังก่อตัวบนกราฟเท่านั้น — ระบบยังตัดสินจากแท่งที่ปิดแล้ว</span></h3></div><div class="bd stack" style="gap:12px">
       <label class="check"><input type="checkbox" id="lOn" ${P.live ? "checked" : ""}> เปิดราคาสดบนหน้ากราฟ</label>
       <div class="hint"><b>BTC / ETH:</b> ใช้ Binance ฟรี ไม่ต้องตั้งค่า · <b>FX / ทอง / ดัชนี:</b> ใส่ API key ฟรีจาก <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a> (สมัครด้วยอีเมล → Dashboard → API Key)</div>
-      <label class="f">Finnhub API key<input class="inp mono" id="lKey" value="${esc(P.finnhub)}" placeholder="วาง API key ที่นี่" autocomplete="off"></label>
+      <label class="f">Finnhub API key <span class="muted small">(ราคาวิ่งทุกวินาที)</span><input class="inp mono" id="lKey" value="${esc(P.finnhub)}" placeholder="วาง API key ที่นี่" autocomplete="off"></label>
+      <label class="f">Twelve Data API key <span class="muted small">(ไม่บังคับ: แท่งเทียนจริงย้อนหลัง ~40 วัน ของ FX / ทอง)</span><input class="inp mono" id="lKey2" value="${esc(P.twelve)}" placeholder="วาง API key ที่นี่" autocomplete="off"></label>
+      <div class="hint">ไม่มี Twelve Data key: แท่งเก่าของ FX / ทอง / ดัชนีมาจาก Yahoo (ทองและดัชนีเป็นสัญญาฟิวเจอร์ส) รูปร่างจึงต่างจาก MT5 เล็กน้อย · สมัครฟรีที่ <a href="https://twelvedata.com/register" target="_blank" rel="noopener">twelvedata.com</a> → API Keys · BTC / ETH ใช้แท่งจริงจาก Binance อัตโนมัติ</div>
       <details><summary class="small muted">ชื่อสัญลักษณ์ราคาสด (ขั้นสูง)</summary><div class="fgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px">
         ${Object.keys(LIVE_DEFAULT).map((k) => `<label class="f">${k}<input class="inp mono" data-live="${k}" value="${esc(map[k])}"></label>`).join("")}</div></details>
       <div class="hint">ราคาสดมาจากผู้ให้บริการคนละรายกับโบรก (ต่างกันเล็กน้อย โดยเฉพาะทองและดัชนี) — ราคาเข้าออเดอร์จริงให้ดูใน MT5</div>
@@ -1112,12 +1189,13 @@ function bindPersonalSettings(view) {
   const save = () => {
     const liveMap = Object.fromEntries($$("[data-live]", view).map((i) => [i.dataset.live, i.value.trim()]).filter(([k, v]) => v && v !== LIVE_DEFAULT[k]));
     prefs.set({ home: $("#dHome").value, candle: $("#dCandle").value, bars: Math.min(1000, Math.max(40, +$("#dBars").value || 220)),
-      live: $("#lOn").checked, finnhub: $("#lKey").value.trim(), liveMap });
+      live: $("#lOn").checked, finnhub: $("#lKey").value.trim(), twelve: $("#lKey2").value.trim(), liveMap });
+    S.recent = {};
     const t = $("#dTheme").value; if (t !== store.get("theme", "dark")) { store.set("theme", t); document.documentElement.dataset.theme = t; }
     prev(); toast("บันทึกแล้ว (เครื่องนี้)", 1400);
   };
   const prev = () => { const c = CANDLE[$("#dCandle").value] || CANDLE.classic; $("#dPrev").innerHTML = [1, 0, 1, 1, 0, 1].map((u, i) => `<i style="background:${u ? c.up : c.down};height:${14 + (i * 7) % 16}px"></i>`).join(""); };
-  $$("#dTheme, #dHome, #dCandle, #dBars, #lOn, #lKey, [data-live]", view).forEach((i) => i.addEventListener("change", save));
+  $$("#dTheme, #dHome, #dCandle, #dBars, #lOn, #lKey, #lKey2, [data-live]", view).forEach((i) => i.addEventListener("change", save));
   prev();
   const KEYS = ["prefs", "personal", "theme", "sel", "labSel", "calc", "chartOverlay"];
   $("#bkCopy").onclick = async () => {
@@ -1136,7 +1214,7 @@ function bindPersonalSettings(view) {
     ["สแกนสัญญาณล่าสุด", st.scanner?.last_scan ? `${fdt(st.scanner.last_scan, true)} (${ago(st.scanner.last_scan)})` : "–"],
     ["วิเคราะห์ระบบล่าสุด", st.research_generated ? `${fdt(st.research_generated, true)} (${ago(st.research_generated)})` : "–"],
     ["ระบบในคลัง", `${S.strategies.length} ระบบ × H1 / H4 / D1`],
-    ["ราคา", "ย้อนหลัง: MT5 ของโบรก (FX ทอง ดัชนี) · ใหม่ทุกชั่วโมง: Yahoo + Binance · ราคาสด: Binance / Finnhub"]];
+    ["ราคา", "ย้อนหลัง: MT5 ของโบรก (FX ทอง ดัชนี) · ใหม่ทุกชั่วโมง: Yahoo + Binance · ราคาสด: Binance / Finnhub · แท่งจริงล่าสุด: Binance / Twelve Data"]];
   $("#aboutBox").innerHTML = rows.map(([k, v]) => `<span class="k">${k}</span><span>${esc(v)}</span>`).join("");
 }
 
@@ -1424,6 +1502,9 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
   - เวลาในไฟล์ MT5 เป็นเวลาเซิร์ฟเวอร์โบรก (GMT+2 / GMT+3) ระบบแปลงเป็นเวลาสากลให้อัตโนมัติ
 - **ราคาใหม่ทุกชั่วโมง:** Yahoo (FX, ทองและดัชนีแบบ futures) และ Binance (BTC, ETH) — ปรับระดับให้ต่อกับราคาโบรกสนิท
 - **ราคาสดบนกราฟ (ขยับทุก 1 วินาที):** BTC/ETH จาก Binance ฟรี · FX/ทอง/ดัชนี ต้องใส่ Finnhub API key ฟรีในหน้า **ตั้งค่า**
+- **แท่งเทียนให้เหมือนของจริง:** BTC/ETH ดึงแท่งจริง ~40 วันล่าสุดจาก Binance ทุกครั้งที่เปิดกราฟ · FX/ทอง ใส่ **Twelve Data key** (ฟรี, ไม่บังคับ) ในหน้าตั้งค่าเพื่อดึงแท่งจริงล่าสุด · ดัชนียังใช้ Yahoo futures
+  - แท่ง H4 และ D1 ตัดตามเวลาเซิร์ฟเวอร์โบรก (H4 = 00/04/08… เวลา MT5, 1 วัน = ปิดตลาดนิวยอร์ก) จึงรูปร่างตรงกับ MT5
+  - แท่งที่สร้างจากราคาสดระหว่างเปิดหน้าไว้ เปิดที่ราคาแรกของแท่งนั้นจริง ๆ ไม่ลากจากราคาเก่า
 ### ระบบที่ทดสอบกับราคาโบรก ใช้กับราคาจากแหล่งอื่นได้ไหม
 - ได้ — ระบบดูรูปแบบของแท่ง H1/H4/D1 ซึ่งราคาจากแต่ละแหล่งต่างกันน้อยมาก (FX ไม่ถึง 1 pip) ส่วนทอง/ดัชนี futures ต่างระดับนิดหน่อยแต่ปรับให้แล้ว
 - สิ่งที่ต้องใช้ให้ตรงคือ **ระยะ** SL/TP (pips/จุด) — ใช้ปุ่ม **ปรับตามราคา MT5** บนการ์ดสัญญาณก่อนส่งออเดอร์
