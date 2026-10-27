@@ -19,6 +19,8 @@ import time
 from datetime import datetime, timezone
 from statistics import NormalDist
 
+import pandas as pd
+
 from . import data
 from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, symbol_spec, write_json
 from .metrics import equity_points
@@ -98,11 +100,14 @@ def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
     settings = settings or load_settings()
     cfg = settings["research"]
     spec = symbol_spec(sym, settings)
+    cutoff = research_cutoff(settings)
     df = data.get_bars(sym, tf)
+    df = df[df.index < cutoff]          # every candidate sits the same exam: data up to the start of the current quarter
+    cfg = {**cfg, "cutoff": cutoff.isoformat()}
     h1 = data.load_h1(sym)
     out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.source_for(sym, settings),
            "data_from": h1.index[0].isoformat() if len(h1) else None, "data_to": h1.index[-1].isoformat() if len(h1) else None,
-           "bars_h1": int(len(h1)), "bars": int(len(df)), "candidates": [], "heavy": {}}
+           "bars_h1": int(len(h1)), "bars": int(len(df)), "cutoff": cutoff.isoformat(), "candidates": [], "heavy": {}}
     if len(df) < 500:
         return out
     for sid in STRATEGIES:
@@ -117,54 +122,59 @@ def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
     return out
 
 
-SWITCH_MARGIN_T = 0.5     # a new system must beat the current one by this much OOS t to replace it at a fold boundary
+def research_cutoff(settings: dict | None = None, now: datetime | None = None) -> pd.Timestamp:
+    """The research cut-off = start of the current quarter on the broker clock (1 Jan / 1 Apr / 1 Jul / 1 Oct).
+    A run in the middle of a quarter (new strategies, button) uses the same cut-off, so it sees exactly the same data.
+    settings.research.cutoff (ISO date) pins it for testing."""
+    cfg = (settings or load_settings())["research"]
+    if cfg.get("cutoff"):
+        return data.period_start(pd.Timestamp(cfg["cutoff"]), cfg.get("oos_months", 3))
+    return data.period_start(pd.Timestamp(now or datetime.now(timezone.utc)), cfg.get("oos_months", 3))
 
 
-def _pick_live(cands: list[dict], prev: dict | None, now: datetime, rank: dict) -> tuple[dict, str]:
-    """Which candidate the symbol trades. Mirrors the walk-forward test instead of re-choosing every Saturday:
-    * the live system and its parameters stay locked until the current 3-month fold ends (prev["locked_until"]);
-    * it is dropped at once if it turns OFF (safety first), or if it is only WATCH and an ACTIVE one exists
-      (WATCH sends no alerts, so nothing being traded is disturbed);
-    * when the lock expires it is replaced only by a clearly better candidate (higher status, or OOS t + SWITCH_MARGIN_T)."""
-    key = lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99)
-    best = max(cands, key=key)
-    if not prev or not prev.get("strategy"):
-        return best, "เลือกครั้งแรก"
-    pc = next((c for c in cands if c["strategy"] == prev["strategy"] and c["tf"] == prev.get("tf")), None)
-    if pc is None:
-        return best, "ระบบเดิมไม่อยู่ในผลวิจัย"
-    if pc["status"] == "OFF":
-        return best, "ระบบเดิมตกเป็น OFF — เปลี่ยน/หยุดทันที"
-    if pc["status"] == "WATCH" and best["status"] == "ACTIVE":
-        return best, "ระบบเดิมเป็นแค่ WATCH และมีระบบ ACTIVE"
-    lu = prev.get("locked_until")
-    if lu and now < datetime.fromisoformat(lu):
-        return pc, f"ล็อกไว้จนจบรอบ Walk-Forward ({lu[:10]})"
-    if best is not pc and (rank[best["status"]] > rank[pc["status"]] or best["oos"]["t_stat"] >= pc["oos"]["t_stat"] + SWITCH_MARGIN_T):
-        return best, "ครบรอบ 3 เดือน และมีระบบที่ดีกว่าชัดเจน"
-    return pc, "ครบรอบ 3 เดือน ระบบเดิมยังดีพอ — ใช้ต่อ"
+def _forced_off(settings: dict, sym: str, c: dict) -> bool:
+    fo = settings.get("force_off", [])
+    return sym in fo or f"{sym}:{c['strategy']}:{c['tf']}" in fo
 
 
 def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None = None) -> dict:
-    """Judge every candidate with the same gates; the symbol trades its best candidate (ACTIVE first, then OOS t),
-    locked per walk-forward fold (see _pick_live)."""
+    """Judge every candidate with the same gates. EVERY candidate that passes is ACTIVE and traded for the quarter
+    (user's rule, 27 Oct 2026). A re-run in the same quarter keeps systems that were already ACTIVE until the quarter ends
+    (only a manual / forward-test veto in force_off stops them early); new candidates must pass the current gates."""
     cfg = settings["research"]
     g = cfg["gates"]
     cands = [c for p in parts for c in p["candidates"]]
     if not cands:
-        return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": []}
+        return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": [], "systems": []}
+    cutoff = pd.Timestamp(parts[0].get("cutoff") or research_cutoff(settings))
+    until = data.add_months(cutoff, cfg.get("oos_months", 3))
     n_cand = sum(1 for c in cands if c["oos"]["trades"] >= 10)
     for c in cands:
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
+        c.pop("kept", None)
+    # carry-over: same quarter -> systems that were ACTIVE stay ACTIVE until the quarter ends
+    same_q = bool(prev) and (prev.get("quarter") or {}).get("cutoff") == cutoff.isoformat()
+    if same_q:
+        was = {(x["strategy"], x["tf"]) for x in prev.get("systems", [])}
+        for c in cands:
+            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and c["current_params"]:
+                c["status"], c["kept"] = "ACTIVE", True
+    for c in cands:
+        if c["status"] == "ACTIVE" and _forced_off(settings, sym, c):
+            c["status"], c["forced_off"] = "OFF", True
     rank = {"ACTIVE": 2, "WATCH": 1, "OFF": 0}
-    best, why = _pick_live(cands, prev, datetime.now(timezone.utc), rank)
-    lock = best.get("current_lock") or {}
-    status = best["status"] if sym not in settings.get("force_off", []) else "OFF"   # manual / AI veto
+    key = lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99)
+    cands.sort(key=key, reverse=True)
+    active = [c for c in cands if c["status"] == "ACTIVE"]
+    best = cands[0]
+    status = best["status"]
+    risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
+    systems = [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
+                "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")),
+                "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
+                "robust": (c["robustness"] or {}).get("score")} for c in active]
     mc = best["mc_1y"] or {}
-    suggested = mc.get("suggested_risk_pct") or 0.0
-    cap = settings["max_risk_pct"] if status == "ACTIVE" else settings["default_risk_pct"] / 2
-    risk = round(min(cap, suggested), 2)
     part = next(p for p in parts if p["tf"] == best["tf"])
     heavy = part["heavy"].get(best["strategy"], {})
     eq = heavy.get("oos_eq", [])
@@ -173,15 +183,17 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     return {
         "symbol": sym, "status": status, "data_source": first["data_source"],
         "data_from": first["data_from"], "data_to": first["data_to"], "bars_h1": first["bars_h1"],
+        "quarter": {"cutoff": cutoff.isoformat(), "until": until.isoformat()}, "systems": systems,
+        "max_symbol_risk_pct": settings.get("max_symbol_risk_pct", 0.75),
         "strategy": best["strategy"], "strategy_name": STRATEGIES[best["strategy"]]["name"], "tf": best["tf"],
         "params": best["current_params"], "risk_pct": risk if status != "OFF" else 0.0,
-        "locked_from": lock.get("start"), "locked_until": lock.get("end"), "pick_reason": why,
+        "locked_from": cutoff.isoformat(), "locked_until": until.isoformat(),
         "oos": best["oos"], "oos_years": best["oos_years"], "wfe": best["wfe"], "plateau": best["plateau"],
         "param_switches": best["param_switches"], "folds": heavy.get("folds", []),
         "random_benchmark": best["random_benchmark"], "mc_1y": mc, "mc_pf_p5": best["mc_pf_p5"], "robustness": best["robustness"],
         "gates": best["gates"], "failed": [x["name"] for x in best["gates"] if not x["pass"]],
         "trials": int(sum(c["n_combos"] for c in cands)), "n_candidates": n_cand, "t_needed": adjusted_t(n_cand),
-        "n_active": sum(c["status"] == "ACTIVE" for c in cands), "n_watch": sum(c["status"] == "WATCH" for c in cands),
+        "n_active": len(active), "n_watch": sum(c["status"] == "WATCH" for c in cands),
         "candidates": cands, "oos_r": r, "oos_equity": equity_points([x[0] for x in eq], r, 1.0, 10000.0),
     }
 
@@ -226,7 +238,8 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
             res = {"symbol": sym, "status": "OFF", "reason": f"error: {e}", "candidates": []}
         old = prev.get("symbols", {}).get(sym)
         if old:
-            res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct")} | {"generated": prev.get("generated")}
+            res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct", "quarter")} | {
+                "generated": prev.get("generated"), "systems": [(x["strategy"], x["tf"]) for x in old.get("systems", [])]}
         out["symbols"][sym] = res
     out["generated"] = datetime.now(timezone.utc).isoformat()
     write_json(LATEST_RESEARCH, out)
@@ -272,6 +285,22 @@ def latest() -> dict:
     return read_json(LATEST_RESEARCH, {"generated": None, "symbols": {}})
 
 
+def is_live(sym_entry: dict, strategy: str, tf: str) -> bool:
+    """Is this strategy x TF one of the symbol's traded (ACTIVE) systems this quarter?"""
+    if "systems" in (sym_entry or {}):
+        return any(x["strategy"] == strategy and x["tf"] == tf for x in sym_entry["systems"])
+    return sym_entry.get("strategy") == strategy and sym_entry.get("tf") == tf and sym_entry.get("status") == "ACTIVE"
+
+
+def live_systems(sym_entry: dict) -> list[dict]:
+    """Systems the scanner trades for a symbol (old latest.json without 'systems': the single ACTIVE/WATCH system)."""
+    if "systems" in (sym_entry or {}):
+        return sym_entry["systems"]
+    if sym_entry.get("status") in ("ACTIVE", "WATCH") and sym_entry.get("params"):
+        return [{k: sym_entry.get(k) for k in ("strategy", "strategy_name", "tf", "params", "status", "risk_pct")}]
+    return []
+
+
 def picks(lat: dict | None = None) -> list[dict]:
     """Quick-pick list for the right rail: every ACTIVE / WATCH candidate of every symbol (plus each symbol's
     current system), most important first: ACTIVE before WATCH, then the higher OOS t-stat."""
@@ -280,7 +309,7 @@ def picks(lat: dict | None = None) -> list[dict]:
     for sym, r in (lat.get("symbols") or {}).items():
         for c in r.get("candidates", []):
             st = c.get("status")
-            live = c.get("strategy") == r.get("strategy") and c.get("tf") == r.get("tf")
+            live = is_live(r, c.get("strategy"), c.get("tf"))
             if st in ("ACTIVE", "WATCH") or live:
                 o = c.get("oos") or {}
                 out.append({"symbol": sym, "tf": c["tf"], "strategy": c["strategy"], "status": st or r.get("status"), "live": live,
@@ -300,7 +329,10 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
         out.append({**symbol_spec(k, s), "mt5_symbol": s["mt5_symbol_map"].get(k, k), "status": r.get("status", "-"),
                     "strategy": r.get("strategy"), "strategy_name": r.get("strategy_name"), "tf": r.get("tf"),
                     "params": r.get("params"), "risk_pct": r.get("risk_pct"), "oos": r.get("oos"),
-                    "robust_score": (r.get("robustness") or {}).get("score")})
+                    "robust_score": (r.get("robustness") or {}).get("score"),
+                    "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False)} for x in live_systems(r)
+                                if x.get("status") == "ACTIVE"],
+                    "quarter": r.get("quarter")})
     return out
 
 

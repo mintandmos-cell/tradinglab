@@ -50,6 +50,7 @@ DEFAULT_SETTINGS = {
     "account_balance": 5000.0,
     "account_currency": "USD",
     "risk_per_trade_pct": 0.25,         # fixed risk per signal (0 = use each system's Monte Carlo risk)
+    "max_symbol_risk_pct": 0.75,        # cap on the open risk of ALL systems of one symbol (several ACTIVE systems allowed)
     "default_risk_pct": 0.5,
     "max_risk_pct": 1.0,
     "target_max_dd_pct": 10.0,          # Monte Carlo 95th-percentile drawdown the sizing must respect
@@ -66,7 +67,7 @@ DEFAULT_SETTINGS = {
         "exit_opposite_signal": True,    # user's rule (Oct 2026): exits = TP / SL / opposite signal only
         "exit_max_hold": False,
         "exit_friday_close": False,
-        "schedule": "weekly",            # daily | weekly | monthly | off
+        "schedule": "quarterly",         # quarterly (start of each quarter, the research cut-off) | weekly | monthly | daily | off
         "schedule_hour_bkk": 10,
         "gates": {"min_oos_trades": 30, "min_expectancy": 0.05, "min_t": 2.0,
                   "min_mc_pf_p5": 1.0, "min_random_pct": 90.0, "min_plateau": 0.4,
@@ -74,7 +75,7 @@ DEFAULT_SETTINGS = {
                   "multiple_testing": True},   # OOS t must also beat the Sidak-adjusted threshold for the number of candidates compared
     },
     "alerts": {"active": True, "watch": False},
-    "force_off": [],                    # symbols vetoed by the user / AI review regardless of research
+    "force_off": [],                    # vetoed by the user / AI review: "XAUUSD" (whole symbol) or "XAUUSD:ichimoku_tk:H1" (one system)
     "scan_interval_sec": 120,
     "notify": {"ntfy_topic": "tradinglab-" + secrets.token_hex(5), "ntfy_server": "https://ntfy.sh",
                "telegram_token": "", "telegram_chat_id": ""},

@@ -12,7 +12,7 @@ import pandas as pd
 from . import data, notify, research
 from .config import SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
 from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
-from .strategies import signals as strat_signals
+from .strategies import STRATEGIES, signals as strat_signals
 from . import indicators as ta
 from .sizing import lots_for
 
@@ -121,29 +121,44 @@ def scan_once() -> list[dict]:
         sigs = load_signals()
         known = {s["id"] for s in sigs}
         frames: dict[tuple, pd.DataFrame] = {}
-        for sym, cfg in latest.items():
-            if cfg.get("status") not in track or not cfg.get("params"):
-                continue
-            try:
-                df = data.get_bars(sym, cfg["tf"])
-                frames[(sym, cfg["tf"])] = df
-                res = run(df, cfg["strategy"], cfg["params"], symbol_spec(sym, settings), cfg["tf"])
-                n = len(df)
-                flat = res["open_trade"] is None and (not res["trades"] or res["trades"][-1]["exit_i"] < n - 1)
-                entry_t = df.index[-1] + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])
-                weekend = exit_rules()["friday"] and (weekend_blocked(entry_t) or
-                                                      friday_cutoff(entry_t) < entry_t + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]]))
-                ot = res["open_trade"]
-                reverse = bool(ot and ot.get("reverse_pending") and res["last_signal"] == -ot["dir"])
-                if res["last_signal"] and (flat or reverse) and np.isfinite(res["atr_last"]) and not weekend:
-                    s = _make_signal(sym, cfg, df, res, settings)
-                    if s["id"] not in known:
+        cap = float(settings.get("max_symbol_risk_pct", 0.75))
+        for sym, entry in latest.items():
+            # every ACTIVE system of the quarter is traded (several per symbol / TF allowed)
+            for cfg in research.live_systems(entry):
+                if cfg.get("status") not in track or not cfg.get("params"):
+                    continue
+                try:
+                    key = (sym, cfg["tf"])
+                    df = frames.get(key)
+                    if df is None:
+                        df = frames[key] = data.get_bars(sym, cfg["tf"])
+                    res = run(df, cfg["strategy"], cfg["params"], symbol_spec(sym, settings), cfg["tf"])
+                    n = len(df)
+                    flat = res["open_trade"] is None and (not res["trades"] or res["trades"][-1]["exit_i"] < n - 1)
+                    entry_t = df.index[-1] + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])
+                    weekend = exit_rules()["friday"] and (weekend_blocked(entry_t) or
+                                                          friday_cutoff(entry_t) < entry_t + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]]))
+                    ot = res["open_trade"]
+                    reverse = bool(ot and ot.get("reverse_pending") and res["last_signal"] == -ot["dir"])
+                    if res["last_signal"] and (flat or reverse) and np.isfinite(res["atr_last"]) and not weekend:
+                        s = _make_signal(sym, cfg, df, res, settings)
+                        if s["id"] in known:
+                            continue
+                        # total risk cap per symbol (user's rule): open ACTIVE alerts of this symbol, other systems'
+                        # positions + this one; a reversal replaces this system's own open order
+                        same_sys = lambda x: x["strategy"] == cfg["strategy"] and x["tf"] == cfg["tf"]
+                        open_risk = sum(float(x.get("risk_pct") or 0) for x in sigs
+                                        if x["symbol"] == sym and x.get("outcome") == "open" and not x.get("capped")
+                                        and x.get("system_status") == "ACTIVE" and not same_sys(x))
+                        if s["system_status"] == "ACTIVE" and open_risk + float(s["risk_pct"]) > cap + 1e-9:
+                            s.update(capped=True, user_status="skipped",
+                                     note=f"ข้าม: ความเสี่ยงรวม {sym} จะเป็น {open_risk + float(s['risk_pct']):.2f}% เกินเพดาน {cap}%")
                         sigs.insert(0, s)
                         known.add(s["id"])
                         new.append(s)
-            except Exception as e:
-                log.exception("scan %s failed", sym)
-                STATE["last_error"] = f"{sym}: {e}"
+                except Exception as e:
+                    log.exception("scan %s %s failed", sym, cfg.get("strategy"))
+                    STATE["last_error"] = f"{sym} {cfg.get('strategy')}: {e}"
         for s in sigs:
             if s.get("outcome") == "open":
                 df = frames.get((s["symbol"], s["tf"]))
@@ -155,7 +170,7 @@ def scan_once() -> list[dict]:
                 _track(s, df, symbol_spec(s["symbol"], settings))
         save_signals(sigs)
     for s in new:
-        if s["system_status"] not in allow:
+        if s["system_status"] not in allow or s.get("capped"):
             continue
         title, msg = alert_text(s, symbol_spec(s["symbol"], settings)["digits"])
         notify.send(title, msg, priority=5 if s["system_status"] == "ACTIVE" else 3,
@@ -167,20 +182,23 @@ def scan_once() -> list[dict]:
 def alert_text(s: dict, d: int) -> tuple[str, str]:
     """Push title + body: lot first, then the levels to type into MT5."""
     side = "🟢 BUY" if s["dir"] > 0 else "🔴 SELL"
+    no = list(STRATEGIES).index(s["strategy"]) + 1 if s["strategy"] in STRATEGIES else s["strategy"]
+    tag = f"TL{no}-{s['tf']}"
+
     if s["below_min_lot"]:
-        title = f"{side} {s['mt5_symbol']} {s['tf']} — lot ต่ำกว่า 0.01"
+        title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — lot ต่ำกว่า 0.01"
         lot_line = (f"⚠️ Lot ที่คำนวณได้ {s['raw_lots']} ต่ำกว่าขั้นต่ำ 0.01 · ถ้าเปิด 0.01 lot จะเสี่ยง "
                     f"${s['min_lot_risk_usd']} ({s['min_lot_risk_pct']}% ของทุน) มากกว่าที่ตั้งไว้ {s['risk_pct']}%")
     else:
-        title = f"{side} {s['mt5_symbol']} {s['tf']} — เปิด {s['lots']:.2f} lot"
+        title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — เปิด {s['lots']:.2f} lot"
         lot_line = f"📦 LOT {s['lots']:.2f} · เสี่ยง ${s['risk_usd']} ({s['risk_pct']}% ของทุน ${s['balance']:,.0f})"
     reward = f"${s['reward_usd']}" if not s["below_min_lot"] else f"${round(s['min_lot_risk_usd'] * s['rr'], 2)} (ที่ 0.01 lot)"
     close_by = (f"ปิดภายใน {datetime.fromisoformat(s['close_by']).astimezone(BKK).strftime('%d/%m %H:%M')} น." if s.get("close_by")
                 else "ถือจนชน TP / SL หรือมีสัญญาณกลับทิศ")
-    rev = f"🔁 ปิดออเดอร์ {s['reverse_of']} เดิมก่อน แล้วเปิดไม้นี้\n" if s.get("reverse_of") else ""
+    rev = (f"🔁 ปิดออเดอร์ {s['reverse_of']} เดิมของระบบนี้ (comment {tag}) ก่อน แล้วเปิดไม้นี้\n" if s.get("reverse_of") else "")
     msg = (f"{rev}{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
            f"TP {_fmt(s['tp'], d)} ({s['tp_pips']} pips) · R:R 1:{s['rr']} · กำไรเป้า {reward}\n"
-           f"{close_by} · {s['strategy_name']} · ระบบ {s['system_status']}")
+           f"{close_by} · ระบบ: {s['strategy_name']} ({s['tf']}) · {s['system_status']}\n🏷️ ใส่ comment ใน MT5: {tag}")
     return title, msg
 
 
@@ -211,6 +229,9 @@ def research_due(settings: dict, now: datetime | None = None) -> bool:
         return False
     if sched == "daily":
         return last.date() < now.date()
+    if sched == "quarterly":      # once per quarter, after its start (the research cut-off moved)
+        cut = research.research_cutoff(settings)
+        return datetime.fromisoformat(gen) < cut.to_pydatetime()
     if sched == "monthly":
         return (last.year, last.month) < (now.year, now.month)
     # weekly: Saturday (FX closed) or later in the week if missed

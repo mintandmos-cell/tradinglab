@@ -145,11 +145,22 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["open", "high", "low", "close"])
 
 
+_MODE_CACHE = [0.0, "ny_close"]
+
+
+def _server_mode(settings=None) -> str:
+    if settings is not None:
+        return settings.get("mt5_server_time", "ny_close")
+    if time.time() - _MODE_CACHE[0] > 60:          # read settings at most once a minute (called in tight loops)
+        _MODE_CACHE[:] = [time.time(), load_settings().get("mt5_server_time", "ny_close")]
+    return _MODE_CACHE[1]
+
+
 def server_to_utc(idx, settings=None) -> pd.DatetimeIndex:
     """MT5 bar times are the broker's SERVER clock, not UTC. Most FX brokers run "New York close" servers:
     server time = New York time + 7 h (GMT+2 in winter, GMT+3 while the US is on daylight time), so the
     week opens Monday 00:00 server time. settings.mt5_server_time: "ny_close" (default) | "utc" | hours offset."""
-    mode = (settings or load_settings()).get("mt5_server_time", "ny_close")
+    mode = _server_mode(settings)
     naive = pd.DatetimeIndex(idx).tz_localize(None) if pd.DatetimeIndex(idx).tz is not None else pd.DatetimeIndex(idx)
     if mode == "utc":
         return naive.tz_localize("UTC")
@@ -248,7 +259,7 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
 
 def utc_to_server(idx, settings=None) -> pd.DatetimeIndex:
     """Inverse of server_to_utc: UTC → naive broker server time (NY close = New York + 7 h)."""
-    mode = (settings or load_settings()).get("mt5_server_time", "ny_close")
+    mode = _server_mode(settings)
     idx = pd.DatetimeIndex(idx)
     idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
     if mode == "utc":
@@ -256,6 +267,20 @@ def utc_to_server(idx, settings=None) -> pd.DatetimeIndex:
     if mode != "ny_close":
         return idx.tz_localize(None) + pd.Timedelta(hours=float(mode))
     return idx.tz_convert("America/New_York").tz_localize(None) + pd.Timedelta(hours=7)
+
+
+def period_start(ts, months: int = 3, settings=None) -> pd.Timestamp:
+    """Start of the calendar period (quarter for months=3) containing ts, on the BROKER clock, returned in UTC.
+    Walk-forward windows and the research cut-off use these boundaries: 1 Jan / 1 Apr / 1 Jul / 1 Oct 00:00 server time."""
+    srv = utc_to_server(pd.DatetimeIndex([pd.Timestamp(ts)]), settings)[0]
+    mi = (srv.year * 12 + srv.month - 1) // months * months
+    return server_to_utc(pd.DatetimeIndex([pd.Timestamp(year=mi // 12, month=mi % 12 + 1, day=1)]), settings)[0]
+
+
+def add_months(ts_utc, months: int, settings=None) -> pd.Timestamp:
+    """ts (a period boundary in UTC) + n calendar months on the broker clock."""
+    srv = utc_to_server(pd.DatetimeIndex([pd.Timestamp(ts_utc)]), settings)[0]
+    return server_to_utc(pd.DatetimeIndex([srv + pd.DateOffset(months=months)]), settings)[0]
 
 
 def resample(h1: pd.DataFrame, tf: str, settings=None) -> pd.DataFrame:

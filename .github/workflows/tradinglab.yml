@@ -3,7 +3,8 @@ name: TradingLab
 on:
   schedule:
     - cron: "4 * * * *"     # every hour, just after the H1 candle closes: scan + alerts + site
-    - cron: "30 2 * * 6"    # Saturday 09:30 Bangkok (FX closed): full auto research
+    - cron: "30 2 1 1,4,7,10 *"   # 1 Jan / Apr / Jul / Oct 09:30 Bangkok: quarterly research (all systems, same cut-off)
+    - cron: "30 2 * * 6"    # Saturday 09:30 Bangkok: safety net — research ONLY if this quarter's run is still missing
   workflow_dispatch:
     inputs:
       mode:
@@ -23,7 +24,7 @@ permissions:
 # One queue for hourly scans / site builds (a newer queued one replaces an older queued one — fine for scans).
 # Research runs (button, Saturday, new history pushed) get their own group so a queued scan can never cancel them.
 concurrency:
-  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || contains(toJSON(github.event.commits), 'data/history/')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || github.event.schedule == '30 2 1 1,4,7,10 *' || contains(toJSON(github.event.commits), 'data/history/')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
   cancel-in-progress: false
 
 jobs:
@@ -40,10 +41,28 @@ jobs:
         run: |
           MODE="scan"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ inputs.mode }}"; fi
-          if [ "${{ github.event.schedule }}" = "30 2 * * 6" ]; then MODE="research"; fi
+          if [ "${{ github.event.schedule }}" = "30 2 * * 6" ] || [ "${{ github.event.schedule }}" = "30 2 1 1,4,7,10 *" ]; then MODE="due"; fi
           if [ "${{ github.event_name }}" = "push" ]; then MODE="build"; fi
           # new long price history pushed from the PC (export_mt5_history.bat): research it right away
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
+          if [ "$MODE" = "due" ]; then
+            # research runs once per quarter (cut-off = 1 Jan / 1 Apr / 1 Jul / 1 Oct 00:00 broker time = New York + 7 h)
+            curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/main/data/research/latest.json" -o latest.json || true
+            MODE=$(python3 - <<'PY'
+          import json, datetime as dt
+          from zoneinfo import ZoneInfo
+          now = dt.datetime.now(dt.timezone.utc)
+          srv = now.astimezone(ZoneInfo("America/New_York")).replace(tzinfo=None) + dt.timedelta(hours=7)
+          q = dt.datetime(srv.year, (srv.month - 1) // 3 * 3 + 1, 1)
+          cut = (q - dt.timedelta(hours=7)).replace(tzinfo=ZoneInfo("America/New_York")).astimezone(dt.timezone.utc)
+          try:
+              gen = dt.datetime.fromisoformat(json.load(open("latest.json"))["generated"])
+          except Exception:
+              gen = None
+          print("research" if gen is None or gen < cut else "scan")
+          PY
+          )
+          fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"; echo "mode=$MODE"
       - uses: actions/checkout@v4
         if: steps.m.outputs.mode == 'research'

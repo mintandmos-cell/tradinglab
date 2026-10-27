@@ -1,5 +1,6 @@
 {
  "risk_per_trade_pct": 0.25,
+ "max_symbol_risk_pct": 0.75,
  "default_risk_pct": 0.25,
  "max_risk_pct": 0.5,
  "target_max_dd_pct": 10,
@@ -76,7 +77,7 @@
   "exit_opposite_signal": true,
   "exit_max_hold": false,
   "exit_friday_close": false,
-  "schedule": "weekly",
+  "schedule": "quarterly",
   "schedule_hour_bkk": 10,
   "gates": {
    "min_oos_trades": 30,

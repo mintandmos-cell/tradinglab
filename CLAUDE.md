@@ -7,7 +7,8 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 ## How it runs (no PC needed)
 - GitHub repo (this folder) + **GitHub Actions** `.github/workflows/tradinglab.yml`:
   - every hour: `python -m app.cloud scan` → free data (Yahoo / Binance mirror) → new signals + forward tracking → ntfy push → rebuild site → **GitHub Pages**.
-  - Saturday 09:30 Bangkok + "Run workflow" button (mode research): job `plan` (prefetch prices → cache) → matrix job `part`
+  - Research is QUARTERLY (user's rule, 27 Oct 2026): cron 1 Jan/Apr/Jul/Oct 09:30 Bangkok; the Saturday cron only runs it if this
+    quarter's research is missing (mode "due" in `plan`). "Run workflow" button (mode research) any time: job `plan` (prefetch prices → cache) → matrix job `part`
     (8 symbols × 3 TF, `python -m app.cloud part SYM TF`, offline `TL_OFFLINE=1`) → job `run` (`app.cloud merge` = gates/status + scan + site).
     Research has its own concurrency group so queued hourly scans never cancel it. Mode `test` = one ntfy test push.
   - push to `main` touching app/web/research/settings: rebuild the site only.
@@ -45,24 +46,27 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - `app/strategies.py` — strategy library (50) (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
 - `app/research.py` — every strategy × TF × symbol goes through **every** step (WF OOS, random benchmark, 8 robustness tests, MC) via
-  `research_part` → `merge`; status is decided per candidate. Live system / params are LOCKED per walk-forward fold (user's
-  decision 27 Oct 2026, so live trading = the OOS of the current fold): params = what the current fold picked at its start
-  (`current_params`, `current_lock`), the symbol keeps its system until `locked_until` (`research._pick_live`); it switches early only
-  if the system turns OFF or is WATCH while an ACTIVE exists; at the boundary only for a clearly better one (higher status or t + 0.5).
-  Fold boundaries depend on the data start date — a new MT5 history export with a different start shifts them. Summaries →
+  `research_part` → `merge`. QUARTER RULES (user, 27 Oct 2026): every candidate is cut at the same research cut-off = start of the
+  current quarter on the broker clock (`research_cutoff`, `data.period_start`); WF OOS folds are calendar quarters; live params = best
+  in the 12 months before the cut-off, traded unchanged for the quarter. EVERY ACTIVE candidate is traded (`systems` list per symbol,
+  several per symbol/TF allowed, MT5 account is Hedging). A mid-quarter re-run (new strategies, button) uses the same cut-off; systems
+  already ACTIVE this quarter are kept (`kept`) even if the stricter multiple-testing gate now fails them; new ones must pass.
+  Early stop only via `force_off` ("SYM" or "SYM:strategy:TF", Monday forward check). Open risk of all systems of one symbol is capped at
+  `max_symbol_risk_pct` (0.75%): extra signals are recorded with `capped` (no push). Push title/comment carry the system tag `TL{no}-{TF}`. Summaries →
   `data/research/latest.json` (+ `history/`); heavy per-candidate data (`oos_eq`, folds) → `data/research/oos/{SYM}_{TF}.json.gz` (`research.heavy`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Robustness noise test = 10 sims.
 - `app/scanner.py` — signals on closed bars, forward tracking with the same rules, ntfy/Telegram push.
 - `app/charts.py` (`system_payload`: any strategy on any chart, view-only — chart page picker + equity curve; static build writes `site/data/sys/{SYM}_{TF}_{strategy}.json`), `app/export.py` (static site → `site/`), `app/cloud.py` (Actions entry), `app/server.py` + `web/` (same front-end; `window.TL_STATIC` switches it to static JSON).
 
 ## Monday session ("อัปเดตระบบ", "เก็บข้อมูลวิเคราะห์แล้วปรับระบบ", …) — finish within the day
 1. `git pull --rebase` (gets the bot's signals + Saturday research). If `data/signals.json` conflicts, take the remote version.
-2. Refresh research: normally the cloud does it (dispatch the workflow with mode research; ~1.5–2 h in parallel). Locally
+2. Research is quarterly; only re-run mid-quarter if the user asks or the library changed (same cut-off, so results only add systems). Cloud: dispatch the workflow with mode research (~1–2 h). Locally
    `.venv\Scripts\python -W ignore -m app.research` runs all parts in sequence (many hours with 50 strategies).
-   Skip if `generated` in `data/research/latest.json` is after the most recent Saturday 00:00 Bangkok and the user did not ask.
+   Skip if `generated` in `data/research/latest.json` is after this quarter's cut-off and the user did not ask.
 3. Read `data/research/latest.json` (incl. `robustness`), the newest `data/research/history/` files, and forward results in `data/signals.json`
    (`outcome`, `outcome_r`, `system_status`, `user_status`).
-4. For every ACTIVE/WATCH system compare forward-test R with the research OOS: after ≥ 20 forward trades, if forward expectancy is below
-   the Monte Carlo 5th-percentile expectancy (`mc_1y.confidence`), add the symbol to `force_off` in `data/settings.json` and say why.
+4. For every ACTIVE system (each entry of `systems`) compare forward-test R with its research OOS: after ≥ 20 forward trades, if forward
+   expectancy is below the Monte Carlo 5th-percentile expectancy (`mc_1y.confidence` of that candidate), add "SYM:strategy:TF" to
+   `force_off` in `data/settings.json` and say why.
 5. Prepend a dated section to `data/research/ai_notes.md` (Thai, short): changes vs `previous` (status/strategy/TF/params/risk/robustness),
    forward-test health, concrete next steps. Shown on the "ระบบเทรด" page.
 6. Commit (`data/research`, `data/settings.json`, any code) and `git push` → Actions rebuilds the site; the hourly scanner uses the new systems.

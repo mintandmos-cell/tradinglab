@@ -352,6 +352,9 @@ async function navigate() {
 const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
 const sysOf = (sym) => S.symbols.find((x) => x.symbol === sym) || {};
+// the symbol's ACTIVE systems this quarter (several allowed); old data without "systems": the single system
+const liveSystems = (sym) => { const r = sysOf(sym); return r.systems || (r.status === "ACTIVE" && r.strategy ? [{ strategy: r.strategy, tf: r.tf }] : []); };
+const isLiveSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && (!tf || x.tf === tf));
 const stratLabel = (id) => { const s = stratById(id); return s ? `#${s.no} ${s.name}` : id; };
 function pickSel(q, key, fallbackStrategy) {
   const prev = store.get(key, store.get("sel", {}));
@@ -375,7 +378,7 @@ function railHtml(sel) {
   return `<div class="rail">
     <div class="rail-grp"><button class="rb qbtn" id="qBtn" data-tip="เลือกด่วน: ระบบ ACTIVE / WATCH เรียงตามความสำคัญ">⚡<small>ด่วน</small></button></div>
     <div class="rail-grp">${["H1", "H4", "D1"].map((t) => `<button class="rb ${t === sel.tf ? "on" : ""}" data-tf="${t}" data-tip="Timeframe ${t}">${t}</button>`).join("")}</div>
-    <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${sys.strategy === sel.strategy ? '<i class="star">★</i>' : ""}</button></div>
+    <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${isLiveSys(sel.symbol, sel.strategy, sel.tf) ? '<i class="star">★</i>' : ""}</button></div>
     <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i></button>`).join("")}</div>
   </div>`;
 }
@@ -422,13 +425,13 @@ function bindTabs(root, key, onTab) {
 }
 function openSysPicker(anchor, sel, pick) {
   document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
-  const live = sysOf(sel.symbol).strategy;
+  const live = new Set(liveSystems(sel.symbol).filter((x) => x.tf === sel.tf).map((x) => x.strategy));
   const bg = document.createElement("div"); bg.className = "syspop-bg";
   const pop = document.createElement("div"); pop.className = "syspop";
-  pop.innerHTML = `<div class="syspop-hd"><b>เลือกระบบเทรด</b><span class="muted small">${S.strategies.length} ระบบ · ★ = ระบบจริงของ ${sel.symbol}</span>
+  pop.innerHTML = `<div class="syspop-hd"><b>เลือกระบบเทรด</b><span class="muted small">${S.strategies.length} ระบบ · ★ = ระบบที่เทรดจริงของ ${sel.symbol} ${sel.tf} ไตรมาสนี้</span>
       <input class="inp" id="sysQ" placeholder="ค้นหาเลข ชื่อ หรือกลุ่ม…" autocomplete="off"></div>
     <div class="syspop-list">${S.strategies.map((s) => `<button data-sid="${s.id}" class="${s.id === sel.strategy ? "on" : ""}" data-q="${esc((s.no + " " + s.name + " " + s.family).toLowerCase())}">
-      <b>${s.no}</b><span>${esc(s.name)}<small>${esc(s.family)}</small></span>${s.id === live ? '<i class="star">★</i>' : ""}</button>`).join("")}</div>`;
+      <b>${s.no}</b><span>${esc(s.name)}<small>${esc(s.family)}</small></span>${live.has(s.id) ? '<i class="star">★</i>' : ""}</button>`).join("")}</div>`;
   document.body.append(bg, pop);
   const r = anchor.getBoundingClientRect();
   if (window.innerWidth > 760) {
@@ -467,6 +470,7 @@ function signalCard(s, compact = false) {
       <div><div class="lbl">R:R</div><div class="mono">1 : ${fnum(s.rr, 2)}</div></div>
       <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">$${fnum(s.reward_usd, 2)}</div></div>
     </div>
+    ${s.capped ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⛔</span><div>${esc(s.note || "ข้าม: เกินเพดานความเสี่ยงรวมของสินทรัพย์นี้")} — ไม่ได้ส่งแจ้งเตือน (ระบบยังติดตามผลไม้นี้เพื่อวัดผลของระบบ)</div></div>` : ""}
     ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ 0.01 —
       ถ้าเปิด 0.01 lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
     <div class="adj">
@@ -476,7 +480,7 @@ function signalCard(s, compact = false) {
     ${compact ? "" : `<div class="acts">
       <button class="btn sm" data-a="copy">📋 คัดลอก</button>
       <button class="btn sm" data-a="adjust">🎯 ปรับตามราคา MT5</button>
-      <a class="btn sm" href="#/chart?symbol=${s.symbol}&tf=${s.tf}">📈 กราฟ</a>
+      <a class="btn sm" href="#/chart?symbol=${s.symbol}&tf=${s.tf}&strategy=${s.strategy}">📈 กราฟ</a>
       ${s.user_status === "new" ? `<button class="btn sm long" data-a="taken">✓ เปิดแล้ว</button><button class="btn sm ghost" data-a="skipped">ข้าม</button>` : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิดแล้ว" : "ข้าม"}</span>`}
     </div>`}
   </div>`;
@@ -701,7 +705,7 @@ async function renderChart(view) {
         ls.setData(vals.map((v, k) => (v === null ? null : { time: shiftT(sp.t[k]), value: v })).filter(Boolean));
         legend.push(`<span><i style="background:${color}"></i>${esc(name)}</span>`);
       });
-      const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.outcome === "open") : [];
+      const liveSigs = live ? sigs.filter((s) => s.symbol === sym && s.tf === tf && s.strategy === sid && s.outcome === "open") : [];
       open = live ? openPosition(sp, liveSigs) : (sp.open_trade ? { ...sp.open_trade, from: sp.open_trade.entry_time, pending: false } : null);
       if (open) open.lot = live ? lotLabel(sym, open.entry, open.sl, sys.risk_pct) : "ทดลอง";
       const markers = drawTradeLevels(ch, { candles: cd.candles, trades: sp.trades, digits: dg }, open);
@@ -859,7 +863,7 @@ async function renderSystems(view) {
       <div class="row" style="margin-top:12px"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}">🧪 ดูผลทดสอบทีละขั้นใน Strategy Lab</a><a class="btn sm ghost" href="#/chart?symbol=${sym}&tf=${tf}&strategy=${sid}">📈 ดูบนกราฟ</a></div></section></div>` : "");
   $("#catPane").innerHTML = `<div class="cat-hd"><input class="inp" id="catQ" placeholder="ค้นหาเลข ชื่อ กลุ่ม หรือ indicator…"><span class="muted small">กดการ์ดเพื่อเลือกระบบนั้น</span></div>
     <div class="cat">${S.strategies.map((s) => `<button class="cat-card ${s.id === sid ? "on" : ""}" data-sid="${s.id}" data-q="${esc((s.no + " " + s.name + " " + s.family + " " + s.indicators.join(" ")).toLowerCase())}">
-      <div class="cat-top"><span class="no">${s.no}</span><div><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.family)}</div></div>${s.id === sys.strategy ? '<i class="star">★</i>' : ""}</div>
+      <div class="cat-top"><span class="no">${s.no}</span><div><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.family)}</div></div>${isLiveSys(sym, s.id) ? '<i class="star">★</i>' : ""}</div>
       <div class="tiny"><span class="muted">Indicator:</span> ${esc(s.indicators.join(", "))}</div>
       <div class="tiny"><span class="pos">LONG:</span> ${esc(s.long)}</div></button>`).join("")}</div>`;
   $("#catQ").oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$(".cat-card").forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
@@ -910,14 +914,14 @@ async function renderLab(view) {
   const sel = { symbol: sym, tf, strategy: sid };
   store.set("labSel", sel);
   const st = stratById(sid);
-  const isBest = best.strategy === sid && best.tf === tf;
+  const isBest = isLiveSys(sym, sid, tf) || (!(R.systems || []).length && best.strategy === sid && best.tf === tf);
   let tab = store.get("labTab2", "steps");
   const runBtn = STATIC ? `<a class="btn sm primary" href="${actionsUrl()}" target="_blank" rel="noopener" data-tip="เปิด GitHub Actions → Run workflow → research">▶ สั่งวิเคราะห์ใหม่ทันที</a>`
     : `<button class="btn sm primary" id="runAll">▶ สั่งวิเคราะห์ใหม่ทันที</button>`;
   const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
   if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
   view.innerHTML = wsHtml({
-    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isBest ? `${statusBadge(R.status)}<span class="badge ghost">★ ระบบที่ใช้จริง</span>` : statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || "–")}`,
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost">★ เทรดจริงไตรมาสนี้</span>' : ""}`,
     tabs, tab, actions: runBtn,
     main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
     sel,
@@ -993,8 +997,9 @@ async function renderLab(view) {
     lineChart($("#oosMini"), [{ data: dedupeTimes(pts), color: "#60a5fa", last: true }]);
   }
   $("#wsFoot").innerHTML = `<span class="fi strat"><b>#${st.no}</b> ${esc(st.name)} <span class="muted">· ${esc(paramText(cand?.current_params || sp?.params))}</span></span>
-    ${isBest ? footItem("สถานะ", statusBadge(R.status)) : footItem("บทบาท", "ผู้สมัคร")}${footItem("เกณฑ์", `${passed}/${judged}`)}
-    ${isBest && R.locked_until ? `<span class="fi" data-tip="${esc(R.pick_reason || "")}">ล็อกระบบ+พารามิเตอร์ถึง <b>${fdt(Date.parse(R.locked_until) / 1000, true).split(",")[0]}</b></span>` : ""}
+    ${footItem("สถานะ", statusBadge(cand?.status || R.status))}${footItem("เกณฑ์", `${passed}/${judged}`)}
+    ${R.quarter ? `<span class="fi" data-tip="ทุกระบบสอบด้วยข้อมูลถึงวันตัดรอบเดียวกัน ระบบที่ผ่านเทรดด้วยพารามิเตอร์เดิมจนจบไตรมาส">ตัดข้อมูล <b>${fdt(Date.parse(R.quarter.cutoff) / 1000, true).split(",")[0]}</b> · ใช้ถึง <b>${fdt(Date.parse(R.quarter.until) / 1000, true).split(",")[0]}</b></span>` : ""}
+    ${cand?.kept ? '<span class="fi warn" data-tip="ACTIVE ตั้งแต่ต้นไตรมาส จึงใช้ต่อจนจบไตรมาส แม้เกณฑ์ใหม่สูงขึ้น">คงไว้ถึงสิ้นไตรมาส</span>' : ""}
     ${footItem("วิเคราะห์ล่าสุด", res.generated ? ago(res.generated) : "–")}<span class="fi faint">เส้น OOS equity ในข้อ 3 เป็นหน่วย R สะสม</span>`;
 }
 
@@ -1388,10 +1393,12 @@ function manualChapters() {
 TradingLab มี 3 ส่วนที่ทำงานแยกกัน และ **คอมของคุณไม่ต้องเปิดไว้**:
 ### 🤖 ส่วนที่ทำงานเองทั้งหมด (บน GitHub ฟรี)
 - **ทุกชั่วโมง (นาทีที่ ~4–20):** ดึงราคาล่าสุด → ตรวจว่าระบบ ACTIVE มีสัญญาณใหม่ไหม → ถ้ามี ส่งแจ้งเตือนเข้ามือถือพร้อม **Lot / Entry / SL / TP** → อัปเดตเว็บนี้ (กราฟ เส้น Entry/SL/TP, ผล forward test)
-- **ทุกวันเสาร์ 09:30 น.:** วิเคราะห์ใหม่ทั้งหมดทุกสินทรัพย์ (Backtest + Walk-Forward + Robustness 8 แบบ + Monte Carlo) ตลาด FX ปิดวันเสาร์ จึงไม่กระทบการเทรด
-  - **ระบบและพารามิเตอร์ที่ใช้จริงถูกล็อกตามรอบ Walk-Forward (3 เดือน)** เหมือนตอนทดสอบเป๊ะ — วันเสาร์แค่อัปเดตผลและเช็คว่ายังผ่านเกณฑ์
-  - เปลี่ยนก่อนครบรอบเฉพาะเมื่อ: ระบบเดิมตกเป็น **OFF** (หยุดทันที) หรือระบบเดิมเป็นแค่ WATCH แล้วมีระบบ ACTIVE
-  - ครบรอบแล้วเปลี่ยนระบบเฉพาะเมื่อตัวใหม่ดีกว่า **ชัดเจน** (สถานะสูงกว่า หรือ t สูงกว่า ≥ 0.5) — กันการสลับไปมา
+- **ทุกต้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค. 09:30 น.):** วิจัยใหม่ทั้งหมด — ทุกระบบทุกสินทรัพย์ **สอบพร้อมกันด้วยข้อมูลถึงวันตัดรอบเดียวกัน** (00:00 เวลาโบรกของวันที่ 1)
+  - **ทุกระบบที่ผ่านเกณฑ์เป็น ACTIVE และเทรดได้พร้อมกัน** (หลายระบบในสินทรัพย์ / TF เดียวกันได้) ใช้พารามิเตอร์เดิมตลอดไตรมาส
+  - **กดวิจัยใหม่กลางไตรมาส** (เช่นเพิ่มระบบใหม่) ยังตัดข้อมูลที่วันเดียวกัน → ระบบใหม่ที่ผ่านเกณฑ์ ACTIVE ได้ทันที ส่วนระบบที่ ACTIVE อยู่แล้ว **ใช้ต่อจนจบไตรมาส** แม้เกณฑ์สูงขึ้น
+  - หยุดระบบก่อนจบไตรมาสเฉพาะเมื่อผลจริง (forward test) แย่กว่าที่ทดสอบไว้ชัดเจน (ตรวจทุกวันจันทร์กับ Claude)
+  - วันเสาร์: ตรวจอย่างเดียวว่ารอบวิจัยของไตรมาสนี้ทำแล้วหรือยัง (กันพลาด)
+  - **เพดานความเสี่ยงรวมต่อสินทรัพย์ 0.75%** — ถ้าหลายระบบของสินทรัพย์เดียวกันเปิดอยู่จนเต็มเพดาน สัญญาณใหม่จะถูกข้าม (ไม่แจ้งเตือน แต่ยังบันทึกผล)
 - ทุกพารามิเตอร์ของการวิเคราะห์ (ช่วง IS/OOS, ชุดค่าที่ทดสอบ, เกณฑ์ผ่าน) **ตั้งไว้แล้ว ไม่ต้องปรับเอง**
 ### 🙋 ส่วนที่คุณทำ
 - **เมื่อมีแจ้งเตือน:** เปิด MT5 แล้วส่งคำสั่งซื้อขายตาม Lot / SL / TP ในข้อความ (ระบบ **ไม่ได้** ส่งออเดอร์ให้เอง)
@@ -1478,9 +1485,11 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - ทุกกลยุทธ์ผ่านการตรวจโค้ดอัตโนมัติ (\`tests/check_strategies.py\`): เปลี่ยนราคาในอนาคตแล้วสัญญาณในอดีตต้องไม่เปลี่ยน และบนกราฟสุ่มต้องได้ผลใกล้ 0R
 - ตั้งใจให้ชุดเล็ก เพราะยิ่งลองมากชุด ยิ่งมีโอกาสเจอ “ชุดที่ดีเพราะโชค”
 ### ขั้นที่ 3 — Walk-Forward แบบเลื่อนหน้าต่าง (หัวใจของการทดสอบ)
-- **1.** ดูข้อมูล 12 เดือน (In-Sample) แล้วเลือกพารามิเตอร์ที่ t-stat ดีที่สุด
-- **2.** เอาพารามิเตอร์นั้นไปเทรด **3 เดือนถัดไป** ที่ระบบไม่เคยเห็น (Out-of-Sample) โดยห้ามแก้
-- **3.** เลื่อนไป 3 เดือน แล้วทำซ้ำจนสุดข้อมูล
+- ช่วงสอบเป็น **ไตรมาสตามปฏิทิน** (ม.ค.–มี.ค., เม.ย.–มิ.ย., …) และข้อมูลของทุกระบบถูกตัดที่ **ต้นไตรมาสปัจจุบัน** เหมือนกันหมด
+- **1.** ดูข้อมูล 12 เดือนก่อนต้นไตรมาส (In-Sample) แล้วเลือกพารามิเตอร์ที่ t-stat ดีที่สุด
+- **2.** เอาพารามิเตอร์นั้นไปเทรด **ไตรมาสนั้น** ที่ระบบไม่เคยเห็น (Out-of-Sample) โดยห้ามแก้
+- **3.** เลื่อนไป 1 ไตรมาส แล้วทำซ้ำจนถึงวันตัดรอบ
+- **ไตรมาสปัจจุบัน = ช่วงสอบรอบใหม่ที่กำลังเกิดขึ้นจริง:** พารามิเตอร์ที่ใช้เทรด คือชุดที่เลือกจาก 12 เดือนก่อนวันตัดรอบ ใช้เหมือนเดิมจนจบไตรมาส
 - **4.** เอาผล OOS ทุกช่วงมาต่อกัน **ใช้ผลนี้เท่านั้นในการตัดสิน** (เหมือนข้อสอบที่ไม่เคยเห็น)
 - ช่วงไหน In-Sample ไม่มีชุดที่เป็นบวก ระบบจะไม่เทรดช่วงนั้น
 ### ขั้นที่ 4 — เทียบกับการสุ่มจุดเข้า
@@ -1495,21 +1504,20 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - Monte Carlo **ตรวจ overfitting ไม่ได้** จึงใช้กับผล OOS เท่านั้น
 ### ขั้นที่ 7 — “หักค่าโชค” แล้วตัดสินทุกระบบด้วยเกณฑ์เดียวกัน
 - **ทุกระบบ × ทุก TF × ทุกสินทรัพย์ ผ่านขั้น 1–6 ครบเหมือนกันหมด** (บนคลาวด์แบ่งเป็น 24 งานรันพร้อมกัน ใช้เวลาราว 1–2 ชม.)
-- ทุกสินทรัพย์มีผู้สมัครประมาณ ${(S.settings?.research?.timeframes || [1, 2, 3]).length * (S.strategies.length || 50)} ตัว (กลยุทธ์ × TF) ทุกตัวได้สถานะของตัวเอง แล้วสินทรัพย์นั้นใช้ตัวที่ **ACTIVE และ t-stat สูงสุด** (ถ้าไม่มี ACTIVE ใช้ตัวที่ t สูงสุด)
+- ทุกสินทรัพย์มีผู้สมัครประมาณ ${(S.settings?.research?.timeframes || [1, 2, 3]).length * (S.strategies.length || 50)} ตัว (กลยุทธ์ × TF) ทุกตัวได้สถานะของตัวเอง และ **ทุกตัวที่ ACTIVE ถูกนำไปเทรด** (หน้ากราฟ / Lab เปิดมาที่ตัวที่ t สูงสุด)
 - ปัญหา: **ถ้าให้คนจำนวนมากโยนเหรียญ คนที่ได้หัวมากที่สุดก็ดูเก่งเพราะโชค** จึงต้องตั้งเกณฑ์สูงขึ้นตามจำนวนผู้สมัคร
 - เกณฑ์ “t ปรับตามจำนวนระบบที่เทียบ” ใช้ Šidák correction: 8 ผู้สมัคร ≈ t 2.5 · 20 ผู้สมัคร ≈ t 2.8 · 40 ผู้สมัคร ≈ t 3.0 · 150 ผู้สมัคร ≈ t 3.4 (ข้อเสนอของ Harvey, Liu & Zhu คือ t > 3)
 - **ยิ่งเพิ่มกลยุทธ์ เกณฑ์ยิ่งสูง** — การมีกลยุทธ์มากขึ้นไม่ได้ทำให้มีระบบผ่านง่ายขึ้น
 ### ขั้นที่ 8 — ตัดสินสถานะ
-- **ACTIVE:** ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริง
-- **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ติดตามผลจริงเงียบ ๆ ไม่แจ้งเตือน
+- **ACTIVE:** ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริงตลอดไตรมาส (★ ในหน้าเว็บ)
+- **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ไม่เทรด ไม่แจ้งเตือน (ดูผลได้ในปุ่ม ⚡ ด่วน)
 - **OFF:** ไม่พบ edge → ไม่เทรด
 - หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF`],
     ["watch", "7. ป้าย ACTIVE / WATCH / OFF คืออะไร", `
 เปรียบเหมือน **นักฟุตบอลในทีม**:
-- **ACTIVE (ตัวจริง)** — ผ่านการคัดเลือกทุกด่าน ลงเล่นจริง → ระบบส่งแจ้งเตือนให้คุณเปิดออเดอร์
+- **ACTIVE (ตัวจริง)** — ผ่านการคัดเลือกทุกด่าน ลงเล่นจริงทั้งไตรมาส → ระบบส่งแจ้งเตือนให้คุณเปิดออเดอร์ · มีตัวจริงได้หลายคนพร้อมกัน (หลายระบบต่อสินทรัพย์) — บัญชี Hedging จึงอาจมีทั้ง Buy และ Sell ของสินทรัพย์เดียวกันจากคนละระบบ
 - **WATCH (ตัวสำรองที่ฟอร์มดี)** — ผล Out-of-Sample เป็นบวก แต่หลักฐานยังไม่พอ เช่น t-stat ต่ำกว่าเกณฑ์ หรือ Monte Carlo ยังไม่มั่นใจ
-  - ระบบยังสแกนหาสัญญาณและ **บันทึกผลจริง (forward test)** ไว้ทุกไม้ แต่ **ไม่ส่งแจ้งเตือน** (เปิดได้ในตั้งค่า แต่ไม่แนะนำ)
-  - ถ้าผลจริงสะสมดี การวิเคราะห์รอบถัดไปอาจเลื่อนเป็น ACTIVE เอง
+  - **ไม่ส่งแจ้งเตือน** และไม่นับเป็นระบบเทรด · ถ้าข้อมูลไตรมาสถัดไปทำให้หลักฐานพอ รอบวิจัยหน้าอาจเลื่อนเป็น ACTIVE เอง
   - **ไม่ควรเทรดด้วยเงินจริง** ใช้ดูเพื่อเรียนรู้หรือเทรด demo
 - **OFF (ไม่ติดทีม)** — ไม่พบความได้เปรียบที่แยกออกจากโชคได้ → ไม่เทรด
 - กดการ์ดในหน้า **ระบบเทรด** จะเห็นว่าเกณฑ์ไหน ✓ ผ่าน ✗ ไม่ผ่าน`],
@@ -1582,7 +1590,7 @@ async function renderSignals(view) {
     const st = stratById(x.strategy), op = openOf(x.symbol);
     return `<a class="sys-tile ${x.status}" href="#/chart?symbol=${x.symbol}&tf=${x.tf || "H1"}${x.strategy ? "&strategy=" + x.strategy : ""}">
       <div class="t-top"><span class="ab">${ABBR[x.symbol] || ""}</span><b>${x.symbol}</b>${statusBadge(x.status)}</div>
-      <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${x.tf || ""}</span></div>
+      <div class="t-sys">${st ? `<b>#${st.no}</b> ${esc(st.name)}` : '<span class="muted">ไม่มีระบบ</span>'} <span class="muted">${x.tf || ""}</span>${(x.systems || []).length > 1 ? ` <span class="badge ghost" title="${esc(x.systems.map((y) => "#" + (stratById(y.strategy)?.no ?? "?") + " " + y.tf).join(" · "))}">+${x.systems.length - 1} ระบบ</span>` : ""}</div>
       <div class="t-foot">${op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : '<span class="muted">○ รอสัญญาณ</span>'}
         ${x.oos ? `<span class="mono muted">${fr(x.oos.expectancy, 2)}/ไม้</span>` : ""}</div></a>`;
   };
@@ -1590,7 +1598,7 @@ async function renderSignals(view) {
     <div class="hero">
       <div class="hero-main"><div class="hero-k">สัญญาณที่เข้าได้ตอนนี้</div><div class="hero-v">${actionable.length}</div>
         <div class="hero-s">${STATIC ? `คลาวด์สแกนทุกชั่วโมง · ล่าสุด ${ago(STATIC.last_scan)}` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} · แจ้งเตือนเข้ามือถือเมื่อระบบ ACTIVE มีสัญญาณ</div></div>
-      <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.length, active.map((x) => x.symbol).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
+      <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.reduce((n, x) => n + Math.max(1, (x.systems || []).length), 0), active.map((x) => x.symbol + ((x.systems || []).length > 1 ? ` ×${x.systems.length}` : "")).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
         ${kpi("กำลังติดตาม", tracking.length, "ออเดอร์ที่ยังไม่ปิด")}
         ${kpi("Forward test", fa ? fr(fa.net_r, 1) : "–", fa ? `${fa.trades} ไม้ · ชนะ ${fa.win_rate}%` : "ยังไม่มีไม้ที่จบ", fa ? cls(fa.net_r) : "")}
         <div class="kpi act"><button class="btn sm" id="scanBtn">${ICONS.refresh} ${STATIC ? "โหลดใหม่" : "สแกนตอนนี้"}</button></div></div>

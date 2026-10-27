@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from . import indicators as ta
+from .data import add_months, period_start
 from .engine import cost_price, exit_rules, hold_bars, run, simulate, week_guard
 from .strategies import signals as strat_signals
 from .metrics import summarize
@@ -43,24 +44,32 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
     combos = combos or grid(strategy_id, cfg.get("max_hold_hours", 120))
     is_m, oos_m, min_tr = cfg.get("is_months", 12), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
     runs = runs if runs is not None else backtest_combos(df, strategy_id, spec, tf, combos)
-    start, end = df.index[0] + pd.Timedelta(days=30), df.index[-1]
+    # Calendar-aligned folds (user's rule, 27 Oct 2026): OOS windows are calendar periods (quarters for 3 months) on the
+    # broker clock and every candidate is cut at the SAME research cut-off (start of the current quarter), so all systems
+    # sit the same exam; the live parameters are what the in-sample window just before the cut-off picks, traded unchanged
+    # for the following period (= the next out-of-sample fold, now happening live).
+    first = df.index[0] + pd.Timedelta(days=30)
+    end = pd.Timestamp(cfg["cutoff"]) if cfg.get("cutoff") else period_start(df.index[-1], oos_m)
+    end = period_start(end, oos_m) if end != period_start(end, oos_m) else end
+    q = period_start(first, oos_m)
+    while add_months(q, -is_m) < first:
+        q = add_months(q, oos_m)
     folds, oos_trades, is_rates = [], [], []
-    k = 0
-    while True:
-        is_start = start + pd.DateOffset(months=k * oos_m)
-        is_end = is_start + pd.DateOffset(months=is_m)
-        oos_end = is_end + pd.DateOffset(months=oos_m)
-        if is_end >= end:
-            break
+
+    def pick(a, b):
         best, best_t = None, -np.inf
         for j, rr in enumerate(runs):
-            m = (rr["t"] >= is_start) & (rr["t"] < is_end)
-            x = rr["r"][m]
+            x = rr["r"][(rr["t"] >= a) & (rr["t"] < b)]
             t = _tstat(x) if len(x) >= min_tr and x.mean() > 0 else -np.inf
             if t > best_t:
                 best, best_t = j, t
+        return best, best_t
+
+    while q < end:
+        is_start, is_end, oos_end = add_months(q, -is_m), q, min(add_months(q, oos_m), end)
+        best, best_t = pick(is_start, is_end)
         fold = {"is_start": is_start.isoformat(), "is_end": is_end.isoformat(), "oos_start": is_end.isoformat(),
-                "oos_end": min(oos_end, end).isoformat(), "partial": bool(oos_end > end)}
+                "oos_end": oos_end.isoformat(), "partial": False}
         if best is None:
             fold.update(params=None, is_trades=0, is_exp=None, oos_trades=0, oos_r=0.0, oos_exp=None)
         else:
@@ -75,20 +84,15 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
                         is_t=round(best_t, 2), oos_trades=int(len(x_oos)), oos_r=round(float(x_oos.sum()), 2),
                         oos_exp=round(float(x_oos.mean()), 4) if len(x_oos) else None)
         folds.append(fold)
-        k += 1
+        q = add_months(q, oos_m)
 
-    # parameters for live trading = the ones the CURRENT fold picked at its start, kept until that fold's OOS window ends
-    # (exactly what the walk-forward test did: re-optimise every oos_months, never in between). The current fold is the
-    # last one; its OOS window contains "now". A flat fold (nothing positive in-sample) means: do not trade.
-    last = folds[-1] if folds else None
-    cur = last.get("combo") if last else None
-    cur_t = last.get("is_t") if last and cur is not None else None
-    lock = {"start": last["oos_start"], "end": (pd.Timestamp(last["is_end"]) + pd.DateOffset(months=oos_m)).isoformat()} if last else None
-
+    # live parameters: in-sample = the is_m months before the cut-off, traded from the cut-off for one period
+    cur, cur_t = pick(add_months(end, -is_m), end)
+    lock = {"start": end.isoformat(), "end": add_months(end, oos_m).isoformat()}
+    end_eff = end
     oos_trades.sort(key=lambda x: x["entry_time"])
     oos_r = np.array([x["r"] for x in oos_trades], float)
-    oos_years = sum(
-        (min(pd.Timestamp(f["oos_end"]), end) - pd.Timestamp(f["oos_start"])).days for f in folds) / 365.25
+    oos_years = sum((pd.Timestamp(f["oos_end"]) - pd.Timestamp(f["oos_start"])).days for f in folds) / 365.25
     full_exp = [rr["r"].mean() if len(rr["r"]) >= min_tr else -1 for rr in runs]
     chosen = [f.get("combo") for f in folds if f.get("combo") is not None]
     oos_rate = oos_r.sum() / (oos_years * 12) if oos_years > 0 else 0.0
@@ -103,7 +107,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
         "param_switches": int(sum(1 for a, b in zip(chosen, chosen[1:]) if a != b)),
         "distinct_params": len(set(chosen)),
         "current_params": runs[cur]["params"] if cur is not None else None,
-        "current_is_t": round(cur_t, 2) if cur is not None else None,
+        "current_is_t": round(cur_t, 2) if cur is not None else None, "cutoff": end_eff.isoformat(),
         "current_lock": lock,
         "_runs": runs,
         "combos_full": [{"params": rr["params"], "trades": int(len(rr["r"])),

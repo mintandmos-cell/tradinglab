@@ -102,9 +102,10 @@ def system_params(symbol: str, tf: str, strategy: str, lat: dict | None = None) 
     wf    = the latest walk-forward choice for that strategy x TF (a research candidate, not traded)
     default = the library defaults (no research for that strategy x TF, e.g. D1)."""
     r = (lat if lat is not None else research.latest()).get("symbols", {}).get(symbol) or {}
-    if r.get("strategy") == strategy and r.get("tf") == tf and r.get("params"):
+    ls = next((x for x in research.live_systems(r) if x["strategy"] == strategy and x["tf"] == tf and x.get("params")), None)
+    if ls:
         cand = next((c for c in r.get("candidates", []) if c["strategy"] == strategy and c["tf"] == tf), None)
-        return normalize(strategy, r["params"]), "live", cand
+        return normalize(strategy, ls["params"]), "live", cand
     cand = next((c for c in r.get("candidates", []) if c["strategy"] == strategy and c["tf"] == tf), None)
     if cand and cand.get("current_params"):
         return normalize(strategy, cand["current_params"]), "wf", cand
