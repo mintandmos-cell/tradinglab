@@ -61,6 +61,7 @@ def build(repo: str = "", chart_limit: int = 1200) -> None:
     _dump(d / "symbols.json", research.symbol_table(settings))
     _dump(d / "strategies.json", public_list())
     _dump(d / "research.json", _light(lat))
+    _dump(d / "picks.json", research.picks(lat))
     _dump(d / "history.json", research.history())
     _dump(d / "signals.json", scanner.load_signals()[:200])
     _dump(d / "forward.json", scanner.forward_summary())

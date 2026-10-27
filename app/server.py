@@ -171,7 +171,7 @@ def walkforward_api(body: dict = Body(...)):
     rb = random_benchmark(df, wf, spec, tf) if body.get("benchmark", True) else None
     r = [t["r"] for t in wf["oos_trades"]]
     times = data.to_unix([t["exit_time"] for t in wf["oos_trades"]])
-    out = {k: v for k, v in wf.items() if k != "oos_trades"}
+    out = {k: v for k, v in wf.items() if k not in ("oos_trades", "_runs")}
     out.update(symbol=sym, random_benchmark=rb, r=[round(x, 4) for x in r], equity=equity_points(times, r, float(body.get("risk_pct", 1.0))),
                trades=[{**_trade_out(t, spec["digits"]), "fold": t["fold"]} for t in wf["oos_trades"]][::-1][:400],
                yearly=_yearly(wf["oos_trades"]), is_months=cfg["is_months"], oos_months=cfg["oos_months"])
@@ -206,6 +206,11 @@ def size(symbol: str, entry: float, sl: float, risk_pct: float, balance: float |
 @app.get("/api/research")
 def research_latest():
     return ok(research.latest())
+
+
+@app.get("/api/picks")
+def picks():
+    return ok(research.picks())
 
 
 @app.get("/api/research/state")

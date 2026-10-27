@@ -80,6 +80,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/forward") return staticGet("forward.json");
   if (p === "/api/scan") return { new: [] };
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
+  if (p === "/api/picks") return staticGet("picks.json");
   if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
   if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`);
   if (p === "/api/size") return sizeLocal(qp.symbol, +qp.entry, +qp.sl, +qp.risk_pct, +(qp.balance || P.account_balance), qp.tp ? +qp.tp : null);
@@ -186,6 +187,42 @@ function dedupeTimes(points) {
   return out;
 }
 
+// ------------------------------------------------------------------ personal display preferences (this device) + live prices
+const PREF_DEF = { candle: "classic", bars: 220, live: true, finnhub: "", liveMap: {}, home: "chart" };
+const prefs = { get() { return { ...PREF_DEF, ...store.get("prefs", {}) }; }, set(v) { store.set("prefs", { ...prefs.get(), ...v }); } };
+const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขียว / แดง" }, tv: { up: "#26a69a", down: "#ef5350", name: "แบบ TradingView" },
+  blue: { up: "#3b82f6", down: "#f59e0b", name: "ฟ้า / ส้ม (ตาบอดสีอ่านง่าย)" }, mono: { up: "#e6e9ef", down: "#6b7280", name: "ขาว / เทา" } };
+const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
+  NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD" };
+const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
+// Real-time price for the chart's forming candle (display only: systems still decide on closed bars).
+// BTC/ETH: Binance trade stream (free, no key). FX / gold / indices: Finnhub websocket with the user's free API key.
+const Live = {
+  ws: null, price: null, ts: 0, src: "", state: "off", symbol: null,
+  start(sym) {
+    this.stop(); this.symbol = sym; this.price = null; const P = prefs.get();
+    if (!P.live) { this.state = "off"; return; }
+    const open = (url, onopen, parse, src, fallback) => {
+      let ws; try { ws = new WebSocket(url); } catch { this.state = "error"; return; }
+      this.ws = ws; this.src = src; this.state = "connecting";
+      ws.onopen = () => { this.state = "live"; onopen && onopen(ws); };
+      ws.onmessage = (e) => { try { const x = parse(JSON.parse(e.data)); if (x) { this.price = x.p; this.ts = x.t; } } catch { /* ignore */ } };
+      ws.onerror = () => { if (fallback && this.ws === ws) { ws.onclose = null; fallback(); } else this.state = "error"; };
+      ws.onclose = () => { if (this.ws === ws && this.state !== "off") this.state = "error"; };
+    };
+    if (BINANCE_LIVE[sym]) {
+      const st = BINANCE_LIVE[sym] + "@aggTrade", parse = (m) => ({ p: +m.p, t: m.T });
+      open(`wss://stream.binance.com:9443/ws/${st}`, null, parse, "Binance",
+        () => open(`wss://data-stream.binance.vision/ws/${st}`, null, parse, "Binance"));
+    } else if (P.finnhub) {
+      const fsym = (P.liveMap || {})[sym] || LIVE_DEFAULT[sym];
+      open(`wss://ws.finnhub.io?token=${encodeURIComponent(P.finnhub)}`, (ws) => ws.send(JSON.stringify({ type: "subscribe", symbol: fsym })),
+        (m) => { const d = m.type === "trade" && m.data?.filter((x) => x.s === fsym).pop(); return d ? { p: +d.p, t: d.t } : null; }, "Finnhub");
+    } else this.state = "nokey";
+  },
+  stop() { const ws = this.ws; this.ws = null; this.state = "off"; if (ws) { ws.onclose = null; try { ws.close(); } catch { /* closed */ } } },
+};
+
 // ------------------------------------------------------------------ router / shell
 const SVG = (d, extra = "") => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${d}</svg>`;
 const ICONS = {
@@ -210,7 +247,7 @@ const ROUTES = {
   guide: { title: "คู่มือ", sub: "วิธีใช้งานทีละขั้น", render: renderGuide },
 };
 const NAV_ORDER = ["chart", "systems", "lab", "signals", "calc", "settings", "guide"];
-function route() { const r = location.hash.replace(/^#\/?/, "").split("?")[0]; return ROUTES[r] ? r : "chart"; }
+function route() { const r = location.hash.replace(/^#\/?/, "").split("?")[0]; return ROUTES[r] ? r : (ROUTES[prefs.get().home] ? prefs.get().home : "chart"); }
 
 function renderNav(newCount = 0) {
   const cur = route();
@@ -234,6 +271,7 @@ async function navigate() {
   const k = route(), r = ROUTES[k];
   S.charts.forEach((c) => { try { c.remove(); } catch { /* already gone */ } }); S.charts = [];
   document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  Live.stop(); clearInterval(S.liveTimer);
   $("#pageTitle").textContent = r.title; $("#pageSub").textContent = r.sub;
   document.title = `${r.title} · TradingLab`;
   document.body.dataset.page = k;
@@ -270,6 +308,7 @@ function wsHtml({ title, tabs = [], tab, actions = "", main, sel, foot = "" }) {
 function railHtml(sel) {
   const sys = sysOf(sel.symbol), st = stratById(sel.strategy) || {};
   return `<div class="rail">
+    <div class="rail-grp"><button class="rb qbtn" id="qBtn" data-tip="เลือกด่วน: ระบบ ACTIVE / WATCH เรียงตามความสำคัญ">⚡<small>ด่วน</small></button></div>
     <div class="rail-grp">${["H1", "H4", "D1"].map((t) => `<button class="rb ${t === sel.tf ? "on" : ""}" data-tf="${t}" data-tip="Timeframe ${t}">${t}</button>`).join("")}</div>
     <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${sys.strategy === sel.strategy ? '<i class="star">★</i>' : ""}</button></div>
     <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i></button>`).join("")}</div>
@@ -279,6 +318,29 @@ function bindRail(root, sel, onChange) {
   $$("[data-tf]", root).forEach((b) => b.onclick = () => onChange({ ...sel, tf: b.dataset.tf }, "tf"));
   $$("[data-sym]", root).forEach((b) => b.onclick = () => onChange({ ...sel, symbol: b.dataset.sym }, "symbol"));
   $("#sysBtn", root).onclick = (e) => openSysPicker(e.currentTarget, sel, (sid) => onChange({ ...sel, strategy: sid }, "strategy"));
+  $("#qBtn", root).onclick = (e) => openQuickPicker(e.currentTarget, sel, (p) => onChange({ symbol: p.symbol, tf: p.tf, strategy: p.strategy }, "pick"));
+}
+async function openQuickPicker(anchor, sel, pick) {
+  document.querySelectorAll(".syspop, .syspop-bg").forEach((x) => x.remove());
+  const list = S.picks || (S.picks = await api("/api/picks").catch(() => []));
+  const bg = document.createElement("div"); bg.className = "syspop-bg";
+  const pop = document.createElement("div"); pop.className = "syspop quick";
+  const row = (p) => { const st = stratById(p.strategy) || {}; const on = p.symbol === sel.symbol && p.tf === sel.tf && p.strategy === sel.strategy;
+    return `<button data-i="${list.indexOf(p)}" class="${on ? "on" : ""}"><b class="ab">${ABBR[p.symbol] || p.symbol.slice(0, 3)}</b>
+      <span><em class="ql">${statusBadge(p.status)} <i class="mono">${p.tf}</i> · #${st.no ?? "?"} ${esc(st.name || p.strategy)}${p.live ? ' <i class="star">★</i>' : ""}</em>
+      <small>${p.symbol} · OOS ${p.trades ?? "–"} ไม้ · ${fr(p.exp, 3)}/ไม้ · t ${fnum(p.t, 2)}${p.robust != null ? " · Robust " + p.robust : ""}</small></span></button>`; };
+  const act = list.filter((p) => p.status === "ACTIVE"), wat = list.filter((p) => p.status === "WATCH"), rest = list.filter((p) => !["ACTIVE", "WATCH"].includes(p.status));
+  pop.innerHTML = `<div class="syspop-hd"><b>⚡ เลือกด่วน</b><span class="muted small">กดครั้งเดียว เปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน · เรียง ACTIVE → WATCH → t-stat สูง · ★ = ระบบที่ใช้จริง</span></div>
+    <div class="syspop-list">${act.length ? `<div class="grp">ACTIVE (${act.length})</div>${act.map(row).join("")}` : ""}
+      ${wat.length ? `<div class="grp">WATCH (${wat.length})</div>${wat.map(row).join("")}` : ""}
+      ${rest.length ? `<div class="grp">ระบบปัจจุบันของสินทรัพย์อื่น (OFF)</div>${rest.map(row).join("")}` : ""}
+      ${list.length ? "" : '<div class="hint pad-x">ยังไม่มีผลวิเคราะห์</div>'}</div>`;
+  document.body.append(bg, pop);
+  const r = anchor.getBoundingClientRect();
+  if (window.innerWidth > 760) { pop.style.top = Math.max(8, Math.min(r.top, window.innerHeight - pop.offsetHeight - 8)) + "px"; pop.style.left = Math.max(8, r.left - pop.offsetWidth - 8) + "px"; }
+  const close = () => { bg.remove(); pop.remove(); };
+  bg.onclick = close;
+  pop.onclick = (e) => { const b = e.target.closest("[data-i]"); if (b) { close(); pick(list[+b.dataset.i]); } };
 }
 function goSel(page, sel, extra = {}) {
   const p = new URLSearchParams({ symbol: sel.symbol, tf: sel.tf, strategy: sel.strategy, ...extra });
@@ -497,7 +559,7 @@ async function renderChart(view) {
   const overlay = store.get("chartOverlay", true);
   let tab = store.get("chartTab", "chart");
   view.innerHTML = wsHtml({
-    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="chBadge"></span>`,
+    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="liveTag"></span><span id="chBadge"></span>`,
     tabs: [["chart", "กราฟ"], ["trades", "เทรดล่าสุด"]], tab,
     actions: `<button class="ibtn ${overlay ? "on" : ""}" id="ovl" data-tip="แสดง/ซ่อน indicator และจุดเข้าออกของระบบ">${ICONS.ind}</button>`,
     main: `<div class="chart-box" id="chartBox"><div class="chart fill" id="mainChart"></div><div class="hist-note" id="chHist"></div></div><div class="ws-pane" id="trPane" hidden></div>`,
@@ -517,6 +579,7 @@ async function renderChart(view) {
 
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
+  let liveSeries = null, liveBar = null, liveDigits = 2;
   const histLabel = () => {
     const el = $("#chHist"); if (!el || !last) return;
     const from = (older[0] || last.cd.candles[0])?.time;
@@ -548,7 +611,8 @@ async function renderChart(view) {
     if (ch) { S.charts = S.charts.filter((c) => c !== ch); ch.remove(); }
     const dg = sp.digits ?? cd.digits;
     ch = makeChart($("#mainChart"), { localization: { priceFormatter: (p) => p.toFixed(dg) } });
-    const cs = ch.addCandlestickSeries({ upColor: "#16c784", downColor: "#ef4444", borderVisible: false, wickUpColor: "#16c784", wickDownColor: "#ef4444",
+    const CC = CANDLE[prefs.get().candle] || CANDLE.classic;
+    const cs = ch.addCandlestickSeries({ upColor: CC.up, downColor: CC.down, borderVisible: false, wickUpColor: CC.up, wickDownColor: CC.down,
       priceFormat: { type: "price", precision: dg, minMove: 1 / 10 ** dg } });
     cs.setData(cd.candles.map((c) => ({ ...c, time: shiftT(c.time) })));
     let open = null;
@@ -567,7 +631,8 @@ async function renderChart(view) {
       markers.sort((a, b) => a.time - b.time); cs.setMarkers(markers);
     }
     S.chartOpen = open;
-    const n = cd.candles.length, half = Math.max(30, Math.round(($("#mainChart").clientWidth || 800) / 14));
+    liveSeries = cs; liveBar = { ...cd.candles[cd.candles.length - 1] }; liveDigits = dg;
+    const n = cd.candles.length, half = Math.max(20, Math.round((prefs.get().bars || 220) / 2));
     // latest candle in the middle of the chart, room on the right for the open position's labels
     ch.timeScale().setVisibleLogicalRange(range || { from: n - 1 - half, to: n - 1 + half });
     $("#chTitle").textContent = sym;
@@ -587,6 +652,26 @@ async function renderChart(view) {
       <span class="fi faint">${esc(source || "")}</span>`;
   };
   await draw(false);
+  // live price: the forming candle moves every second (display only)
+  const TFS = { H1: 3600, H4: 14400, D1: 86400 }[tf];
+  Live.start(sym);
+  const tag = () => {
+    const st = Live.state, el = $("#liveTag"); if (!el) return;
+    el.innerHTML = st === "live" && Live.price ? `<span class="live-dot" data-tip="ราคาสดจาก ${Live.src} อัปเดตทุก 1 วินาที">LIVE</span>`
+      : st === "nokey" ? `<a class="live-dot off" href="#/settings" title="ใส่ Finnhub API key ในหน้าตั้งค่าเพื่อเปิดราคาสด">ราคาสด: ตั้งค่า</a>`
+      : st === "connecting" || (st === "live" && !Live.price) ? `<span class="live-dot off">กำลังเชื่อมต่อ…</span>` : st === "error" ? `<span class="live-dot off">ราคาสดไม่พร้อม</span>` : "";
+  };
+  S.liveTimer = setInterval(() => {
+    if (route() !== "chart" || S.chartToken !== token) return clearInterval(S.liveTimer);
+    tag();
+    const p = Live.price; if (!p || !liveSeries || !liveBar) return;
+    const t = Math.floor((Live.ts || Date.now()) / 1000), start = t - (t % TFS);
+    if (start > liveBar.time) liveBar = { time: start, open: liveBar.close, high: Math.max(liveBar.close, p), low: Math.min(liveBar.close, p), close: p };
+    else liveBar = { ...liveBar, high: Math.max(liveBar.high, p), low: Math.min(liveBar.low, p), close: p };
+    try { liveSeries.update({ ...liveBar, time: shiftT(liveBar.time) }); } catch { /* chart rebuilding */ }
+    $("#chSub").innerHTML = `${tf} · <b class="mono">${fpx(p, liveDigits)}</b>`;
+  }, 1000);
+  tag();
   const timer = setInterval(() => { if (route() !== "chart" || S.chartToken !== token) return clearInterval(timer); if (!document.hidden && tab === "chart") draw(true).catch(() => {}); },
     STATIC ? 300000 : 60000);
 
@@ -728,7 +813,7 @@ async function renderLab(view) {
   const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
   if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
   view.innerHTML = wsHtml({
-    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isBest ? `${statusBadge(R.status)}<span class="badge ghost">ดีที่สุดของ ${sym}</span>` : `<span class="badge ghost">ผู้สมัคร</span>`}`,
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isBest ? `${statusBadge(R.status)}<span class="badge ghost">★ ระบบที่ใช้จริง</span>` : statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || "–")}`,
     tabs, tab, actions: runBtn,
     main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
     sel,
@@ -770,7 +855,7 @@ async function renderLab(view) {
   const mc = mcJs(rOos, Math.max(10, o?.trades_per_year || 10), risk);
   const mcFull = mcJs(rOos, rOos.length, 1, 2000);
   const tNeed = R.t_needed;
-  const gates = isBest && R.gates ? R.gates : o ? [
+  const gates = cand?.gates ? cand.gates : isBest && R.gates ? R.gates : o ? [
     { name: "OOS trades", value: o.trades, need: G.min_oos_trades, pass: o.trades >= G.min_oos_trades },
     { name: "OOS expectancy (R)", value: o.expectancy, need: G.min_expectancy, pass: o.expectancy >= G.min_expectancy },
     { name: "OOS t-stat", value: o.t_stat, need: G.min_t, pass: o.t_stat >= G.min_t },
@@ -780,7 +865,7 @@ async function renderLab(view) {
     { name: "ชนะการสุ่มจุดเข้า / Robustness", value: null, need: "ทดสอบเฉพาะตัวที่ดีที่สุด", pass: null },
   ] : [];
   const passed = gates.filter((g) => g.pass).length, judged = gates.filter((g) => g.pass !== null).length;
-  const rb = isBest ? R.random_benchmark : null, rob = isBest ? R.robustness : null;
+  const rb = cand?.random_benchmark ?? (isBest ? R.random_benchmark : null), rob = cand?.robustness ?? (isBest ? R.robustness : null);
   const oosChart = rOos.length ? `<div class="mini-chart" id="oosMini"></div>` : "";
   $("#stepsPane").innerHTML = `<div class="steps">
     ${step(1, "ข้อมูลและกติกา", `<div class="kv2">${[["ข้อมูล", `${sp?.from ? fdt(sp.from, true).split(",")[0] : "–"} → ปัจจุบัน (${fnum(sp?.years, 1)} ปี)`], ["แหล่งข้อมูล", R.data_source || "–"],
@@ -792,12 +877,12 @@ async function renderLab(view) {
     ${step(4, "คัดเลือก + หักค่าโชค", o ? `<p>ระบบนี้อยู่อันดับ <b>${rank || "–"}</b> จาก <b>${ranked.length}</b> ผู้สมัครที่มีเทรดพอของ ${sym} (เรียงตาม OOS t-stat) · ตัวที่ดีที่สุดคือ <b>${stratLabel(best.strategy)}</b> ${best.tf || ""}</p>
       ${verdict(tNeed != null ? o.t_stat >= tNeed : null, `t-stat ${fnum(o.t_stat, 2)} ${tNeed != null ? (o.t_stat >= tNeed ? "≥" : "<") + " เกณฑ์ " + fnum(tNeed, 2) : ""} (ยิ่งเทียบหลายระบบ เกณฑ์ยิ่งสูง เพื่อตัดตัวที่ดีเพราะโชค)`)}` : '<div class="hint">–</div>')}
     ${step(5, "เทียบกับการสุ่มจุดเข้า", rb ? `${verdict(rb.percentile >= G.min_random_pct, `ชนะการสุ่ม ${rb.percentile}% ของ ${rb.sims} รอบ (ต้อง ≥ ${G.min_random_pct}%) · สุ่มเฉลี่ย ${fr(rb.random_mean, 3)} vs ระบบ ${fr(rb.actual_exp, 3)}`)}`
-      : '<div class="hint">ทดสอบเฉพาะระบบที่ดีที่สุดของแต่ละสินทรัพย์ (ข้อนี้และข้อ 6) เพื่อไม่ให้ใช้เวลาเกินไป</div>', rb ? (rb.percentile >= G.min_random_pct ? "ok" : "no") : "na")}
+      : '<div class="hint">ยังไม่มีผล — รอการวิเคราะห์รอบถัดไป (ทุกระบบผ่านทุกขั้นเหมือนกัน)</div>', rb ? (rb.percentile >= G.min_random_pct ? "ok" : "no") : "na")}
     ${step(6, "Robustness — พยายามทำให้ระบบพัง", rob?.tests?.length ? `${robustBar(rob)}<div class="tbl-wrap" style="margin-top:10px"><table class="tbl"><tbody>${rob.tests.map((t) => `<tr><td>${t.pass === null ? '<span class="faint">–</span>' : t.pass ? '<span class="pos">✓</span>' : '<span class="neg">✗</span>'}</td><td class="wrap">${esc(t.name)}${t.note ? `<div class="tiny faint">${esc(t.note)}</div>` : ""}</td><td class="num">${esc(t.value ?? "–")}</td><td class="muted small wrap">${esc(t.need)}</td></tr>`).join("")}</tbody></table></div>`
-      : '<div class="hint">ทดสอบเฉพาะระบบที่ดีที่สุดของแต่ละสินทรัพย์</div>', rob ? (rob.score >= (G.min_robust_score ?? 60) ? "ok" : "no") : "na")}
+      : '<div class="hint">ยังไม่มีผล หรือมีเทรด OOS ไม่พอ (ต้อง ≥ 10 ไม้)</div>', rob ? (rob.score >= (G.min_robust_score ?? 60) ? "ok" : "no") : "na")}
     ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
       <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
-    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง" : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `ผ่าน ${passed}/${judged} เกณฑ์ที่ตรวจได้ — ระบบนี้ไม่ใช่ตัวที่ถูกเลือกของ ${sym}`}</p>`)}
+    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง" : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
   </div>`;
   if (rOos.length) {
     let cum = 0; const pts = (sp.oos.equity || []).map(([t, r]) => ({ time: shiftT(t), value: +(cum += r).toFixed(2) }));
@@ -994,6 +1079,67 @@ function showMc(out, r) {
   S.charts[S.charts.length - 1].applyOptions({ timeScale: { tickMarkFormatter: (t) => String(Math.round(((t - base) / 86400) * r.fan_step)) } });
 }
 
+// ------------------------------------------------------------------ SETTINGS (personal, this device): display · live prices · backup · about
+function personalSettingsHtml() {
+  const P = prefs.get(), th = store.get("theme", "dark");
+  const map = { ...LIVE_DEFAULT, ...(P.liveMap || {}) };
+  return `<div class="set-grid">
+    <div class="card"><div class="hd"><h3><span class="ic">🎨</span>การแสดงผล<span class="desc">เฉพาะเครื่องนี้</span></h3></div><div class="bd stack" style="gap:14px">
+      <div class="fgrid" style="grid-template-columns:1fr 1fr">
+        <label class="f">ธีม<select class="inp" id="dTheme"><option value="dark" ${th === "dark" ? "selected" : ""}>มืด</option><option value="light" ${th === "light" ? "selected" : ""}>สว่าง</option></select></label>
+        <label class="f">หน้าแรกเมื่อเปิดแอป<select class="inp" id="dHome">${NAV_ORDER.map((k) => `<option value="${k}" ${P.home === k ? "selected" : ""}>${ROUTES[k].title}</option>`).join("")}</select></label>
+        <label class="f">สีแท่งเทียน<select class="inp" id="dCandle">${Object.entries(CANDLE).map(([k, v]) => `<option value="${k}" ${P.candle === k ? "selected" : ""}>${v.name}</option>`).join("")}</select></label>
+        <label class="f">จำนวนแท่งที่เห็นเมื่อเปิดกราฟ<input class="inp num" type="number" min="40" max="1000" step="10" id="dBars" value="${P.bars}"></label>
+      </div>
+      <div class="row"><span class="candle-prev" id="dPrev"></span><span class="hint">แท่งล่าสุดจะอยู่กลางกราฟเสมอ · ซูมด้วยสองนิ้วได้</span></div>
+    </div></div>
+    <div class="card"><div class="hd"><h3><span class="ic">⚡</span>ราคาสด (ขยับทุก 1 วินาที)<span class="desc">ใช้แสดงแท่งที่กำลังก่อตัวบนกราฟเท่านั้น — ระบบยังตัดสินจากแท่งที่ปิดแล้ว</span></h3></div><div class="bd stack" style="gap:12px">
+      <label class="check"><input type="checkbox" id="lOn" ${P.live ? "checked" : ""}> เปิดราคาสดบนหน้ากราฟ</label>
+      <div class="hint"><b>BTC / ETH:</b> ใช้ Binance ฟรี ไม่ต้องตั้งค่า · <b>FX / ทอง / ดัชนี:</b> ใส่ API key ฟรีจาก <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a> (สมัครด้วยอีเมล → Dashboard → API Key)</div>
+      <label class="f">Finnhub API key<input class="inp mono" id="lKey" value="${esc(P.finnhub)}" placeholder="วาง API key ที่นี่" autocomplete="off"></label>
+      <details><summary class="small muted">ชื่อสัญลักษณ์ราคาสด (ขั้นสูง)</summary><div class="fgrid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:8px">
+        ${Object.keys(LIVE_DEFAULT).map((k) => `<label class="f">${k}<input class="inp mono" data-live="${k}" value="${esc(map[k])}"></label>`).join("")}</div></details>
+      <div class="hint">ราคาสดมาจากผู้ให้บริการคนละรายกับโบรก (ต่างกันเล็กน้อย โดยเฉพาะทองและดัชนี) — ราคาเข้าออเดอร์จริงให้ดูใน MT5</div>
+    </div></div>
+    <div class="card"><div class="hd"><h3><span class="ic">💾</span>สำรอง / ย้ายการตั้งค่า<span class="desc">ใช้ย้ายค่าที่ตั้งไว้ไปเครื่องอื่น (เช่น จาก iPad ไปมือถือ)</span></h3></div><div class="bd stack" style="gap:10px">
+      <div class="row"><button class="btn sm" id="bkCopy">📋 คัดลอกรหัสการตั้งค่า</button><button class="btn sm" id="bkLoad">📥 นำเข้า</button><button class="btn sm ghost" id="bkReset">↺ คืนค่าเริ่มต้น</button></div>
+      <textarea class="inp" id="bkText" rows="3" placeholder="วางรหัสการตั้งค่าจากอีกเครื่องที่นี่ แล้วกด นำเข้า"></textarea>
+    </div></div>
+    <div class="card"><div class="hd"><h3><span class="ic">ℹ️</span>เกี่ยวกับระบบ</h3></div><div class="bd"><div class="kv2" id="aboutBox"></div></div></div>
+  </div>`;
+}
+function bindPersonalSettings(view) {
+  const save = () => {
+    const liveMap = Object.fromEntries($$("[data-live]", view).map((i) => [i.dataset.live, i.value.trim()]).filter(([k, v]) => v && v !== LIVE_DEFAULT[k]));
+    prefs.set({ home: $("#dHome").value, candle: $("#dCandle").value, bars: Math.min(1000, Math.max(40, +$("#dBars").value || 220)),
+      live: $("#lOn").checked, finnhub: $("#lKey").value.trim(), liveMap });
+    const t = $("#dTheme").value; if (t !== store.get("theme", "dark")) { store.set("theme", t); document.documentElement.dataset.theme = t; }
+    prev(); toast("บันทึกแล้ว (เครื่องนี้)", 1400);
+  };
+  const prev = () => { const c = CANDLE[$("#dCandle").value] || CANDLE.classic; $("#dPrev").innerHTML = [1, 0, 1, 1, 0, 1].map((u, i) => `<i style="background:${u ? c.up : c.down};height:${14 + (i * 7) % 16}px"></i>`).join(""); };
+  $$("#dTheme, #dHome, #dCandle, #dBars, #lOn, #lKey, [data-live]", view).forEach((i) => i.addEventListener("change", save));
+  prev();
+  const KEYS = ["prefs", "personal", "theme", "sel", "labSel", "calc", "chartOverlay"];
+  $("#bkCopy").onclick = async () => {
+    const dump = Object.fromEntries(KEYS.map((k) => [k, store.get(k, null)]).filter(([, v]) => v !== null));
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(dump))));
+    $("#bkText").value = code;
+    try { await navigator.clipboard.writeText(code); toast("คัดลอกรหัสแล้ว — นำไปวางในอีกเครื่อง"); } catch { toast("คัดลอกจากกล่องข้อความด้านล่าง"); }
+  };
+  $("#bkLoad").onclick = () => {
+    try { const d = JSON.parse(decodeURIComponent(escape(atob($("#bkText").value.trim())))); Object.entries(d).forEach(([k, v]) => KEYS.includes(k) && store.set(k, v)); toast("นำเข้าแล้ว"); setTimeout(() => location.reload(), 600); }
+    catch { toast("รหัสไม่ถูกต้อง"); }
+  };
+  $("#bkReset").onclick = () => { if (!confirm("คืนค่าการตั้งค่าในเครื่องนี้ทั้งหมด?")) return; KEYS.forEach((k) => { try { localStorage.removeItem("tl." + k); } catch { /* */ } }); location.reload(); };
+  const st = S.status || {};
+  const rows = [["เวอร์ชันเว็บ", STATIC?.version || "เซิร์ฟเวอร์บนคอม"], ["สร้างเว็บล่าสุด", STATIC?.built ? fdt(STATIC.built, true) : "–"],
+    ["สแกนสัญญาณล่าสุด", st.scanner?.last_scan ? `${fdt(st.scanner.last_scan, true)} (${ago(st.scanner.last_scan)})` : "–"],
+    ["วิเคราะห์ระบบล่าสุด", st.research_generated ? `${fdt(st.research_generated, true)} (${ago(st.research_generated)})` : "–"],
+    ["ระบบในคลัง", `${S.strategies.length} ระบบ × H1 / H4 / D1`],
+    ["ราคา", "ย้อนหลัง: MT5 ของโบรก (FX ทอง ดัชนี) · ใหม่ทุกชั่วโมง: Yahoo + Binance · ราคาสด: Binance / Finnhub"]];
+  $("#aboutBox").innerHTML = rows.map(([k, v]) => `<span class="k">${k}</span><span>${esc(v)}</span>`).join("");
+}
+
 // ------------------------------------------------------------------ SETTINGS
 async function renderSettingsStatic(view) {
   const s = await api("/api/settings"); S.settings = s;
@@ -1008,7 +1154,7 @@ async function renderSettingsStatic(view) {
         <div class="hint">Lot บนการ์ดสัญญาณและบนกราฟคำนวณให้อัตโนมัติจากค่านี้ — ตอนนี้ ${fnum(P.account_balance, 0)} USD × ${P.risk_pct || s.risk_per_trade_pct}% = เสี่ยงไม้ละ <b>$${fnum(P.account_balance * (P.risk_pct || s.risk_per_trade_pct) / 100, 2)}</b> (ถ้าชน SL)
           · ข้อความแจ้งเตือนบนมือถือใช้ทุน ${fnum(STATIC.account_balance || 5000, 0)} USD และ ${s.risk_per_trade_pct}% ตามที่ตั้งไว้บนคลาวด์</div>
         <div class="formsec">ชื่อสัญลักษณ์ใน MT5 ของโบรกเกอร์คุณ</div>
-        <div class="fgrid" style="grid-template-columns:repeat(4,minmax(0,1fr))">${S.symbols.map((x) => `<label class="f">${x.symbol}<input class="inp" data-map="${x.symbol}" value="${esc(P.mt5_symbol_map[x.symbol] || s.mt5_symbol_map[x.symbol] || x.symbol)}"></label>`).join("")}</div>
+        <div class="fgrid symmap">${S.symbols.map((x) => `<label class="f">${x.symbol}<input class="inp" data-map="${x.symbol}" value="${esc(P.mt5_symbol_map[x.symbol] || s.mt5_symbol_map[x.symbol] || x.symbol)}"></label>`).join("")}</div>
         <div class="row" style="justify-content:flex-end"><button class="btn primary" id="pSave">💾 บันทึก</button></div>
       </div></div>
       <div class="card"><div class="hd"><h3><span class="ic">🔔</span>การแจ้งเตือนบนมือถือ<span class="desc">ผ่านแอป ntfy · ส่งจากคลาวด์ทุกชั่วโมง</span></h3></div><div class="bd md">${md(`
@@ -1018,12 +1164,14 @@ async function renderSettingsStatic(view) {
 - **ทดสอบเสียงแจ้งเตือน:** GitHub → Actions → TradingLab → **Run workflow** → เลือก \`test\` → Run
 - ถ้าเด้งแต่ไม่มีเสียง: ตรวจ การตั้งค่า → การแจ้งเตือน → ntfy → เสียง, สวิตช์ปิดเสียง และโหมดโฟกัส`)}</div></div>
     </div>
+    ${personalSettingsHtml()}
     <div class="card"><div class="hd"><h3><span class="ic">🤖</span>การวิเคราะห์อัตโนมัติ<span class="desc">ระบบจัดการเองทั้งหมด — ดูอย่างเดียว</span></h3><div class="right"><a class="btn sm" href="${actionsUrl()}" target="_blank" rel="noopener">GitHub Actions ↗</a></div></div><div class="bd stack">
       <div class="kpis">${kpi("วิเคราะห์ใหม่", "ทุกเสาร์", "09:30 น. + ปุ่มเดียว")}${kpi("Walk-Forward", `${s.research.is_months}/${s.research.oos_months} m`, "+ ทดสอบอีก 4 หน้าต่าง")}${kpi("TF", s.research.timeframes.join(" / "))}${kpi("ปิดออเดอร์", "TP·SL·กลับทิศ", "ไม่จำกัดเวลาถือ")}${kpi("DD เป้าหมาย", s.target_max_dd_pct + "%", "MC 95%")}</div>
       <div class="formsec">เกณฑ์ ACTIVE (ห้ามลดเพื่อให้มีสัญญาณ)</div>
       <div class="gates">${[["OOS ไม้", G.min_oos_trades], ["Expectancy", G.min_expectancy + "R"], ["t-stat", G.min_t], ["MC PF@95%", G.min_mc_pf_p5], ["ชนะสุ่ม", G.min_random_pct + "%"], ["Plateau", G.min_plateau], ["Robustness", G.min_robust_score]].map(([k, v]) => `<span class="gate p">${k} ≥ ${v}</span>`).join("")}</div>
       ${s.force_off?.length ? `<div class="hint">ปิดโดย AI/ผู้ใช้: ${s.force_off.join(", ")}</div>` : ""}
     </div></div></div>`;
+  bindPersonalSettings(view);
   $("#pSave").onclick = () => {
     const risk = parseFloat($("#pRisk").value);
     local.set({ account_balance: parseFloat($("#pBal").value) || 5000, risk_pct: risk > 0 ? risk : null,
@@ -1091,6 +1239,7 @@ async function renderSettings(view) {
         <div class="hint">Exness บัญชี Standard มักมี “m” ต่อท้าย เช่น USDJPYm · NAS100 ใน Exness = USTEC · สเปรดเป็นหน่วยราคา (EURUSD 0.0001 = 1 pip)</div>
       </div></div>
     </div>
+    ${personalSettingsHtml()}
     <div class="card"><div class="hd"><h3>ความปลอดภัย</h3></div><div class="bd fgrid" style="grid-template-columns:1fr 1fr 1fr">
       <label class="f">PIN สำหรับเข้าเว็บ (ว่าง = ไม่ใช้)<input class="inp" type="password" data-k="access_pin" value="${esc(s.access_pin)}"></label>
       <label class="f">สแกนทุก (วินาที)<input class="inp num" type="number" data-k="scan_interval_sec" value="${s.scan_interval_sec}"></label>
@@ -1115,6 +1264,7 @@ async function renderSettings(view) {
     S.symbols = await api("/api/symbols");
     toast("บันทึกแล้ว");
   };
+  bindPersonalSettings(view);
   $("#testNotify").onclick = async () => { const r = await api("/api/notify/test", { method: "POST" }); toast("ผลส่ง: " + JSON.stringify(r)); };
 }
 
@@ -1181,6 +1331,8 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
     ["pages", "5. หน้าต่าง ๆ ในเว็บ", `
 เมนูอยู่ทางซ้าย (มือถืออยู่ด้านบน) เป็นไอคอนเรียงตามนี้ — เปิดเว็บมาจะเข้าหน้า **กราฟ** ของสินทรัพย์ / TF / ระบบที่ดูล่าสุดเสมอ
 ### 📈 กราฟ
+- ปุ่ม **⚡ ด่วน** บนสุดของแถบขวา: รายการระบบ ACTIVE / WATCH ของทุกสินทรัพย์ เรียงตามความสำคัญ กดครั้งเดียวเปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน
+- ป้าย **LIVE** ข้างราคา = ราคาสดกำลังขยับทุก 1 วินาที (ตั้งค่าได้ในหน้าตั้งค่า)
 - กลางจอคือกราฟ ด้านขวาคือแถบเลือก: **H1 / H4 / D1** → **เลขระบบ** (กดเพื่อเลือก 1–${S.strategies.length || 50}, ★ = ระบบจริง) → **สินทรัพย์** (EU = EURUSD, GU = GBPUSD, UJ = USDJPY, XAU = ทอง, NAS = Nasdaq, SPX = S&P 500, BTC, ETH)
 - จุดสีบนปุ่มสินทรัพย์: 🟢 ACTIVE · 🟠 WATCH · ไม่มีจุด = OFF
 - แท่งล่าสุดอยู่กลางกราฟ · ซูมด้วยสองนิ้ว · **เลื่อนไปทางซ้ายเพื่อดูย้อนหลัง** ข้อมูลปีก่อนหน้าจะโหลดมาต่อเอง
@@ -1224,14 +1376,15 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - สุ่มจุดเข้า 300 รอบ โดยใช้ SL/TP/จำนวนไม้/สัดส่วน Long-Short เท่ากัน
 - ต้องชนะการสุ่มอย่างน้อย 90% — ถ้าไม่ชนะ แปลว่ากำไรมาจากตลาดวิ่งทางเดียว ไม่ใช่จากสัญญาณ
 ### ขั้นที่ 5 — Robustness 8 แบบ (พยายามทำให้ระบบพัง)
-- หน้าต่าง Walk-Forward ขนาดอื่น 5 แบบ, ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 20 รอบ
+- หน้าต่าง Walk-Forward ขนาดอื่น 5 แบบ, ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 10 รอบ
 - ฝั่ง Long/Short ไม่มีฝั่งที่ขาดทุนชัด, กำไรสม่ำเสมอรายครึ่งปี, ตัด 5% ไม้ที่ดีที่สุดออกแล้วยังบวก, พารามิเตอร์ข้างเคียงก็กำไร
 ### ขั้นที่ 6 — Monte Carlo
 - สุ่มลำดับและเลือกไม้ OOS ซ้ำ 5,000 รอบ เพื่อดูว่า **ถ้าโชคไม่ดี** drawdown จะลึกแค่ไหน
 - ใช้หา Profit factor ที่ระดับแย่ 5% และความเสี่ยงต่อไม้ที่ทำให้ DD 95% ไม่เกินเป้า
 - Monte Carlo **ตรวจ overfitting ไม่ได้** จึงใช้กับผล OOS เท่านั้น
-### ขั้นที่ 7 — เลือกตัวที่ดีที่สุด แล้ว “หักค่าโชค”
-- ทุกสินทรัพย์มีผู้สมัครประมาณ ${(S.settings?.research?.timeframes || [1, 2, 3]).length * (S.strategies.length || 50)} ตัว (กลยุทธ์ × TF) ระบบเลือกตัวที่ OOS t-stat สูงสุด
+### ขั้นที่ 7 — “หักค่าโชค” แล้วตัดสินทุกระบบด้วยเกณฑ์เดียวกัน
+- **ทุกระบบ × ทุก TF × ทุกสินทรัพย์ ผ่านขั้น 1–6 ครบเหมือนกันหมด** (บนคลาวด์แบ่งเป็น 24 งานรันพร้อมกัน ใช้เวลาราว 1–2 ชม.)
+- ทุกสินทรัพย์มีผู้สมัครประมาณ ${(S.settings?.research?.timeframes || [1, 2, 3]).length * (S.strategies.length || 50)} ตัว (กลยุทธ์ × TF) ทุกตัวได้สถานะของตัวเอง แล้วสินทรัพย์นั้นใช้ตัวที่ **ACTIVE และ t-stat สูงสุด** (ถ้าไม่มี ACTIVE ใช้ตัวที่ t สูงสุด)
 - ปัญหา: **ถ้าให้คนจำนวนมากโยนเหรียญ คนที่ได้หัวมากที่สุดก็ดูเก่งเพราะโชค** จึงต้องตั้งเกณฑ์สูงขึ้นตามจำนวนผู้สมัคร
 - เกณฑ์ “t ปรับตามจำนวนระบบที่เทียบ” ใช้ Šidák correction: 8 ผู้สมัคร ≈ t 2.5 · 20 ผู้สมัคร ≈ t 2.8 · 40 ผู้สมัคร ≈ t 3.0 · 150 ผู้สมัคร ≈ t 3.4 (ข้อเสนอของ Harvey, Liu & Zhu คือ t > 3)
 - **ยิ่งเพิ่มกลยุทธ์ เกณฑ์ยิ่งสูง** — การมีกลยุทธ์มากขึ้นไม่ได้ทำให้มีระบบผ่านง่ายขึ้น
@@ -1259,23 +1412,25 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 ### สิ่งที่ทำถูกต้องแล้ว
 - ไม่แอบดูอนาคต (ตรวจกับกราฟสุ่มแล้ว), หักต้นทุน, ชน SL ก่อนเมื่อไม่แน่ใจ, ตัดสินจาก OOS เท่านั้น, ชุดพารามิเตอร์เล็ก
 ### ข้อจำกัดที่ต้องรู้ (ตรงไปตรงมา)
-- **ข้อมูลฟรีสั้น:** Yahoo ให้ H1 ย้อนหลังแค่ ~2 ปี → OOS ของ FX/ทอง/ดัชนีมีแค่ ~1–1.5 ปี ยังน้อยเกินจะมั่นใจมาก (เปิด MT5 แล้ววิเคราะห์บนคอมจะได้ข้อมูลยาวกว่า)
-- **ราคา futures ไม่ใช่ CFD:** ทอง/ดัชนีจาก Yahoo เป็นสัญญาล่วงหน้าแบบต่อเนื่อง มีช่วงเปลี่ยนสัญญาที่ราคากระโดดเล็กน้อย
+- **ข้อมูลย้อนหลังมาจาก MT5 ของโบรก** (FX ตั้งแต่ 1999, ทอง 2004, US500 2017, NAS100 2020) ต่อด้วย Yahoo — ดัชนียังมีข้อมูลสั้นกว่าตัวอื่น
+- **ราคาใหม่ทุกชั่วโมงของทอง/ดัชนีเป็น futures จาก Yahoo** ระบบปรับระดับให้ต่อกับราคาโบรกแล้ว แต่ยังต่างจากราคาโบรกเล็กน้อย
 - **Šidák ถือว่าผู้สมัครเป็นอิสระต่อกัน** ซึ่งจริง ๆ กลยุทธ์คล้ายกันหลายตัว เกณฑ์จึงค่อนข้างเข้ม (เข้มดีกว่าหลวม)
 - **Monte Carlo สมมติว่าแต่ละไม้ไม่เกี่ยวกัน** ช่วงตลาดเปลี่ยนนิสัยยาว ๆ อาจแย่กว่าที่ MC แสดง
 - **ไม่มีวิธีไหนพิสูจน์ได้ว่าจะกำไรในอนาคต** — การทดสอบนี้ทำได้แค่ “คัดระบบที่น่าจะเป็นโชคออก” ผลจริง (forward test) คือบทพิสูจน์สุดท้าย
 - เว็บนี้เป็นเครื่องมือวิจัย ไม่ใช่คำแนะนำการลงทุน`],
-    ["price", "9. ราคา, ความสดของข้อมูล และ MT5", `
-- **ไม่ต้องเปิด MT5 เพื่อให้ระบบทำงาน** คลาวด์ดึงราคาฟรีเอง:
-  - Yahoo สำหรับ FX, ทอง และดัชนี
-  - Binance สำหรับ BTC และ ETH
-- MT5 ใช้แค่ตอนที่ **คุณส่งออเดอร์** (ในมือถือหรือคอมก็ได้)
-- **เว็บไม่ใช่ราคา real-time:** ข้อมูลอัปเดตชั่วโมงละครั้งหลังแท่งเทียน H1 ปิด และ GitHub อาจช้าไป 5–20 นาที
-  - ระบบตัดสินใจจากแท่งที่ **ปิดแล้ว** (H1/H4/D1) เท่านั้น จึงไม่ต้องการราคาทุกวินาที
-  - ราคาจริงตอนเข้าให้ดูใน MT5 แล้วใช้ปุ่ม **ปรับตามราคา MT5**
-- **ทำไมราคาบนเว็บต่างจาก MT5:** ทองและดัชนีจาก Yahoo เป็นราคา futures ซึ่งต่างจาก CFD ของโบรกประมาณ 0.1–0.5%
-  - สิ่งที่ใช้ได้ตรงคือ **ระยะ** SL/TP (pips/จุด) เพราะปุ่มปรับตามราคา MT5 คงระยะไว้
-- **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง (ไม่บังคับ ใช้ตอนวิเคราะห์เชิงลึกกับ Claude)`],
+    ["price", "9. ราคามาจากไหน, ราคาสด และ MT5", `
+### ข้อมูลราคาแต่ละส่วนมาจากไหน
+- **ข้อมูลย้อนหลังหลายปี (FX, ทอง, ดัชนี):** จาก MT5 ของโบรกคุณ ผ่านไฟล์ \`export_mt5_history.bat\` (ส่งใหม่ปีละครั้งก็พอ)
+  - เวลาในไฟล์ MT5 เป็นเวลาเซิร์ฟเวอร์โบรก (GMT+2 / GMT+3) ระบบแปลงเป็นเวลาสากลให้อัตโนมัติ
+- **ราคาใหม่ทุกชั่วโมง:** Yahoo (FX, ทองและดัชนีแบบ futures) และ Binance (BTC, ETH) — ปรับระดับให้ต่อกับราคาโบรกสนิท
+- **ราคาสดบนกราฟ (ขยับทุก 1 วินาที):** BTC/ETH จาก Binance ฟรี · FX/ทอง/ดัชนี ต้องใส่ Finnhub API key ฟรีในหน้า **ตั้งค่า**
+### ระบบที่ทดสอบกับราคาโบรก ใช้กับราคาจากแหล่งอื่นได้ไหม
+- ได้ — ระบบดูรูปแบบของแท่ง H1/H4/D1 ซึ่งราคาจากแต่ละแหล่งต่างกันน้อยมาก (FX ไม่ถึง 1 pip) ส่วนทอง/ดัชนี futures ต่างระดับนิดหน่อยแต่ปรับให้แล้ว
+- สิ่งที่ต้องใช้ให้ตรงคือ **ระยะ** SL/TP (pips/จุด) — ใช้ปุ่ม **ปรับตามราคา MT5** บนการ์ดสัญญาณก่อนส่งออเดอร์
+### อื่น ๆ
+- **ไม่ต้องเปิด MT5 หรือคอมเพื่อให้ระบบทำงาน** — คลาวด์สแกนทุกชั่วโมงเอง (GitHub อาจช้า 5–20 นาที)
+- ระบบตัดสินใจจากแท่งที่ **ปิดแล้ว** เท่านั้น ราคาสดมีไว้ดูเฉย ๆ
+- **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง`],
     ["monday", "10. วันจันทร์กับ Claude", `
 - เปิดคอม → เปิด Claude ในโฟลเดอร์ \`D:\\Backtest\` → พิมพ์ เช่น “อัปเดตระบบเทรด” หรือ “ทุนเปลี่ยนเป็น 6000”
 - Claude จะ:

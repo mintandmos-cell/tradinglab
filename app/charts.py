@@ -151,7 +151,8 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
                              "entry": round(ot["entry"], d), "sl": round(ot["sl"], d), "tp": round(ot["tp"], d),
                              "close_by": int(pd.Timestamp(ot["close_by"]).timestamp()) if ot.get("close_by") is not None else None,
                                  "reverse_pending": bool(ot.get("reverse_pending"))}
-    if cand and cand.get("oos_eq"):
-        out["oos"] = {"equity": cand["oos_eq"], "metrics": cand["oos"], "years": cand.get("oos_years"),
+    oos_eq = (research.heavy(symbol, tf).get(strategy) or {}).get("oos_eq") if cand else None
+    if cand and oos_eq:
+        out["oos"] = {"equity": oos_eq, "metrics": cand["oos"], "years": cand.get("oos_years"),
                       "wfe": cand.get("wfe"), "plateau": cand.get("plateau")}
     return out

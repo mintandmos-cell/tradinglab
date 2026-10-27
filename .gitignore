@@ -10,3 +10,4 @@ data/cloud_state.json
 data/*.tmp
 .dukascopy-cache/
 node_modules/
+data/research/parts/

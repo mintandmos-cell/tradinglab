@@ -59,7 +59,7 @@ def _test(key, name, value, need, ok, note=""):
     return {"key": key, "name": name, "value": value, "need": need, "pass": None if ok is None else bool(ok), "note": note}
 
 
-def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise_sims: int = 20, seed: int = 3) -> dict:
+def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise_sims: int = 10, seed: int = 3) -> dict:
     base = wf["oos_trades"]
     tests = []
     if len(base) < 10:
@@ -71,7 +71,7 @@ def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise
         if (is_m, oos_m) == (cfg.get("is_months", 12), cfg.get("oos_months", 3)):
             o = wf["oos"]
         else:
-            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_months": is_m, "oos_months": oos_m})["oos"]
+            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_months": is_m, "oos_months": oos_m}, runs=wf.get("_runs"))["oos"]
         if o["trades"] >= 10:
             rows.append({"is": is_m, "oos": oos_m, "trades": o["trades"], "expectancy": o["expectancy"], "t": o["t_stat"]})
     pos = sum(r["expectancy"] > 0 for r in rows)

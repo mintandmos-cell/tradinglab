@@ -25,9 +25,7 @@ def _tstat(r: np.ndarray) -> float:
     return float(r.mean() / sd * np.sqrt(len(r))) if sd > 0 else -np.inf
 
 
-def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: dict, combos: list[dict] | None = None) -> dict:
-    combos = combos or grid(strategy_id, cfg.get("max_hold_hours", 120))
-    is_m, oos_m, min_tr = cfg.get("is_months", 12), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
+def backtest_combos(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, combos: list[dict]) -> list[dict]:
     runs = []
     for p in combos:
         tr = run(df, strategy_id, p, spec, tf)["trades"]
@@ -36,6 +34,15 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
             "t": pd.DatetimeIndex([x["entry_time"] for x in tr]) if tr else pd.DatetimeIndex([], tz="UTC"),
             "r": np.array([x["r"] for x in tr], float),
         })
+    return runs
+
+
+def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: dict, combos: list[dict] | None = None,
+                 runs: list[dict] | None = None) -> dict:
+    """runs = the full-history backtest of every combo, reusable across window lengths (robustness test)."""
+    combos = combos or grid(strategy_id, cfg.get("max_hold_hours", 120))
+    is_m, oos_m, min_tr = cfg.get("is_months", 12), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
+    runs = runs if runs is not None else backtest_combos(df, strategy_id, spec, tf, combos)
     start, end = df.index[0] + pd.Timedelta(days=30), df.index[-1]
     folds, oos_trades, is_rates = [], [], []
     k = 0
@@ -98,6 +105,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
         "distinct_params": len(set(chosen)),
         "current_params": runs[cur]["params"] if cur is not None else None,
         "current_is_t": round(cur_t, 2) if cur is not None else None,
+        "_runs": runs,
         "combos_full": [{"params": rr["params"], "trades": int(len(rr["r"])),
                          "expectancy": round(float(rr["r"].mean()), 4) if len(rr["r"]) else None} for rr in runs],
     }

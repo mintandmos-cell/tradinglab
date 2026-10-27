@@ -27,9 +27,92 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  run:
+  # ---------------------------------------------------------------- what to do, and (research) fetch prices once
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 20
+    outputs:
+      mode: ${{ steps.m.outputs.mode }}
+    env:
+      PYTHONWARNINGS: ignore
+    steps:
+      - id: m
+        run: |
+          MODE="scan"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ inputs.mode }}"; fi
+          if [ "${{ github.event.schedule }}" = "30 2 * * 6" ]; then MODE="research"; fi
+          if [ "${{ github.event_name }}" = "push" ]; then MODE="build"; fi
+          # new long price history pushed from the PC (export_mt5_history.bat): research it right away
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"; echo "mode=$MODE"
+      - uses: actions/checkout@v4
+        if: steps.m.outputs.mode == 'research'
+      - uses: actions/setup-python@v5
+        if: steps.m.outputs.mode == 'research'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.m.outputs.mode == 'research'
+        run: pip install -r requirements.txt
+      - name: Restore price cache
+        if: steps.m.outputs.mode == 'research'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: prices-${{ github.run_id }}
+          restore-keys: prices-
+      - name: Fetch fresh prices once for all research jobs
+        if: steps.m.outputs.mode == 'research'
+        run: python -m app.cloud prefetch
+      - name: Save price cache
+        if: steps.m.outputs.mode == 'research'
+        uses: actions/cache/save@v4
+        with:
+          path: data/cache
+          key: prices-${{ github.run_id }}-research
+
+  # ---------------------------------------------------------------- research: every strategy x every step, one job per symbol x TF
+  part:
+    needs: plan
+    if: needs.plan.outputs.mode == 'research'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        symbol: [EURUSD, GBPUSD, USDJPY, XAUUSD, NAS100, US500, BTCUSD, ETHUSD]
+        tf: [H1, H4, D1]
+    env:
+      PYTHONWARNINGS: ignore
+      TL_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Restore price cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: prices-${{ github.run_id }}-research
+          restore-keys: prices-
+      - name: Research ${{ matrix.symbol }} ${{ matrix.tf }}
+        run: python -m app.cloud part ${{ matrix.symbol }} ${{ matrix.tf }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: part-${{ matrix.symbol }}-${{ matrix.tf }}
+          path: data/research/parts/
+          retention-days: 3
+
+  # ---------------------------------------------------------------- merge (research) · scan · build site · commit · deploy
+  run:
+    needs: [plan, part]
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -57,14 +140,18 @@ jobs:
           key: prices-${{ github.run_id }}
           restore-keys: prices-
 
+      - name: Research parts
+        if: needs.plan.outputs.mode == 'research'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: part-*
+          path: data/research/parts
+          merge-multiple: true
+
       - name: Run
         run: |
-          MODE="scan"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then MODE="${{ inputs.mode }}"; fi
-          if [ "${{ github.event.schedule }}" = "30 2 * * 6" ]; then MODE="research"; fi
-          if [ "${{ github.event_name }}" = "push" ]; then MODE="build"; fi
-          # new long price history pushed from the PC (export_mt5_history.bat): research it right away
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
+          MODE="${{ needs.plan.outputs.mode }}"
+          if [ "$MODE" = "research" ]; then MODE="merge"; fi
           echo "mode=$MODE"
           python -m app.cloud "$MODE"
           if [ "$MODE" = "test" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi

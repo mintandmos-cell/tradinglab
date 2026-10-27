@@ -54,6 +54,7 @@ DEFAULT_SETTINGS = {
     "max_risk_pct": 1.0,
     "target_max_dd_pct": 10.0,          # Monte Carlo 95th-percentile drawdown the sizing must respect
     "data_source": "auto",              # auto | mt5 | free
+    "mt5_server_time": "ny_close",      # broker server clock: ny_close (GMT+2/+3, most FX brokers) | utc | hours offset
     "mt5_path": r"C:\Program Files\MetaTrader 5\terminal64.exe",
     "mt5_symbol_map": {k: k for k in SYMBOLS} | {"NAS100": "USTEC"},
     "symbol_overrides": {},             # per-symbol contract/spread/commission edits from the UI

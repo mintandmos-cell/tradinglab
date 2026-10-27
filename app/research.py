@@ -10,6 +10,8 @@ Run:  python -m app.research            (all symbols)
 """
 from __future__ import annotations
 
+import gzip
+import json
 import logging
 import sys
 import threading
@@ -58,100 +60,168 @@ def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: in
     return [{"name": n, "value": v, "need": need, "pass": bool(ok)} for n, v, need, ok in checks]
 
 
-def research_symbol(sym: str, settings: dict | None = None) -> dict:
+MC_KEEP = ("method", "sims", "n_trades", "risk_pct", "return_pct", "max_dd_pct", "pf_p5", "expectancy_p5", "prob_profit",
+           "prob_dd_over_limit", "risk_of_ruin", "dd_limit_pct", "confidence", "suggested_risk_pct")
+OOS_DIR = RESEARCH_DIR / "oos"          # per symbol x TF: every candidate's OOS trades + folds (chart / lab pages)
+PARTS_DIR = RESEARCH_DIR / "parts"      # cloud matrix jobs: one research part per symbol x TF (not committed)
+
+
+def _status(o: dict, gates: list[dict], has_params: bool) -> str:
+    if all(g["pass"] for g in gates) and has_params:
+        return "ACTIVE"
+    if o["expectancy"] > 0 and o["t_stat"] >= 1.0 and o["trades"] >= 15 and has_params:
+        return "WATCH"
+    return "OFF"
+
+
+def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tuple[dict, dict]:
+    """Every step for ONE candidate (strategy x TF): walk-forward (done) -> random benchmark -> robustness ->
+    Monte Carlo. Returns (summary for latest.json, heavy part: OOS trades + folds)."""
+    r = [t["r"] for t in wf["oos_trades"]]
+    enough = len(r) >= 5
+    rb = random_benchmark(df, wf, spec, tf) if enough else None
+    per_year = max(int(round(wf["oos"]["trades_per_year"])), 10)
+    mc = run_mc(r, 1.0, n_trades=per_year, dd_limit_pct=settings["target_max_dd_pct"]) if enough else {}
+    mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000) if enough else {}
+    rob = robustness(df, wf, spec, tf, cfg)
+    summary = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
+                                   "param_switches", "distinct_params", "current_params", "current_is_t")}
+    summary.update(name=STRATEGIES[wf["strategy"]]["name"], random_benchmark=rb,
+                   mc_1y={k: mc[k] for k in MC_KEEP if k in mc}, mc_pf_p5=mc_full.get("pf_p5"), robustness=rob)
+    heavy = {"oos_eq": [[int(t), round(float(x["r"]), 3)] for t, x in zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])],
+             "folds": wf["folds"]}
+    return summary, heavy
+
+
+def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
+    """All strategies on one symbol x TF, every step for every strategy (the cloud runs the 24 parts in parallel)."""
     settings = settings or load_settings()
     cfg = settings["research"]
     spec = symbol_spec(sym, settings)
-    h1 = data.load_h1(sym, refresh=True)
-    candidates, best, best_df = [], None, None
-    for tf in cfg["timeframes"]:
-        df = data.get_bars(sym, tf)
-        if len(df) < 500:
-            continue
-        for sid in STRATEGIES:
-            STATE["progress"] = f"{sym} {tf} {sid}"
-            wf = walk_forward(df, sid, spec, tf, cfg)
-            cand = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
-                                        "param_switches", "distinct_params", "current_params", "current_is_t")}
-            cand["name"] = STRATEGIES[sid]["name"]
-            # compact OOS trades (exit time, R) of every candidate: the chart page's walk-forward equity curve
-            cand["oos_eq"] = [[int(t), round(float(x["r"]), 3)] for t, x in
-                              zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])]
-            candidates.append(cand)
-            score = wf["oos"]["t_stat"] if wf["oos"]["trades"] >= 10 else -99
-            if best is None or score > best["_score"]:
-                best, best_df = {**wf, "_score": score}, df
-    if best is None:
-        return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": []}
+    df = data.get_bars(sym, tf)
+    h1 = data.load_h1(sym)
+    out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.source_for(sym, settings),
+           "data_from": h1.index[0].isoformat() if len(h1) else None, "data_to": h1.index[-1].isoformat() if len(h1) else None,
+           "bars_h1": int(len(h1)), "bars": int(len(df)), "candidates": [], "heavy": {}}
+    if len(df) < 500:
+        return out
+    for sid in STRATEGIES:
+        STATE["progress"] = f"{sym} {tf} {sid}"
+        t0 = time.time()
+        wf = walk_forward(df, sid, spec, tf, cfg)
+        summary, heavy = evaluate(df, wf, spec, tf, cfg, settings)
+        out["candidates"].append(summary)
+        out["heavy"][sid] = heavy
+        log.info("%s %s %-20s n=%4d t=%5.2f robust=%s (%.0fs)", sym, tf, sid, summary["oos"]["trades"], summary["oos"]["t_stat"],
+                 (summary["robustness"] or {}).get("score"), time.time() - t0)
+    return out
 
-    r = [t["r"] for t in best["oos_trades"]]
-    rb = random_benchmark(best_df, best, spec, best["tf"]) if len(r) >= 5 else None
-    per_year = max(int(round(best["oos"]["trades_per_year"])), 10)
-    mc = run_mc(r, 1.0, n_trades=per_year, dd_limit_pct=settings["target_max_dd_pct"]) if len(r) >= 5 else {}
-    mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000) if len(r) >= 5 else {}
-    STATE["progress"] = f"{sym} robustness"
-    rob = robustness(best_df, best, spec, best["tf"], cfg)
-    n_cand = sum(1 for c in candidates if c["oos"]["trades"] >= 10)
-    gates = _gates(best, rb, {"pf_p5": mc_full.get("pf_p5")}, rob, cfg["gates"], n_cand)
-    o = best["oos"]
-    if all(g["pass"] for g in gates) and best["current_params"]:
-        status = "ACTIVE"
-    elif o["expectancy"] > 0 and o["t_stat"] >= 1.0 and o["trades"] >= 15 and best["current_params"]:
-        status = "WATCH"
-    else:
-        status = "OFF"
-    if sym in settings.get("force_off", []):   # manual / AI veto, e.g. forward test contradicting research
-        status = "OFF"
-    # size so the Monte Carlo 95th-percentile 1-year drawdown stays inside the target; unproven systems get half
+
+def merge_symbol(sym: str, parts: list[dict], settings: dict) -> dict:
+    """Judge every candidate with the same gates; the symbol trades its best candidate (ACTIVE first, then OOS t)."""
+    cfg = settings["research"]
+    g = cfg["gates"]
+    cands = [c for p in parts for c in p["candidates"]]
+    if not cands:
+        return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": []}
+    n_cand = sum(1 for c in cands if c["oos"]["trades"] >= 10)
+    for c in cands:
+        c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
+        c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
+    rank = {"ACTIVE": 2, "WATCH": 1, "OFF": 0}
+    best = max(cands, key=lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99))
+    status = best["status"] if sym not in settings.get("force_off", []) else "OFF"   # manual / AI veto
+    mc = best["mc_1y"] or {}
     suggested = mc.get("suggested_risk_pct") or 0.0
     cap = settings["max_risk_pct"] if status == "ACTIVE" else settings["default_risk_pct"] / 2
     risk = round(min(cap, suggested), 2)
-    times = data.to_unix([t["exit_time"] for t in best["oos_trades"]])
-    reasons = [g["name"] for g in gates if not g["pass"]]
+    part = next(p for p in parts if p["tf"] == best["tf"])
+    heavy = part["heavy"].get(best["strategy"], {})
+    eq = heavy.get("oos_eq", [])
+    r = [x[1] for x in eq]
+    first = parts[0]
     return {
-        "symbol": sym, "status": status, "data_source": data.source_for(sym, settings),
-        "data_from": h1.index[0].isoformat(), "data_to": h1.index[-1].isoformat(), "bars_h1": int(len(h1)),
+        "symbol": sym, "status": status, "data_source": first["data_source"],
+        "data_from": first["data_from"], "data_to": first["data_to"], "bars_h1": first["bars_h1"],
         "strategy": best["strategy"], "strategy_name": STRATEGIES[best["strategy"]]["name"], "tf": best["tf"],
         "params": best["current_params"], "risk_pct": risk if status != "OFF" else 0.0,
-        "oos": o, "oos_years": best["oos_years"], "wfe": best["wfe"], "plateau": best["plateau"],
-        "param_switches": best["param_switches"], "folds": best["folds"],
-        "random_benchmark": rb, "mc_1y": mc, "mc_pf_p5": mc_full.get("pf_p5"), "robustness": rob, "gates": gates,
-        "failed": reasons,
-        "trials": int(sum(c["n_combos"] for c in candidates)), "n_candidates": n_cand,
-        "t_needed": adjusted_t(n_cand), "candidates": candidates,
-        "oos_r": [round(float(x), 4) for x in r],
-        "oos_equity": equity_points(times, r, 1.0, 10000.0),
+        "oos": best["oos"], "oos_years": best["oos_years"], "wfe": best["wfe"], "plateau": best["plateau"],
+        "param_switches": best["param_switches"], "folds": heavy.get("folds", []),
+        "random_benchmark": best["random_benchmark"], "mc_1y": mc, "mc_pf_p5": best["mc_pf_p5"], "robustness": best["robustness"],
+        "gates": best["gates"], "failed": [x["name"] for x in best["gates"] if not x["pass"]],
+        "trials": int(sum(c["n_combos"] for c in cands)), "n_candidates": n_cand, "t_needed": adjusted_t(n_cand),
+        "n_active": sum(c["status"] == "ACTIVE" for c in cands), "n_watch": sum(c["status"] == "WATCH" for c in cands),
+        "candidates": cands, "oos_r": r, "oos_equity": equity_points([x[0] for x in eq], r, 1.0, 10000.0),
     }
 
 
+def save_heavy(part: dict) -> None:
+    OOS_DIR.mkdir(parents=True, exist_ok=True)
+    with gzip.open(OOS_DIR / f"{part['symbol']}_{part['tf']}.json.gz", "wt", encoding="utf-8") as f:
+        json.dump(part["heavy"], f, separators=(",", ":"))
+
+
+_heavy_cache: dict = {}
+
+
+def heavy(sym: str, tf: str) -> dict:
+    """Per-candidate OOS trades + folds for a symbol x TF (strategy id -> {oos_eq, folds})."""
+    f = OOS_DIR / f"{sym}_{tf}.json.gz"
+    if not f.exists():
+        return {}
+    key = (sym, tf, f.stat().st_mtime)
+    if key not in _heavy_cache:
+        with gzip.open(f, "rt", encoding="utf-8") as fh:
+            _heavy_cache[key] = json.load(fh)
+    return _heavy_cache[key]
+
+
+def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
+    """Write latest.json (+ history snapshot) from research parts; heavy OOS data goes to data/research/oos/*.json.gz."""
+    settings = load_settings()
+    prev = read_json(LATEST_RESEARCH, {"symbols": {}})
+    out = {"generated": None, "settings": settings["research"], "symbols": dict(prev.get("symbols", {}))}
+    by_sym: dict[str, list[dict]] = {}
+    for p in parts:
+        by_sym.setdefault(p["symbol"], []).append(p)
+        save_heavy(p)
+    for sym in symbols or list(SYMBOLS):
+        if sym not in by_sym:
+            continue
+        try:
+            res = merge_symbol(sym, by_sym[sym], settings)
+        except Exception as e:
+            log.exception("merge %s failed", sym)
+            res = {"symbol": sym, "status": "OFF", "reason": f"error: {e}", "candidates": []}
+        old = prev.get("symbols", {}).get(sym)
+        if old:
+            res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct")} | {"generated": prev.get("generated")}
+        out["symbols"][sym] = res
+    out["generated"] = datetime.now(timezone.utc).isoformat()
+    write_json(LATEST_RESEARCH, out)
+    write_json(RESEARCH_DIR / "history" / f"{datetime.now(timezone.utc):%Y%m%d_%H%M}.json",
+               {"generated": out["generated"], "symbols": {k: {kk: v.get(kk) for kk in (
+                   "status", "strategy", "tf", "params", "risk_pct", "oos", "failed", "trials", "n_active", "n_watch")}
+                   | {"robust_score": (v.get("robustness") or {}).get("score")} for k, v in out["symbols"].items()}})
+    return out
+
+
 def run_all(symbols: list[str] | None = None) -> dict:
+    """Local / PC: every part one after another (slow: hours with long history), then merge."""
     if not _run_lock.acquire(blocking=False):
         return {"error": "research already running"}
     try:
         STATE.update(running=True, started=datetime.now(timezone.utc).isoformat(), error=None)
         settings = load_settings()
-        prev = read_json(LATEST_RESEARCH, {"symbols": {}})
-        out = {"generated": None, "settings": settings["research"], "symbols": dict(prev.get("symbols", {}))}
+        parts = []
         for sym in symbols or list(SYMBOLS):
-            t0 = time.time()
-            try:
-                res = research_symbol(sym, settings)
-                old = prev.get("symbols", {}).get(sym)
-                if old:
-                    res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct")}
-                    res["previous"]["generated"] = prev.get("generated")
-                out["symbols"][sym] = res
-                log.info("%s -> %s %s %s (%.1fs)", sym, res["status"], res.get("strategy"), res.get("tf"), time.time() - t0)
-            except Exception as e:
-                log.exception("research %s failed", sym)
-                out["symbols"][sym] = {"symbol": sym, "status": "OFF", "reason": f"error: {e}", "candidates": []}
-        out["generated"] = datetime.now(timezone.utc).isoformat()
-        write_json(LATEST_RESEARCH, out)
-        write_json(RESEARCH_DIR / "history" / f"{datetime.now(timezone.utc):%Y%m%d_%H%M}.json",
-                   {"generated": out["generated"], "symbols": {k: {kk: v.get(kk) for kk in (
-                       "status", "strategy", "tf", "params", "risk_pct", "oos", "failed", "trials")}
-                       | {"robust_score": (v.get("robustness") or {}).get("score")} for k, v in out["symbols"].items()}})
-        return out
+            data.load_h1(sym, refresh=True)
+            for tf in settings["research"]["timeframes"]:
+                try:
+                    parts.append(research_part(sym, tf, settings))
+                except Exception:
+                    log.exception("research %s %s failed", sym, tf)
+        return merge(parts, symbols)
     except Exception as e:
         STATE["error"] = repr(e)
         raise
@@ -169,6 +239,25 @@ def run_in_background(symbols=None) -> bool:
 
 def latest() -> dict:
     return read_json(LATEST_RESEARCH, {"generated": None, "symbols": {}})
+
+
+def picks(lat: dict | None = None) -> list[dict]:
+    """Quick-pick list for the right rail: every ACTIVE / WATCH candidate of every symbol (plus each symbol's
+    current system), most important first: ACTIVE before WATCH, then the higher OOS t-stat."""
+    lat = lat or latest()
+    out = []
+    for sym, r in (lat.get("symbols") or {}).items():
+        for c in r.get("candidates", []):
+            st = c.get("status")
+            live = c.get("strategy") == r.get("strategy") and c.get("tf") == r.get("tf")
+            if st in ("ACTIVE", "WATCH") or live:
+                o = c.get("oos") or {}
+                out.append({"symbol": sym, "tf": c["tf"], "strategy": c["strategy"], "status": st or r.get("status"), "live": live,
+                            "t": o.get("t_stat"), "exp": o.get("expectancy"), "trades": o.get("trades"),
+                            "robust": (c.get("robustness") or {}).get("score")})
+    rank = {"ACTIVE": 0, "WATCH": 1}
+    out.sort(key=lambda x: (rank.get(x["status"], 2), not x["live"], -(x["t"] or -99)))
+    return out
 
 
 def symbol_table(settings: dict | None = None) -> list[dict]:

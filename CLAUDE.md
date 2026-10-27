@@ -7,7 +7,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 ## How it runs (no PC needed)
 - GitHub repo (this folder) + **GitHub Actions** `.github/workflows/tradinglab.yml`:
   - every hour: `python -m app.cloud scan` → free data (Yahoo / Binance mirror) → new signals + forward tracking → ntfy push → rebuild site → **GitHub Pages**.
-  - Saturday 09:30 Bangkok + "Run workflow" button: `python -m app.cloud research` (full auto research) then scan.
+  - Saturday 09:30 Bangkok + "Run workflow" button (mode research): job `plan` (prefetch prices → cache) → matrix job `part`
+    (8 symbols × 3 TF, `python -m app.cloud part SYM TF`, offline `TL_OFFLINE=1`) → job `run` (`app.cloud merge` = gates/status + scan + site).
+    Research has its own concurrency group so queued hourly scans never cancel it. Mode `test` = one ntfy test push.
   - push to `main` touching app/web/research/settings: rebuild the site only.
   - The bot commits `data/signals.json` and `data/research/**`. Secrets: `NTFY_TOPIC` (+ optional `TELEGRAM_*`), variable `ACCOUNT_BALANCE`.
 - The local server (`start_server.bat`, port 8800) is optional: interactive Lab and MT5 broker data.
@@ -25,22 +27,30 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Chart: latest candle centred, tabs chart / latest trades. Systems: equity curve / system details (indicators, params, rules
   from `app/strategy_docs.py`) / catalogue. Lab: step-by-step results of one system, default = the symbol's best; the
   "re-run research now" button lives only here. Page must not pinch-zoom on iPad (only charts zoom).
+  ⚡ quick pick at the top of the rail = ACTIVE → WATCH candidates (any strategy/TF) sorted by status then t (`research.picks`, static `picks.json`).
+- Live prices (display only, never used for signals): forming candle updated every 1 s — BTC/ETH from the Binance WebSocket, FX/gold/indices
+  from Finnhub (user pastes a free key in Settings; OANDA symbols). Device prefs (theme, home page, candle colours, bars, live, key) live in
+  browser localStorage `tl.prefs` with a backup code — nothing personal is committed.
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout
 - `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance. H1 cached in `data/cache`, H4/D1 resampled.
   Long history: `data/history/{SYM}_H1.csv.gz` (from `export_mt5_history.bat` on the PC; Dukascopy blocks GitHub runners — `tools/fetch_history.js`
   / workflow History kept for manual retry) is joined with Yahoo bars by `with_history` (ratio-scaled at the overlap). A push touching
-  `data/history/` makes the cloud run the full research.
+  `data/history/` makes the cloud run the full research. MT5 bar times are broker server time ("NY close" = New York + 7 h); `server_to_utc`
+  (`settings.mt5_server_time`) converts them to UTC everywhere (seed files and live MT5), so FX weeks open Sunday 21/22 UTC.
 - `app/strategies.py` — strategy library (50) (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
-- `app/research.py` — per-symbol pipeline → `data/research/latest.json` (+ `history/`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Every candidate keeps its compact OOS trades (`oos_eq`) for the chart page.
+- `app/research.py` — every strategy × TF × symbol goes through **every** step (WF OOS, random benchmark, 8 robustness tests, MC) via
+  `research_part` → `merge`; status is decided per candidate, the symbol's live system = best ACTIVE, then WATCH, then t. Summaries →
+  `data/research/latest.json` (+ `history/`); heavy per-candidate data (`oos_eq`, folds) → `data/research/oos/{SYM}_{TF}.json.gz` (`research.heavy`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Robustness noise test = 10 sims.
 - `app/scanner.py` — signals on closed bars, forward tracking with the same rules, ntfy/Telegram push.
 - `app/charts.py` (`system_payload`: any strategy on any chart, view-only — chart page picker + equity curve; static build writes `site/data/sys/{SYM}_{TF}_{strategy}.json`), `app/export.py` (static site → `site/`), `app/cloud.py` (Actions entry), `app/server.py` + `web/` (same front-end; `window.TL_STATIC` switches it to static JSON).
 
 ## Monday session ("อัปเดตระบบ", "เก็บข้อมูลวิเคราะห์แล้วปรับระบบ", …) — finish within the day
 1. `git pull --rebase` (gets the bot's signals + Saturday research). If `data/signals.json` conflicts, take the remote version.
-2. Refresh research: `.venv\Scripts\python -W ignore -m app.research` (~1–2 min; uses MT5 if the terminal is open, else free data).
+2. Refresh research: normally the cloud does it (dispatch the workflow with mode research; ~1.5–2 h in parallel). Locally
+   `.venv\Scripts\python -W ignore -m app.research` runs all parts in sequence (many hours with 50 strategies).
    Skip if `generated` in `data/research/latest.json` is after the most recent Saturday 00:00 Bangkok and the user did not ask.
 3. Read `data/research/latest.json` (incl. `robustness`), the newest `data/research/history/` files, and forward results in `data/signals.json`
    (`outcome`, `outcome_r`, `system_status`, `user_status`).

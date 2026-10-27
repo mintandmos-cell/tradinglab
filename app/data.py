@@ -7,6 +7,7 @@ History is cached on disk and merged on refresh, so free-data history grows over
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 import warnings
@@ -84,7 +85,7 @@ def _fetch_mt5(sym: str, settings) -> pd.DataFrame | None:
         log.warning("MT5 no data for %s: %s", name, mt5.last_error())
         return None
     df = pd.DataFrame(rates)
-    df.index = pd.to_datetime(df["time"], unit="s", utc=True)
+    df.index = server_to_utc(pd.to_datetime(df["time"], unit="s"), settings)
     return df.rename(columns={"tick_volume": "volume"})[["open", "high", "low", "close", "volume"]]
 
 
@@ -144,6 +145,21 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["open", "high", "low", "close"])
 
 
+def server_to_utc(idx, settings=None) -> pd.DatetimeIndex:
+    """MT5 bar times are the broker's SERVER clock, not UTC. Most FX brokers run "New York close" servers:
+    server time = New York time + 7 h (GMT+2 in winter, GMT+3 while the US is on daylight time), so the
+    week opens Monday 00:00 server time. settings.mt5_server_time: "ny_close" (default) | "utc" | hours offset."""
+    mode = (settings or load_settings()).get("mt5_server_time", "ny_close")
+    naive = pd.DatetimeIndex(idx).tz_localize(None) if pd.DatetimeIndex(idx).tz is not None else pd.DatetimeIndex(idx)
+    if mode == "utc":
+        return naive.tz_localize("UTC")
+    if mode != "ny_close":
+        return (naive - pd.Timedelta(hours=float(mode))).tz_localize("UTC")
+    ny = (naive - pd.Timedelta(hours=7)).tz_localize("America/New_York", ambiguous=np.zeros(len(naive), bool),
+                                                     nonexistent="shift_forward")
+    return ny.tz_convert("UTC")
+
+
 def _seed(sym: str) -> pd.DataFrame | None:
     """Long Dukascopy H1 history committed in data/history (None if not fetched yet)."""
     f = HISTORY_DIR / f"{sym}_H1.csv.gz"
@@ -151,7 +167,7 @@ def _seed(sym: str) -> pd.DataFrame | None:
         return None
     try:
         d = pd.read_csv(f)
-        d.index = pd.to_datetime(d.pop("time"), unit="s", utc=True)
+        d.index = server_to_utc(pd.to_datetime(d.pop("time"), unit="s"))     # exported from MT5 in broker server time
         d["volume"] = 0.0
         # brokers pad old history with DAILY bars stored as H1 (~22 a month, e.g. EURUSD 1971-1998, NAS100 2011-2020):
         # start at the first month that really has hourly bars (> 250 a month), otherwise ATR / signals mix daily and hourly
@@ -208,7 +224,9 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
         path = _cache_path(sym, src)
         cached = pd.read_pickle(path) if path.exists() else None
         try:
-            if src == "mt5":
+            if cached is not None and os.environ.get("TL_OFFLINE"):   # research matrix jobs: prices were fetched once by "prefetch"
+                new = None
+            elif src == "mt5":
                 new = _fetch_mt5(sym, settings)
             elif src == "binance":
                 since = int(cached.index[-1].timestamp() * 1000) if cached is not None and len(cached) else None
