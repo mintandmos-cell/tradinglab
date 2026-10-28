@@ -77,13 +77,36 @@ def mt5_symbol_info(sym: str) -> dict | None:
             "digits": i.digits, "bid": i.bid, "ask": i.ask, "spread_price": (i.ask - i.bid) if i.ask and i.bid else None}
 
 
+# the same market under other brokers' names (Exness: USTEC / US500, The5ers: NAS100 / SP500, ...)
+SYMBOL_ALIASES = [
+    ["NAS100", "USTEC", "US100", "NDX100", "NQ100", "USTECH", "NAS100USD", "USTEC100"],
+    ["US500", "SP500", "SPX500", "US500USD", "SPX", "USA500"],
+    ["XAUUSD", "GOLD"],
+    ["BTCUSD", "BITCOIN"],
+    ["ETHUSD", "ETHEREUM"],
+]
+_resolved: dict[str, str] = {}
+
+
 def mt5_resolve(name: str) -> str | None:
-    """Broker symbol name: the mapped one, else a suffixed variant (XAUUSD.r, XAUUSDm, ...)."""
+    """Broker symbol name for a mapped name: exact, then the same market's other names (NAS100 -> USTEC on Exness),
+    each also with a broker suffix (XAUUSDm, US500.cash, USTEC.r ...). Shortest match wins."""
     import MetaTrader5 as mt5
-    if mt5.symbol_info(name) is not None:
-        return name
-    cands = sorted((s.name for s in (mt5.symbols_get(f"*{name}*") or [])), key=len)
-    return cands[0] if cands else None
+    if name in _resolved and mt5.symbol_info(_resolved[name]) is not None:
+        return _resolved[name]
+    family = next((f for f in SYMBOL_ALIASES if name.upper() in f), [])
+    tries = [name] + [a for a in family if a != name.upper()]
+    for t in tries:
+        if mt5.symbol_info(t) is not None:
+            _resolved[name] = t
+            return t
+    for t in tries:
+        cands = sorted((x.name for x in (mt5.symbols_get(f"{t}*") or []) if x.name.upper().startswith(t.upper())), key=len)
+        if cands:
+            _resolved[name] = cands[0]
+            log.info("MT5 symbol %s -> %s", name, cands[0])
+            return cands[0]
+    return None
 
 
 def _fetch_mt5(sym: str, settings) -> pd.DataFrame | None:

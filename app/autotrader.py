@@ -317,6 +317,8 @@ def main() -> None:
     print(f"✅ MT5: {a.server} · บัญชี {a.login} · {_kind()} · ทุน {a.balance:,.2f} {a.currency}")
     if not mt5.terminal_info().trade_allowed:
         print("⚠️  ใน MT5 ให้กดปุ่ม 'Algo Trading' ให้เป็นสีเขียว ไม่งั้นส่งคำสั่งไม่ได้")
+    names = {sym: data.mt5_resolve(settings["mt5_symbol_map"].get(sym, sym)) for sym in settings["mt5_symbol_map"]}
+    print("   ชื่อสินทรัพย์ใน MT5: " + " · ".join(f"{k}→{v or '❌ ไม่พบ'}" for k, v in names.items()))
     topic = (settings.get("notify") or {}).get("ntfy_topic") or ""
     print(f"   แจ้งเตือนมือถือ: ntfy topic = {topic or '(ยังไม่ได้ตั้ง)'} — ต้องเป็นชื่อเดียวกับที่แอป ntfy บนมือถือติดตาม")
     print(f"   เว็บไซต์: {'เชื่อม GitHub ได้ — สัญญาณจากคอมขึ้นเว็บทันที' if ghsync.token() else '⚠️ ไม่มี GitHub token — สัญญาณจากคอมจะไม่ขึ้นเว็บ'}")
