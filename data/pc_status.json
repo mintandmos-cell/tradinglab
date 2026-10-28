@@ -1,25 +1,21 @@
 {
  "last_scan_hour": "2026-10-28 08:00:00+00:00",
  "new_signals": [],
- "time": "2026-10-28T08:00:15.276475+00:00",
+ "time": "2026-10-28T08:15:11.512463+00:00",
  "account": "DEMO",
- "balance": 10000.0,
- "equity": 9994.01,
- "positions": [
+ "balance": 9990.95,
+ "equity": 9990.95,
+ "positions": [],
+ "closed": [
   {
    "ticket": 2754889530,
-   "symbol": "USDJPY",
-   "system": "TL56-H1",
    "signal_id": "USDJPY-H1-vol_breakout-1793149200",
-   "side": "BUY",
-   "lots": 0.07,
-   "price_open": 157.935,
-   "sl": 157.731,
-   "tp": null,
-   "price": 157.8,
-   "profit": -5.99,
-   "time": "2026-10-28T02:40:50+00:00"
+   "time": "2026-10-28T08:15:09.103006+00:00",
+   "symbol": "USDJPY",
+   "system": "[sl 157.73100]",
+   "price": 157.731,
+   "reason": "SL",
+   "profit": -9.05
   }
- ],
- "closed": []
+ ]
 }
