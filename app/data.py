@@ -350,9 +350,9 @@ def market_hours(sym: str, df: pd.DataFrame, settings=None) -> pd.DataFrame:
     return df[wd < 5]
 
 
-def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
+def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataFrame:
     settings = load_settings()
-    src = source_for(sym, settings)
+    src = src or source_for(sym, settings)
     key = f"{src}:{sym}"
     with _lock:
         hit = _mem.get(key)
@@ -365,6 +365,9 @@ def load_h1(sym: str, refresh: bool = False) -> pd.DataFrame:
                 new = None
             elif src == "mt5":
                 new = _fetch_mt5(sym, settings)
+                if new is None and cached is None:   # this broker has no such symbol (or MT5 hiccup): use the free feed
+                    log.warning("MT5 has no data for %s — using the free feed for it", sym)
+                    return load_h1(sym, refresh, "binance" if "binance" in SYMBOLS[sym] else "yahoo")
             elif src == "binance":
                 since = int(cached.index[-1].timestamp() * 1000) if cached is not None and len(cached) else None
                 new = _fetch_binance(SYMBOLS[sym]["binance"], since)
