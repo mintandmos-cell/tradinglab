@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from . import data, ghsync, notify, scanner
-from .config import DATA_DIR, load_settings, read_json, write_json
+from .config import DATA_DIR, TIMEFRAMES, load_settings, read_json, write_json
 from .strategies import STRATEGIES
 
 log = logging.getLogger("tradinglab.autotrader")
@@ -56,7 +56,8 @@ DEFAULTS = {
     "start_balance": None,         # set on the first run (the account's starting balance)
     "magic": 5_600_000,
     "deviation_points": 30,
-    "retry_minutes": 10,           # a failed order is retried every 15 s for this long after the signal
+    "retry_minutes": 10,
+    "max_chase_r": 0.5,            # a late signal is not entered once price ran > 0.5 R in its favour (or to within 0.1 R of SL)           # a failed order is retried every 15 s for this long after the signal
     "notify": True,                # push "🤖 DEMO/REAL ..." to the ntfy topic in data/local.json
 }
 STATE_FILE = DATA_DIR / "autotrade_state.json"
@@ -171,6 +172,13 @@ def execute(c: dict, s: dict, balance: float) -> str:
         return "retry"
     price = tick.ask if d > 0 else tick.bid
     sl_dist, rr = float(s["sl_dist"]), float(s["rr"])
+    moved = d * (price - float(s["entry"])) / sl_dist if sl_dist > 0 else 0.0     # in R, + = in the trade's favour
+    if moved > float(c["max_chase_r"]) or moved < -0.9:
+        _log("skip", symbol=sym, system=tag, signal=s["id"],
+             reason=f"price moved {moved:+.2f} R from the signal's entry {s['entry']} - too late to enter")
+        _push(c, f"ไม่เข้า {name} {tag} — ราคาวิ่งไปแล้ว",
+              f"สัญญาณ {s['side']} ที่ ~{s['entry']} · ตอนนี้ {price} ({moved:+.2f} R) · เข้าตอนนี้ความเสี่ยง/ผลตอบแทนไม่เหมือนที่ทดสอบไว้")
+        return "done"
     risk_pct = float(s.get("risk_pct") or 0.25) * float(c["risk_scale"])
     vpu = _value_per_unit(info)
     if vpu <= 0 or sl_dist <= 0:
@@ -262,7 +270,10 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     data._mem.clear()                                                  # rebuild candles from MT5 for the new close
     new = scanner.scan_once()                                          # records + pushes the normal alert at once
     pub = ghsync.publish(new)                                          # website + cloud see them (no second alert)
-    _log("scan", new=[s["id"] for s in new], published=pub)
+    hb = ghsync.put_status({"last_scan_hour": str(pd.Timestamp.now(tz="UTC").floor("h")),
+                            "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
+                            "new_signals": [s["id"] for s in new]})
+    _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb)
     for s in new:
         if s.get("system_status") == "ACTIVE":
             _queue(c, st, s, "pc")
@@ -271,9 +282,9 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
 
 
 def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
-    """Trade every ACTIVE signal the PHONE got, also the ones the cloud found on its own data (the PC's MT5 candles can
-    differ a little from the cloud's feed, so a borderline signal may show up on one side only). A signal is followed
-    while it is still valid (its valid_until = 2 candles after the signal candle) and was not skipped by the risk cap."""
+    """Trade every ACTIVE signal the PHONE got, also the ones the cloud added on its own (PC was restarting, or a
+    catch-up for a missed candle). Followed while the backtest still holds it (outcome open), within 3 candles of the
+    signal candle, not skipped by the risk cap; execute() then refuses to chase a price that already ran away."""
     if pull:
         ghsync.pull()
     now = pd.Timestamp.now(tz="UTC")
@@ -282,9 +293,10 @@ def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
     since = pd.Timestamp(st["follow_from"])
     for s in scanner.load_signals():
         try:
+            tfm = pd.Timedelta(minutes=TIMEFRAMES[s["tf"]])
             if (s.get("system_status") == "ACTIVE" and s.get("outcome") == "open" and not s.get("capped")
-                    and pd.Timestamp(s["valid_until"]) > now and pd.Timestamp(s["created"]) >= since - pd.Timedelta(hours=2)):
-                _queue(c, st, s, "alert")
+                    and pd.Timestamp(s["bar_time"]) + 4 * tfm > now and pd.Timestamp(s["created"]) >= since - pd.Timedelta(hours=2)):
+                _queue(c, st, s, s.get("origin") or "alert")
         except Exception:
             continue
 

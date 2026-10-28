@@ -63,6 +63,18 @@ async function staticGet(file, text = false) {
   if (!res.ok) throw new Error(`${file}: ${res.status}`);
   return text ? res.text() : res.json();
 }
+// live files straight from the repository (the PC auto-trader publishes signals there seconds after a candle closes;
+// the Pages copy only follows after a site build) — falls back to the Pages copy
+const GH_REPO = "mintandmos-cell/tradinglab";
+async function ghLive(path) {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=main&t=${Date.now()}`,
+      { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" });
+    if (r.ok) return await r.json();
+  } catch { /* offline / rate limit */ }
+  return null;
+}
+async function pcStatus() { return ghLive("data/pc_status.json"); }
 async function staticApi(path, opts = {}) {
   const [p, q] = path.split("?"); const qp = Object.fromEntries(new URLSearchParams(q || ""));
   const P = local.get(), post = (opts.method || "GET") === "POST";
@@ -88,7 +100,7 @@ async function staticApi(path, opts = {}) {
     const marks = store.get("sigMarks", {}); marks[decodeURIComponent(p.slice(13))] = body; store.set("sigMarks", marks); return body;
   }
   if (p === "/api/signals") {
-    const marks = store.get("sigMarks", {}), sigs = await staticGet("signals.json");
+    const marks = store.get("sigMarks", {}), sigs = (await ghLive("data/signals.json")) || await staticGet("signals.json");
     return sigs.slice(0, +(qp.limit || 200)).map((s) => {
       const risk = s.source === "portfolio" ? s.risk_pct : effRisk(s.risk_pct), z = sizeLocal(s.symbol, s.entry, s.sl, risk, P.account_balance, s.tp);
       return { ...s, ...(marks[s.id] || {}), mt5_symbol: P.mt5_symbol_map[s.symbol] || s.mt5_symbol, risk_pct: risk,
@@ -1769,7 +1781,12 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 3. มีสัญญาณใหม่ → ส่งแจ้งเตือนแบบเดิม (🟢 BUY / 🔴 SELL …) เข้ามือถือ **ทันที**
 4. ส่งสัญญาณขึ้น GitHub → เว็บอัปเดตภายใน ~2 นาที และระบบบนคลาวด์จะ **ไม่แจ้งซ้ำ** (เห็นว่ามีสัญญาณนี้แล้ว)
 5. เปิดออเดอร์ใน MT5 แล้วส่ง “🤖 DEMO/REAL · BUY … lot” บอก Lot และราคาที่ได้จริง (ส่งไม่ผ่าน → ลองซ้ำทุก 15 วินาที นาน 10 นาที)
-- **ถ้าคอมปิด:** ระบบบนคลาวด์ทำงานแทนเหมือนเดิม (แจ้งเตือนช้า 10–45 นาที, ไม่มีการเปิดออเดอร์อัตโนมัติ)
+### ลำดับความสำคัญ (ใครเป็นคนตัดสินสัญญาณ)
+1. **คอม (ราคา MT5 ของโบรกเกอร์) = ตัวหลัก** — สแกนวินาทีที่ 5 หลังแท่งปิด → แจ้งเตือน “💻 จากคอม” + เปิดออเดอร์ทันที และส่ง “สัญญาณชีพ” ขึ้น GitHub ทุกชั่วโมง
+2. **คลาวด์ = ตัวสำรอง** — ถ้าคอมสแกนแท่งนั้นไปแล้ว คลาวด์จะไม่สร้างสัญญาณซ้ำ/ขัดแย้ง (ราคาคนละแหล่งอาจเห็นต่างกันในแท่งที่เฉียดเงื่อนไข) · ถ้าคอมไม่ได้สแกนเกิน 2 ชั่วโมง คลาวด์แจ้ง “☁️ จากคลาวด์” แทน (ช้า 10–60 นาที เพราะ GitHub เลื่อนรอบเอง)
+3. **รอบไหนพลาด** (คลาวด์มาช้า, คอมรีสตาร์ท) → ระบบย้อนดู 1–2 แท่งก่อน ถ้าเทรดของสัญญาณนั้นยังไม่จบ จะแจ้ง “แจ้งช้า … นาที” แทนที่จะเงียบไป
+4. **โปรแกรมเปิดตามแจ้งเตือนทุกอัน** (เช็กทุก 2 นาที) ภายใน 3 แท่งหลังสัญญาณ — แต่ **ไม่ไล่ราคา**: ถ้าราคาวิ่งไปทางกำไรเกิน 0.5R หรือเกือบถึง SL แล้ว จะไม่เข้าและแจ้ง “ไม่เข้า — ราคาวิ่งไปแล้ว”
+5. **เว็บ** ดึงรายการสัญญาณสดจาก GitHub ทุกครั้งที่เปิด/โหลดใหม่ และหน้าสัญญาณบอกว่า 💻 คอมออนไลน์ หรือ ☁️ คอมออฟไลน์
 ### เริ่มใช้งาน (ทำครั้งเดียว)
 1. ล็อกอินบัญชีใน MT5 → กดปุ่ม **Algo Trading** ให้เป็นสีเขียว
 2. เปิด start_server.bat → เว็บบนคอม (localhost:8800) → **ตั้งค่า**: ใส่ **ntfy topic ชื่อเดียวกับที่แอป ntfy บนมือถือติดตาม** และ **ทุน (USD) เท่ากับที่ตั้งบน GitHub** (ตัวแปร ACCOUNT_BALANCE) → บันทึก แล้วปิดหน้าต่าง server ได้
@@ -1813,7 +1830,11 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 
 // ------------------------------------------------------------------ SIGNALS
 async function renderSignals(view) {
-  const [sigs, syms, fwd] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward")]);
+  const [sigs, syms, fwd, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null]);
+  const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
+  const pcLine = !STATIC ? "" : pcAge !== null && pcAge < 70
+    ? `<div class="hero-s"><span class="pos">💻 คอมออนไลน์</span> · สแกนราคา MT5 ทุกต้นชั่วโมง · ล่าสุด ${ago(pc.time)} — แจ้งเตือน + เปิดออเดอร์ภายในไม่กี่วินาที</div>`
+    : `<div class="hero-s"><span class="neg">☁️ คอมออฟไลน์</span> · ใช้คลาวด์แทน (แจ้งช้า 10–60 นาที, ไม่เปิดออเดอร์อัตโนมัติ)${pc && pc.time ? ` · คอมสแกนล่าสุด ${ago(pc.time)}` : ""}</div>`;
   S.sigs = sigs;
   S.symbols = syms;
   const now = new Date();
@@ -1841,7 +1862,7 @@ async function renderSignals(view) {
   };
   view.innerHTML = `<div class="page">
     <div class="hero">
-      <div class="hero-main"><div class="hero-k">สัญญาณที่เข้าได้ตอนนี้</div><div class="hero-v">${actionable.length}</div>
+      <div class="hero-main"><div class="hero-k">สัญญาณที่เข้าได้ตอนนี้</div><div class="hero-v">${actionable.length}</div>${pcLine}
         <div class="hero-s">${STATIC ? `คลาวด์สแกนทุกชั่วโมง · ล่าสุด ${ago(STATIC.last_scan)}` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} · แจ้งเตือนเข้ามือถือเมื่อระบบ ACTIVE มีสัญญาณ</div></div>
       <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.reduce((n, x) => n + Math.max(1, (x.systems || []).length), 0), active.map((x) => x.symbol + ((x.systems || []).length > 1 ? ` ×${x.systems.length}` : "")).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
         ${kpi("กำลังติดตาม", tracking.length, "ออเดอร์ที่ยังไม่ปิด")}

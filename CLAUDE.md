@@ -47,11 +47,18 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   signals.json by id (`tools/merge_signals.py`). New ACTIVE signals are executed: market order, visible SL (signal's sl_dist), TP rr x
   SL, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse, retry 10 min. It ALSO trades
   every fresh ACTIVE signal the cloud alerted (polls GitHub every 2 min, `follow_alerts`: outcome open, not capped, before
-  valid_until; once per id via state `done`) - the cloud's feed can show a borderline signal the MT5 candles don't. Risk = signal risk x `risk_scale` (1.0) on the MT5
+  up to 4 candles after the signal bar; once per id via state `done`) - the cloud's feed can show a borderline signal the MT5 candles don't. Risk = signal risk x `risk_scale` (1.0) on the MT5
   balance; below min lot -> min lot (`min_lot_always` "*"); signals the alert marks `capped` are skipped (`follow_cap`). Anti-wipeout
   guard only (user dropped 6 %/3 %): total DD 25 % pause / 30 % close-all, daily 0 = off. Refuses REAL accounts unless `allow_live`.
   While its heartbeat (data/autotrade_state.json) is fresh the local server's scanner loop stays quiet. Scanner skips `force_off`
-  systems at once. REMOTE UPDATES: between candles (min 20-50, nothing pending) it exits with code 3 when origin/main has new
+  systems at once. PRIORITY (28 Oct 2026, user: never miss entries / phone, MT5, web must agree): the PC is the authority -
+  after each hourly scan it writes the heartbeat data/pc_status.json to GitHub (`ghsync.put_status`, [skip ci]); the cloud scan
+  skips new signals for candles the PC already scanned (`scanner.pc_covered`, PC seen < 2 h). Signals carry `origin` pc|cloud
+  (shown in the push). Missed candles: `scan_once` also emits a `late` catch-up when the backtest's open trade came from a
+  signal 1-2 bars back. The robot follows open signals up to 4 candles after the signal bar but never chases: skip if price ran
+  > `max_chase_r` (0.5 R) in favour or within 0.1 R of SL. The static web reads signals.json + pc_status.json live from the GitHub
+  API (`ghLive`), falling back to the Pages copy; the Signals page shows PC online/offline. GitHub cron really fires every
+  ~45-50 min, not 10. REMOTE UPDATES: between candles (min 20-50, nothing pending) it exits with code 3 when origin/main has new
   code under app/ tools/ requirements.txt; autotrade.bat loops (pull + restart) - so pushing a fix to main updates the PC. Keep the
   bat itself stable (cmd reads a running .bat by offset). PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
   Never help hide automation from a prop firm (The5ers needs written approval for automated trading).

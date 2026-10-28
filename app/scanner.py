@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from . import data, notify, research
-from .config import SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
+from .config import CLOUD, SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
 from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
 from .strategies import STRATEGIES, signals as strat_signals
 from . import indicators as ta
@@ -46,12 +46,18 @@ def _fmt(x: float, digits: int) -> str:
     return f"{x:.{digits}f}"
 
 
-def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dict) -> dict:
+def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dict, i: int | None = None) -> dict:
+    """Signal on the last closed bar, or (i = an earlier bar) a catch-up for a bar a scan missed: the backtest
+    entered at the next open and that trade is still open, so the order is still worth taking."""
     spec = symbol_spec(sym, settings)
     p = cfg["params"]
-    d = int(res["last_signal"])
-    entry = float(df.close.iloc[-1])
-    sl_dist = float(p["sl_atr"]) * res["atr_last"]
+    late = i is not None and i != len(df) - 1
+    i = len(df) - 1 if i is None else i
+    if late:
+        d, sl_dist = int(res["open_trade"]["dir"]), float(res["open_trade"]["sl_dist"])
+    else:
+        d, sl_dist = int(res["last_signal"]), float(p["sl_atr"]) * res["atr_last"]
+    entry = float(df.close.iloc[i])
     rr = float(p["rr"])
     sl, tp = entry - d * sl_dist, (entry + d * rr * sl_dist if rr > 0 else None)      # rr 0 = no take-profit
     info = data.mt5_symbol_info(sym)
@@ -61,14 +67,14 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     balance = float(settings["account_balance"])
     size = lots_for(sym, entry, sl, balance, risk_pct, info, settings)
     min_lot_risk = round(0.01 * sl_dist * size.get("value_per_point_per_lot", 0), 2)  # what the broker's minimum lot would risk
-    bar_t = df.index[-1]
+    bar_t = df.index[i]
     tfm = TIMEFRAMES[cfg["tf"]]
     entry_t = bar_t + pd.Timedelta(minutes=tfm)
     rules = exit_rules()
     close_by = entry_t + pd.Timedelta(hours=p["max_hold_h"]) if rules["max_hold"] else None
     if rules["friday"]:
         close_by = min(close_by, friday_cutoff(entry_t)) if close_by is not None else friday_cutoff(entry_t)
-    rev = (res.get("open_trade") or {}).get("reverse_pending")
+    rev = None if late else (res.get("open_trade") or {}).get("reverse_pending")
     return {
         "id": f"{sym}-{cfg['tf']}-{cfg['strategy']}-{int(bar_t.timestamp())}",
         "created": datetime.now(timezone.utc).isoformat(),
@@ -88,6 +94,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "reverse_of": ("SHORT" if d > 0 else "LONG") if rev else None,
         "price_source": data.price_source(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
         "outcome": "open", "outcome_r": None, "exit_time": None, "user_status": "new",
+        "late": late, "origin": "cloud" if CLOUD else "pc",
     }
 
 
@@ -111,6 +118,24 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
         sig.update(outcome={"SL": "loss", "TP": "win"}.get(reason) or ("win" if r > 0 else "loss" if r < 0 else "time"), exit_reason=reason,
                    outcome_r=r,
                    exit_time=df.index[k].isoformat(), exit_price=round(float(px), spec["digits"]))
+
+
+def pc_status() -> dict:
+    return read_json(SIGNALS_FILE.parent / "pc_status.json", {})
+
+
+def pc_covered(sig: dict, tf: str) -> bool:
+    """The PC auto-trader is the authority while it runs (broker candles, scans seconds after each close): the cloud
+    does not add a signal for a candle the PC has already scanned. If the PC is off (no scan for > 2 h) the cloud
+    alerts as before."""
+    st = pc_status()
+    try:
+        last = pd.Timestamp(st["last_scan_hour"])
+        if pd.Timestamp.now(tz="UTC") - last > pd.Timedelta(hours=2):
+            return False
+        return pd.Timestamp(sig["bar_time"]) + pd.Timedelta(minutes=TIMEFRAMES[tf]) <= last
+    except Exception:
+        return False
 
 
 def scan_once() -> list[dict]:
@@ -144,9 +169,17 @@ def scan_once() -> list[dict]:
                                                           friday_cutoff(entry_t) < entry_t + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]]))
                     ot = res["open_trade"]
                     reverse = bool(ot and ot.get("reverse_pending") and res["last_signal"] == -ot["dir"])
+                    s = None
                     if res["last_signal"] and (flat or reverse) and np.isfinite(res["atr_last"]) and not weekend:
                         s = _make_signal(sym, cfg, df, res, settings)
+                    elif ot and not reverse and 1 <= n - 1 - ot["signal_i"] <= 2 and not weekend:
+                        # a scan was skipped (GitHub runs late, PC restarted): the signal bar is 1-2 bars back and the
+                        # backtest's trade from it is still open -> alert it late rather than never
+                        s = _make_signal(sym, cfg, df, res, settings, i=ot["signal_i"])
+                    if s is not None:
                         if s["id"] in known:
+                            continue
+                        if CLOUD and pc_covered(s, cfg["tf"]):     # the PC already judged this candle on broker data
                             continue
                         # "close your old order first" only if we actually alerted that order (a system that just became
                         # ACTIVE may hold a backtest-only position the user never saw)
@@ -210,6 +243,8 @@ def alert_text(s: dict, d: int) -> tuple[str, str]:
     closed = pd.Timestamp(s["bar_time"]) + pd.Timedelta(minutes=TIMEFRAMES.get(s["tf"], 60))
     late = max(0, int((pd.Timestamp(s["created"]) - closed).total_seconds() // 60)) if s.get("created") else 0
     when = f"🕒 แท่งปิด {closed.tz_convert(BKK).strftime('%H:%M')} น." + (f" · แจ้งช้า {late} นาที — เช็คราคาใน MT5 ก่อนเข้า" if late >= 15 else "")
+    src = {"pc": "💻 จากคอม (ราคา MT5)", "cloud": "☁️ จากคลาวด์ (คอมไม่ได้ออนไลน์)"}.get(s.get("origin"))
+    when += f"\n{src}" if src else ""
     msg = (f"{rev}{when}\n{lot_line}\nEntry ~{_fmt(s['entry'], d)}\nSL {_fmt(s['sl'], d)} ({s['sl_pips']} pips)\n"
            f"{tp_line}\n"
            f"{close_by} · ระบบ: {s['strategy_name']} ({s['tf']}) · {s['system_status']}\n🏷️ ใส่ comment ใน MT5: {tag}")

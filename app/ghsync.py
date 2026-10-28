@@ -106,3 +106,26 @@ def publish(new: list[dict]) -> bool:
         except Exception as e:
             log.warning("publish failed: %s", e)
     return False
+
+
+def put_status(status: dict) -> bool:
+    """data/pc_status.json on GitHub = the PC's heartbeat: the cloud scan leaves candles the PC already scanned to the PC
+    (scanner.pc_covered). Not in the workflow's push paths, so it does not trigger a site build."""
+    if not token():
+        return False
+    path = "data/pc_status.json"
+    for _ in range(3):
+        try:
+            r = requests.get(API + path, headers=_hdr(), params={"ref": "main"}, timeout=30)
+            sha = r.json().get("sha") if r.status_code == 200 else None
+            body = {"message": "pc: heartbeat [skip ci]", "branch": "main",
+                    "content": base64.b64encode(json.dumps(status, indent=1).encode()).decode()}
+            if sha:
+                body["sha"] = sha
+            r = requests.put(API + path, headers=_hdr(), json=body, timeout=60)
+            if r.status_code in (200, 201):
+                return True
+            log.warning("heartbeat: HTTP %s %s", r.status_code, r.text[:200])
+        except Exception as e:
+            log.warning("heartbeat failed: %s", e)
+    return False
