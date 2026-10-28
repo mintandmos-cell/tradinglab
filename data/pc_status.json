@@ -8,10 +8,10 @@
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T20:00:41.460090+00:00",
+ "time": "2026-10-28T20:01:14.779171+00:00",
  "account": "DEMO",
  "balance": 9971.85,
- "equity": 9971.6,
+ "equity": 9973.15,
  "positions": [
   {
    "ticket": 2760554425,
@@ -23,9 +23,23 @@
    "price_open": 81625.02,
    "sl": 81000.9,
    "tp": 82754.37,
-   "price": 81599.69,
-   "profit": -0.25,
+   "price": 81660.35,
+   "profit": 0.35,
    "time": "2026-10-28T20:00:22+00:00"
+  },
+  {
+   "ticket": 2760562520,
+   "symbol": "XAUUSD",
+   "system": "TL56-H1",
+   "signal_id": "XAUUSD-H1-vol_breakout-1793214000",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 4076.425,
+   "sl": 4051.74,
+   "tp": null,
+   "price": 4077.38,
+   "profit": 0.95,
+   "time": "2026-10-28T20:00:58+00:00"
   }
  ],
  "closed": [
