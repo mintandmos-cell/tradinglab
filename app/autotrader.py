@@ -57,6 +57,7 @@ DEFAULTS = {
     "magic": 5_600_000,
     "deviation_points": 30,
     "retry_minutes": 10,
+    "alert_levels": True,          # place exactly the alert's SL / TP prices (lots sized on the real distance)
     "max_chase_r": 0.5,            # a late signal is not entered once price ran > 0.5 R in its favour (or to within 0.1 R of SL)           # a failed order is retried every 15 s for this long after the signal
     "notify": True,                # push "🤖 DEMO/REAL ..." to the ntfy topic in data/local.json
 }
@@ -181,6 +182,10 @@ def execute(c: dict, s: dict, balance: float) -> str:
         return "done"
     risk_pct = float(s.get("risk_pct") or 0.25) * float(c["risk_scale"])
     vpu = _value_per_unit(info)
+    # the SAME SL / TP prices as the alert and the website (user's rule 28 Oct 2026: the robot's order must match what the
+    # phone and the web show). Lots are sized on the real distance from today's fill to that SL.
+    if c.get("alert_levels", True) and s.get("sl") is not None:
+        sl_dist = abs(price - float(s["sl"]))
     if vpu <= 0 or sl_dist <= 0:
         _log("skip", symbol=sym, system=tag, reason="bad tick value / SL distance")
         return "done"
@@ -203,8 +208,12 @@ def execute(c: dict, s: dict, balance: float) -> str:
             _log("skip", symbol=sym, system=tag, reason=f"symbol risk cap {cap_usd:.2f} USD reached")
             return "done"
     digits = info.digits
-    sl = round(price - d * sl_dist, digits)
-    tp = round(price + d * rr * sl_dist, digits) if rr > 0 else 0.0
+    if c.get("alert_levels", True) and s.get("sl") is not None:
+        sl = round(float(s["sl"]), digits)
+        tp = round(float(s["tp"]), digits) if s.get("tp") is not None else 0.0
+    else:
+        sl = round(price - d * sl_dist, digits)
+        tp = round(price + d * rr * sl_dist, digits) if rr > 0 else 0.0
     side = "BUY" if d > 0 else "SELL"
     req = {"action": mt5.TRADE_ACTION_DEAL, "symbol": name, "volume": round(lots, 6),
            "type": mt5.ORDER_TYPE_BUY if d > 0 else mt5.ORDER_TYPE_SELL, "price": price, "sl": sl, "tp": tp,
@@ -221,10 +230,80 @@ def execute(c: dict, s: dict, balance: float) -> str:
          msg=getattr(r, "comment", None) or str(mt5.last_error()))
     if not ok:
         return "retry"
+    _opened[str(getattr(r, "order", "") or "")] = s["id"]
     _push(c, f"{side} {name} {lots:.2f} lot · {tag}",
           f"เปิดแล้ว @ {fill:.{digits}f} · SL {sl}" + (f" · TP {tp}" if tp else " · ไม่มี TP")
           + f" · เสี่ยง {risk_usd:.2f} USD ({risk_usd / balance * 100:.2f}% ของทุน)")
     return "done"
+
+
+# ------------------------------------------------------------------------------------------------ positions -> website
+_opened: dict[str, str] = {}          # position ticket -> signal id, filled by execute()
+REASONS = {0: "ปิดเอง", 1: "ปิดเอง (มือถือ)", 2: "ปิดเอง (เว็บ)", 3: "โปรแกรมปิด", 4: "SL", 5: "TP", 6: "Stop out"}
+
+
+def _signal_of(st: dict, p) -> str | None:
+    t = st.setdefault("tickets", {})
+    if str(p.ticket) in t:
+        return t[str(p.ticket)]
+    # positions opened before tickets were recorded: the newest executed signal of the same system
+    for sid in reversed(st.get("done", [])):
+        parts = sid.split("-")
+        if len(parts) >= 4 and _tag(parts[2], parts[1]) == p.comment and p.symbol.upper().startswith(parts[0][:3]):
+            t[str(p.ticket)] = sid
+            return sid
+    return None
+
+
+def _pos_row(st: dict, p) -> dict:
+    mt5 = _mt5()
+    info = mt5.symbol_info(p.symbol)
+    dg = info.digits if info else 5
+    return {"ticket": p.ticket, "symbol": p.symbol, "system": p.comment, "signal_id": _signal_of(st, p),
+            "side": "BUY" if p.type == mt5.POSITION_TYPE_BUY else "SELL", "lots": p.volume,
+            "price_open": round(p.price_open, dg), "sl": round(p.sl, dg) if p.sl else None, "tp": round(p.tp, dg) if p.tp else None,
+            "price": round(p.price_current, dg), "profit": round(p.profit + getattr(p, "swap", 0.0), 2),
+            "time": (datetime.fromtimestamp(p.time, timezone.utc) - pd.Timedelta(hours=data.mt5_utc_offset() or 0)).isoformat()}
+
+
+def watch_positions(c: dict, st: dict, force: bool = False) -> None:
+    """Every loop: notice positions that closed (SL / TP at the broker, or by hand), push it, and publish the robot's
+    positions to GitHub so the website shows exactly what MT5 holds."""
+    mt5 = _mt5()
+    st.setdefault("tickets", {}).update(_opened)
+    _opened.clear()
+    now = {str(p.ticket): p for p in _positions(c)}
+    before = st.get("open_tickets", [])
+    closed = [t for t in before if t not in now]
+    for t in closed:
+        row = {"ticket": int(t), "signal_id": st["tickets"].get(t), "time": datetime.now(timezone.utc).isoformat()}
+        try:
+            deals = mt5.history_deals_get(position=int(t)) or []
+            out = [d for d in deals if d.entry in (1, 3)]                    # DEAL_ENTRY_OUT / OUT_BY
+            if out:
+                d = out[-1]
+                row.update(symbol=d.symbol, system=d.comment or "", price=d.price, reason=REASONS.get(d.reason, str(d.reason)),
+                           profit=round(sum(x.profit + x.swap + x.commission for x in deals), 2))
+        except Exception as e:
+            log.warning("deal history %s: %s", t, e)
+        st.setdefault("closed", []).insert(0, row)
+        del st["closed"][30:]
+        _log("closed", **row)
+        _push(c, f"ปิด {row.get('symbol', '')} {row.get('system', '')} — {row.get('reason', '')}",
+              f"ราคา {row.get('price', '–')} · กำไร/ขาดทุน {row.get('profit', 0):+.2f} USD")
+    changed = sorted(now) != sorted(before)
+    st["open_tickets"] = sorted(now)
+    if changed or force:
+        publish_status(c, st)
+
+
+def publish_status(c: dict, st: dict, **extra) -> bool:
+    a = _mt5().account_info()
+    status = {**st.get("status", {}), **extra, "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
+              "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
+              "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15]}
+    st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals") if k in status}
+    return ghsync.put_status(status)
 
 
 # ------------------------------------------------------------------------------------------------ guards
@@ -270,9 +349,7 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     data._mem.clear()                                                  # rebuild candles from MT5 for the new close
     new = scanner.scan_once()                                          # records + pushes the normal alert at once
     pub = ghsync.publish(new)                                          # website + cloud see them (no second alert)
-    hb = ghsync.put_status({"last_scan_hour": str(pd.Timestamp.now(tz="UTC").floor("h")),
-                            "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
-                            "new_signals": [s["id"] for s in new]})
+    hb = publish_status(c, st, last_scan_hour=str(pd.Timestamp.now(tz="UTC").floor("h")), new_signals=[s["id"] for s in new])
     _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb)
     for s in new:
         if s.get("system_status") == "ACTIVE":
@@ -316,6 +393,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
             st["warned_live"] = True
         st["pending"] = []
         return
+    watch_positions(c, st)
     state = _guards(c, st)
     if state == "close":
         for p in _positions(c):

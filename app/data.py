@@ -124,7 +124,7 @@ def mt5_utc_offset() -> float | None:
     for name in set(load_settings()["mt5_symbol_map"].values()):
         r = mt5_resolve(name)
         t = mt5.symbol_info_tick(r) if r else None
-        if t is not None and t.time:
+        if t is not None and getattr(t, "time", 0):
             newest = max(newest, int(t.time))
     v = None
     if newest:

@@ -63,7 +63,11 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   bat itself stable (cmd reads a running .bat by offset). LIVE MT5 CLOCK: bars from the running terminal are converted with the
   server offset measured from the newest tick (`data.mt5_utc_offset`; Exness = UTC+0, unlike the NY-close history files that
   `settings.mt5_server_time` describes) and MT5 bars are never merged with an old cache. Chart: an open alerted signal's levels
-  win over the chart's own backtest position (`openPosition`). PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
+  win over the chart's own backtest position (`openPosition`). SAME LEVELS EVERYWHERE (user, 28 Oct 2026): the robot places the
+  alert's exact SL/TP prices (`alert_levels`, lots sized on the real distance); forward tracking (`scanner._track`) uses the
+  alerted SL/TP too. The robot publishes its MT5 positions + recent closes (with signal_id, reason SL/TP) in pc_status.json
+  whenever they change (`watch_positions`, closes pushed to ntfy); the Signals page shows them (robot KPI, table, card banner).
+  The card button 'ฉันเปิดเอง' is only a manual-account log. PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
   Never help hide automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 

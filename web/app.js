@@ -591,6 +591,21 @@ function openSysPicker(anchor, sel, pick) {
 const footItem = (k, v, cls = "", wide = false) => `<span class="fi${wide ? " wide" : ""}"><span class="k">${k}</span><span class="v ${cls}">${v}</span></span>`;
 
 // ------------------------------------------------------------------ SIGNALS
+// what the PC robot really did with a signal (data/pc_status.json, published by the auto-trader)
+function robotOf(s) {
+  const pc = S.pc; if (!pc || !s) return null;
+  const p = (pc.positions || []).find((x) => x.signal_id === s.id);
+  if (p) return { open: true, ...p };
+  const c = (pc.closed || []).find((x) => x.signal_id === s.id);
+  return c ? { open: false, ...c } : null;
+}
+function robotLine(s) {
+  const r = robotOf(s); if (!r) return "";
+  const dg = specOf(s.symbol).digits;
+  return r.open
+    ? `<div class="banner ok" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 (${esc(S.pc.account || "")}) ถืออยู่</b> ${r.side} ${fnum(r.lots, 2)} lot @ ${fpx(r.price_open, dg)} · SL ${r.sl ? fpx(r.sl, dg) : "–"}${r.tp ? " · TP " + fpx(r.tp, dg) : ""} · <span class="${cls(r.profit)}">${r.profit >= 0 ? "+" : ""}$${fnum(r.profit, 2)}</span></div></div>`
+    : `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 ปิดแล้ว</b> — ${esc(r.reason || "")} @ ${r.price != null ? fpx(r.price, dg) : "–"} · <span class="${cls(r.profit)}">${r.profit >= 0 ? "+" : ""}$${fnum(r.profit, 2)}</span></div></div>`;
+}
 function signalCard(s, compact = false) {
   const sp = specOf(s.symbol), d = sp.digits;
   const expired = new Date(s.valid_until) < new Date();
@@ -614,6 +629,7 @@ function signalCard(s, compact = false) {
       <div><div class="lbl">R:R</div><div class="mono">1 : ${fnum(s.rr, 2)}</div></div>
       <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">$${fnum(s.reward_usd, 2)}</div></div>
     </div>
+    ${robotLine(s)}
     ${s.capped ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⛔</span><div>${esc(s.note || "ข้าม: เกินเพดานความเสี่ยงรวมของสินทรัพย์นี้")} — ไม่ได้ส่งแจ้งเตือน (ระบบยังติดตามผลไม้นี้เพื่อวัดผลของระบบ)</div></div>` : ""}
     ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ 0.01 —
       ถ้าเปิด 0.01 lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
@@ -625,7 +641,7 @@ function signalCard(s, compact = false) {
       <button class="btn sm" data-a="copy">📋 คัดลอก</button>
       <button class="btn sm" data-a="adjust">🎯 ปรับตามราคา MT5</button>
       <a class="btn sm" href="#/chart?symbol=${s.symbol}&tf=${s.tf}&strategy=${s.strategy}">📈 กราฟ</a>
-      ${s.user_status === "new" ? `<button class="btn sm long" data-a="taken">✓ เปิดแล้ว</button><button class="btn sm ghost" data-a="skipped">ข้าม</button>` : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิดแล้ว" : "ข้าม"}</span>`}
+      ${s.user_status === "new" ? `<button class="btn sm ghost" data-a="taken" title="ไม่จำเป็นต้องกด — ไว้จดว่าคุณเปิดเองในบัญชีที่เทรดมือ (เช่น The5ers) เพื่อดูสถิติของคุณ">✋ ฉันเปิดเอง</button><button class="btn sm ghost" data-a="skipped" title="จดว่าคุณไม่ได้เข้าไม้นี้ในบัญชีที่เทรดมือ">ข้าม</button>` : `<span class="badge ${s.user_status}">${s.user_status === "taken" ? "เปิดแล้ว" : "ข้าม"}</span>`}
     </div>`}
   </div>`;
 }
@@ -1836,7 +1852,9 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 // ------------------------------------------------------------------ SIGNALS
 async function renderSignals(view) {
   const [sigs, syms, fwd, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null]);
+  S.pc = pc;
   const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
+  const rpos = (pc && pc.positions) || [], rpnl = rpos.reduce((a, x) => a + (+x.profit || 0), 0);
   const pcLine = !STATIC ? "" : pcAge !== null && pcAge < 70
     ? `<div class="hero-s"><span class="pos">💻 คอมออนไลน์</span> · สแกนราคา MT5 ทุกต้นชั่วโมง · ล่าสุด ${ago(pc.time)} — แจ้งเตือน + เปิดออเดอร์ภายในไม่กี่วินาที</div>`
     : `<div class="hero-s"><span class="neg">☁️ คอมออฟไลน์</span> · ใช้คลาวด์แทน (แจ้งช้า 10–60 นาที, ไม่เปิดออเดอร์อัตโนมัติ)${pc && pc.time ? ` · คอมสแกนล่าสุด ${ago(pc.time)}` : ""}</div>`;
@@ -1867,15 +1885,20 @@ async function renderSignals(view) {
   };
   view.innerHTML = `<div class="page">
     <div class="hero">
-      <div class="hero-main"><div class="hero-k">สัญญาณที่เข้าได้ตอนนี้</div><div class="hero-v">${actionable.length}</div>${pcLine}
+      <div class="hero-main"><div class="hero-k">สัญญาณที่ยังเข้าได้ตอนนี้ (สำหรับเทรดมือ)</div><div class="hero-v">${actionable.length}</div>${pcLine}
         <div class="hero-s">${STATIC ? `คลาวด์สแกนทุกชั่วโมง · ล่าสุด ${ago(STATIC.last_scan)}` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} · แจ้งเตือนเข้ามือถือเมื่อระบบ ACTIVE มีสัญญาณ</div></div>
       <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.reduce((n, x) => n + Math.max(1, (x.systems || []).length), 0), active.map((x) => x.symbol + ((x.systems || []).length > 1 ? ` ×${x.systems.length}` : "")).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
-        ${kpi("กำลังติดตาม", tracking.length, "ออเดอร์ที่ยังไม่ปิด")}
+        ${STATIC ? kpi("🤖 ถือใน MT5", rpos.length, pc && pc.time ? `กำไร/ขาดทุนตอนนี้ ${rpnl >= 0 ? "+" : ""}$${fnum(rpnl, 2)} · อัปเดต ${ago(pc.time)}` : "ยังไม่มีข้อมูลจากคอม", rpos.length ? cls(rpnl) : "") : ""}
+        ${kpi("กำลังติดตาม", tracking.length, "สัญญาณที่ยังไม่จบ")}
         ${kpi("Forward test", fa ? fr(fa.net_r, 1) : "–", fa ? `${fa.trades} ไม้ · ชนะ ${fa.win_rate}%` : "ยังไม่มีไม้ที่จบ", fa ? cls(fa.net_r) : "")}
         <div class="kpi act"><button class="btn sm" id="scanBtn">${ICONS.refresh} ${STATIC ? "โหลดใหม่" : "สแกนตอนนี้"}</button></div></div>
     </div>
     ${actionable.length ? `<div class="sec-h"><h2>🔔 เข้าได้ตอนนี้</h2></div><div class="sig-grid">${actionable.map((s) => signalCard(s)).join("")}</div>`
       : `<div class="calm"><div class="big">🔕</div><div><b>ยังไม่มีสัญญาณใหม่</b><div class="muted small">ระบบกำลังเฝ้าตลาดให้ — เมื่อมีสัญญาณ มือถือจะเด้งแจ้งเตือนพร้อม Lot / SL / TP</div></div></div>`}
+    ${rpos.length ? `<div class="sec-h"><h2>🤖 ออเดอร์ใน MT5 (โปรแกรมเทรดให้)</h2><span class="badge">${rpos.length}</span><span class="muted small" style="margin-left:auto">อัปเดตเมื่อเปิด/ปิดออเดอร์ และทุกต้นชั่วโมง · ${ago(pc.time)}</span></div>
+      <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th class="num">Lot</th><th class="num">ราคาเข้า</th><th class="num">SL</th><th class="num">TP</th><th class="num">กำไร</th></tr></thead><tbody>
+      ${rpos.map((x) => `<tr><td><b>${esc(x.symbol)}</b></td><td class="mono">${esc(x.system)}</td><td>${statusBadge(x.side === "BUY" ? "LONG" : "SHORT")}</td><td class="num">${fnum(x.lots, 2)}</td><td class="num">${x.price_open}</td><td class="num neg">${x.sl ?? "–"}</td><td class="num pos">${x.tp ?? "ไม่ตั้ง"}</td><td class="num ${cls(x.profit)}">${x.profit >= 0 ? "+" : ""}$${fnum(x.profit, 2)}</td></tr>`).join("")}
+      </tbody></table></div></div>` : ""}
     <div class="sec-h"><h2>ระบบที่เฝ้าสัญญาณ</h2><a class="muted small" href="#/systems">รายละเอียดระบบ →</a></div>
     <div class="tiles">${syms.map(tile).join("")}</div>
     ${tracking.length ? `<div class="sec-h"><h2>กำลังติดตาม</h2><span class="badge">${tracking.length}</span></div><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div>` : ""}

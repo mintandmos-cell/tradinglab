@@ -99,25 +99,32 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
 
 
 def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
-    """Forward-test the signal with exactly the backtest rules."""
+    """Forward-test the signal with the levels that were really ALERTED (= the order the user / the PC robot placed):
+    SL and TP exactly as in the push, exit at the next open on an opposite signal. (Recomputing the entry / ATR on a newer
+    price feed moved the SL a little and closed signals the real order still held — user's report 28 Oct 2026.)"""
     bt = pd.Timestamp(sig["bar_time"])
     i = df.index.searchsorted(bt)
     if i >= len(df) or df.index[i] != bt or i + 1 >= len(df):
         return
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
-    a = ta.atr(h, l, c, 14)
-    p = sig["params"]
+    d, entry, sl, tp = int(sig["dir"]), float(sig["entry"]), float(sig["sl"]), sig.get("tp")
+    tp = float(tp) if tp is not None else None
+    risk = abs(entry - sl) or 1e-12
     rules = exit_rules()
-    wlast = week_guard(df.index, sig["tf"])[0] if rules["friday"] else None
-    opp = strat_signals(sig["strategy"], df, p)[0] if rules["opposite"] else None
-    res = simulate(o, h, l, c, i + 1, sig["dir"], float(p["sl_atr"]) * a[i], float(p["rr"]), hold_bars(p, sig["tf"], rules), cost_price(spec),
-                   int(wlast[i + 1]) if wlast is not None else None, opp)
-    if res:
-        k, px, reason, entry, *_ = res
-        r = round(sig["dir"] * (px - entry) / (float(p["sl_atr"]) * a[i]), 3)
-        sig.update(outcome={"SL": "loss", "TP": "win"}.get(reason) or ("win" if r > 0 else "loss" if r < 0 else "time"), exit_reason=reason,
-                   outcome_r=r,
-                   exit_time=df.index[k].isoformat(), exit_price=round(float(px), spec["digits"]))
+    opp = strat_signals(sig["strategy"], df, sig["params"])[0] if rules["opposite"] else None
+    for k in range(i + 1, len(df)):
+        if opp is not None and k - 1 > i and opp[k - 1] == -d:             # opposite signal on the previous close
+            px, reason = o[k], "Rev"
+        elif (l[k] <= sl) if d > 0 else (h[k] >= sl):                    # SL first when both are touched (conservative)
+            px, reason = sl, "SL"
+        elif tp is not None and ((h[k] >= tp) if d > 0 else (l[k] <= tp)):
+            px, reason = tp, "TP"
+        else:
+            continue
+        r = round(d * (px - entry) / risk, 3)
+        sig.update(outcome={"SL": "loss", "TP": "win"}.get(reason) or ("win" if r > 0 else "loss" if r < 0 else "time"),
+                   exit_reason=reason, outcome_r=r, exit_time=df.index[k].isoformat(), exit_price=round(float(px), spec["digits"]))
+        return
 
 
 def pc_status() -> dict:

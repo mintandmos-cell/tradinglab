@@ -492,3 +492,4 @@ details summary { cursor: pointer; }
 .rb .hd { position: absolute; left: 3px; bottom: 3px; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 0 2px rgba(59,130,246,.3); }
 .t-held { display: grid; gap: 4px; margin: 6px 0 2px; padding: 6px 8px; border-radius: 8px; background: var(--panel2); font-size: 12px; }
 .t-held .hrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.banner.ok { border-color: rgba(22,199,132,.35); background: rgba(22,199,132,.08); }
