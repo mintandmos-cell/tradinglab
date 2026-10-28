@@ -41,10 +41,12 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.127,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
-  "user_status": "new"
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-28T05:00:00+00:00",
+  "user_status": "new",
+  "exit_reason": "SL",
+  "exit_price": 157.781
  },
  {
   "id": "XAUUSD-H4-cci_trend-1793120400",
@@ -230,9 +232,11 @@
   "reverse_of": "SHORT",
   "price_source": "yahoo",
   "cost_r": 0.014,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
-  "user_status": "new"
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-28T05:00:00+00:00",
+  "user_status": "new",
+  "exit_reason": "SL",
+  "exit_price": 4031.32
  }
 ]
