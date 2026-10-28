@@ -214,7 +214,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     if not ok:
         return "retry"
     _push(c, f"{side} {name} {lots:.2f} lot · {tag}",
-          f"เปิดแล้ว @ {fill} · SL {sl}" + (f" · TP {tp}" if tp else " · ไม่มี TP")
+          f"เปิดแล้ว @ {fill:.{digits}f} · SL {sl}" + (f" · TP {tp}" if tp else " · ไม่มี TP")
           + f" · เสี่ยง {risk_usd:.2f} USD ({risk_usd / balance * 100:.2f}% ของทุน)")
     return "done"
 
@@ -240,18 +240,53 @@ def _guards(c: dict, st: dict) -> str:
 
 
 # ------------------------------------------------------------------------------------------------ one cycle
+def _queue(c: dict, st: dict, sig: dict, why: str) -> None:
+    """Queue one ACTIVE signal for execution (once per signal id)."""
+    done = st.setdefault("done", [])
+    if sig["id"] in done or any(j["signal"]["id"] == sig["id"] for j in st.get("pending", [])):
+        return
+    st.setdefault("pending", []).append({"signal": sig, "until": time.time() + 60 * float(c["retry_minutes"])})
+    _log("queued", signal=sig["id"], source=why)
+
+
+def _mark_done(st: dict, sig_id: str) -> None:
+    done = st.setdefault("done", [])
+    if sig_id not in done:
+        done.append(sig_id)
+    del done[:-500]
+
+
 def hourly_scan(c: dict, st: dict) -> list[dict]:
     """Same scanner as the cloud on MT5 candles; new ACTIVE signals are queued for execution."""
     ghsync.pull()                                                      # newest research + signal list (ids) first
     data._mem.clear()                                                  # rebuild candles from MT5 for the new close
     new = scanner.scan_once()                                          # records + pushes the normal alert at once
     pub = ghsync.publish(new)                                          # website + cloud see them (no second alert)
-    act = [s for s in new if s.get("system_status") == "ACTIVE"]
-    _log("scan", new=[s["id"] for s in new], published=pub, to_trade=len(act))
-    deadline = time.time() + 60 * float(c["retry_minutes"])
-    for s in act:
-        st.setdefault("pending", []).append({"signal": s, "until": deadline})
+    _log("scan", new=[s["id"] for s in new], published=pub)
+    for s in new:
+        if s.get("system_status") == "ACTIVE":
+            _queue(c, st, s, "pc")
+    follow_alerts(c, st, pull=False)
     return new
+
+
+def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
+    """Trade every ACTIVE signal the PHONE got, also the ones the cloud found on its own data (the PC's MT5 candles can
+    differ a little from the cloud's feed, so a borderline signal may show up on one side only). A signal is followed
+    while it is still valid (its valid_until = 2 candles after the signal candle) and was not skipped by the risk cap."""
+    if pull:
+        ghsync.pull()
+    now = pd.Timestamp.now(tz="UTC")
+    if not st.get("follow_from"):                                      # never replay signals from before the first run
+        st["follow_from"] = now.isoformat()
+    since = pd.Timestamp(st["follow_from"])
+    for s in scanner.load_signals():
+        try:
+            if (s.get("system_status") == "ACTIVE" and s.get("outcome") == "open" and not s.get("capped")
+                    and pd.Timestamp(s["valid_until"]) > now and pd.Timestamp(s["created"]) >= since - pd.Timedelta(hours=2)):
+                _queue(c, st, s, "alert")
+        except Exception:
+            continue
 
 
 def cycle(c: dict, st: dict, new_bar: bool) -> None:
@@ -285,11 +320,16 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
         s = job["signal"]
         if state != "ok":
             _log("skip", symbol=s["symbol"], signal=s["id"], reason=f"guard {state} (ขาดทุนรวม {st['total_dd']}%)")
+            _mark_done(st, s["id"])
             continue
-        if execute(c, s, float(a.balance)) == "retry":
+        res = execute(c, s, float(a.balance))
+        if res == "done":
+            _mark_done(st, s["id"])
+        else:
             if time.time() < job["until"]:
                 keep.append(job)
             else:
+                _mark_done(st, s["id"])
                 _log("give_up", symbol=s["symbol"], signal=s["id"])
                 _push(c, f"เปิดออเดอร์ไม่สำเร็จ {s['symbol']} {_tag(s['strategy'], s['tf'])}",
                       "ลองซ้ำ 10 นาทีแล้วไม่ผ่าน — ดูบันทึกใน data/autotrade_log.jsonl", priority=4)
@@ -297,6 +337,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
 
 
 _upd = {"at": 0.0}
+_poll = {"at": 0.0}
 CODE_PATHS = ["app", "tools", "requirements.txt"]
 
 
@@ -360,6 +401,9 @@ def main() -> None:
                 now = pd.Timestamp.now(tz="UTC")
                 hour = str(now.floor("h"))
                 new_bar = hour != last_hour and (now - now.floor("h")).total_seconds() >= 5
+                if not new_bar and time.time() - _poll["at"] > 120:   # alerts the cloud sent (between candles)
+                    _poll["at"] = time.time()
+                    follow_alerts(c, st)
                 cycle(c, st, new_bar)
                 if new_bar:
                     last_hour = st["last_hour"] = hour

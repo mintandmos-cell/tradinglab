@@ -45,7 +45,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   `ghsync.publish`es the new signals to GitHub (contents API, token = local.json `github_token` or the PC's git credential) -> site
   rebuild (push path data/signals.json) and the cloud scan finds the id and does not alert again; the cloud commit step unions
   signals.json by id (`tools/merge_signals.py`). New ACTIVE signals are executed: market order, visible SL (signal's sl_dist), TP rr x
-  SL, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse, retry 10 min. Risk = signal risk x `risk_scale` (1.0) on the MT5
+  SL, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse, retry 10 min. It ALSO trades
+  every fresh ACTIVE signal the cloud alerted (polls GitHub every 2 min, `follow_alerts`: outcome open, not capped, before
+  valid_until; once per id via state `done`) - the cloud's feed can show a borderline signal the MT5 candles don't. Risk = signal risk x `risk_scale` (1.0) on the MT5
   balance; below min lot -> min lot (`min_lot_always` "*"); signals the alert marks `capped` are skipped (`follow_cap`). Anti-wipeout
   guard only (user dropped 6 %/3 %): total DD 25 % pause / 30 % close-all, daily 0 = off. Refuses REAL accounts unless `allow_live`.
   While its heartbeat (data/autotrade_state.json) is fresh the local server's scanner loop stays quiet. Scanner skips `force_off`
