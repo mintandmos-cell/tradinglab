@@ -1,16 +1,14 @@
 {
- "last_scan_hour": "2026-10-28 15:00:00+00:00",
- "new_signals": [
-  "USDJPY-H1-vol_breakout-1793192400"
- ],
+ "last_scan_hour": "2026-10-28 16:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T15:00:37.751966+00:00",
+ "time": "2026-10-28T16:00:23.184729+00:00",
  "account": "DEMO",
  "balance": 9990.95,
- "equity": 9989.29,
+ "equity": 9991.69,
  "positions": [
   {
    "ticket": 2757748035,
@@ -22,8 +20,8 @@
    "price_open": 2330.29,
    "sl": 2356.92,
    "tp": 2295.3,
-   "price": 2332.73,
-   "profit": -0.9,
+   "price": 2331.37,
+   "profit": -0.4,
    "time": "2026-10-28T14:00:27+00:00"
   },
   {
@@ -36,8 +34,8 @@
    "price_open": 158.183,
    "sl": 157.891,
    "tp": null,
-   "price": 158.159,
-   "profit": -0.76,
+   "price": 158.219,
+   "profit": 1.14,
    "time": "2026-10-28T15:00:21+00:00"
   }
  ],
