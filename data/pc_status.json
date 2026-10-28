@@ -5,27 +5,25 @@
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T22:00:22.044335+00:00",
+ "time": "2026-10-28T22:45:59.672865+00:00",
  "account": "DEMO",
- "balance": 9965.61,
- "equity": 9958.17,
- "positions": [
+ "balance": 9940.92,
+ "equity": 9940.92,
+ "positions": [],
+ "closed": [
   {
    "ticket": 2760562520,
+   "signal_id": "XAUUSD-H1-vol_breakout-1793214000",
+   "time": "2026-10-28T22:45:58.375111+00:00",
    "symbol": "XAUUSD",
    "system": "TL56-H1",
-   "signal_id": "XAUUSD-H1-vol_breakout-1793214000",
    "side": "BUY",
    "lots": 0.01,
    "price_open": 4076.425,
-   "sl": 4051.74,
-   "tp": null,
-   "price": 4068.994,
-   "profit": -7.44,
-   "time": "2026-10-28T20:00:58+00:00"
-  }
- ],
- "closed": [
+   "price": 4051.74,
+   "reason": "SL",
+   "profit": -24.69
+  },
   {
    "ticket": 2760554425,
    "signal_id": "BTCUSD-H1-vol_breakout-1793214000",
