@@ -1,16 +1,16 @@
 {
- "last_scan_hour": "2026-10-28 14:00:00+00:00",
+ "last_scan_hour": "2026-10-28 15:00:00+00:00",
  "new_signals": [
-  "ETHUSD-H1-vol_breakout-1793188800"
+  "USDJPY-H1-vol_breakout-1793192400"
  ],
  "scan": {
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T14:00:44.390491+00:00",
+ "time": "2026-10-28T15:00:19.288491+00:00",
  "account": "DEMO",
  "balance": 9990.95,
- "equity": 9990.98,
+ "equity": 9990.54,
  "positions": [
   {
    "ticket": 2757748035,
@@ -22,8 +22,8 @@
    "price_open": 2330.29,
    "sl": 2356.92,
    "tp": 2295.3,
-   "price": 2330.22,
-   "profit": 0.03,
+   "price": 2331.41,
+   "profit": -0.41,
    "time": "2026-10-28T14:00:27+00:00"
   }
  ],
