@@ -59,7 +59,8 @@ def main(mode: str, *args: str) -> int:
     if mode in ("scan", "research"):
         new = scanner.scan_once()
         write_json(export.CLOUD_STATE, {"last_scan": datetime.now(timezone.utc).isoformat(),
-                                        "last_error": scanner.STATE.get("last_error"), "new_signals": len(new)})
+                                        "last_error": scanner.STATE.get("last_error"), "new_signals": len(new),
+                                        "checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]})
         log.info("scan: %d new signal(s)", len(new))
     export.build(repo=repo)
     return 0

@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from . import data, notify, research
-from .config import CLOUD, SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
+from .config import CLOUD, SYMBOLS, SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
 from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
 from .strategies import STRATEGIES, signals as strat_signals
 from . import indicators as ta
@@ -18,6 +18,7 @@ from .sizing import lots_for
 
 log = logging.getLogger("tradinglab.scanner")
 BKK = timezone(timedelta(hours=7))
+SYMBOLS_GROUP = {k: v.get("group") for k, v in SYMBOLS.items()}
 STATE = {"last_scan": None, "last_error": None, "scans": 0}
 _lock = threading.RLock()
 
@@ -151,6 +152,7 @@ def scan_once() -> list[dict]:
     allow = {"ACTIVE"} | ({"WATCH"} if settings["alerts"].get("watch") else set())
     track = {"ACTIVE", "WATCH"}
     new = []
+    STATE.update(errors=[], checked=0)
     with _lock:
         sigs = load_signals()
         known = {s["id"] for s in sigs}
@@ -170,6 +172,10 @@ def scan_once() -> list[dict]:
                         df = frames[key] = data.get_bars(sym, cfg["tf"])
                     res = run(df, cfg["strategy"], cfg["params"], symbol_spec(sym, settings), cfg["tf"])
                     n = len(df)
+                    STATE["checked"] += 1
+                    age_h = (pd.Timestamp.now(tz="UTC") - df.index[-1]).total_seconds() / 3600 - TIMEFRAMES[cfg["tf"]] / 60
+                    if cfg["tf"] == "H1" and age_h > 3 and (SYMBOLS_GROUP.get(sym) == "Crypto" or pd.Timestamp.now(tz="UTC").dayofweek < 5):
+                        STATE["errors"].append(f"{sym} {cfg['tf']}: newest closed bar is {age_h:.0f} h old (stale data)")
                     flat = res["open_trade"] is None and (not res["trades"] or res["trades"][-1]["exit_i"] < n - 1)
                     entry_t = df.index[-1] + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])
                     weekend = exit_rules()["friday"] and (weekend_blocked(entry_t) or
@@ -208,6 +214,7 @@ def scan_once() -> list[dict]:
                 except Exception as e:
                     log.exception("scan %s %s failed", sym, cfg.get("strategy"))
                     STATE["last_error"] = f"{sym} {cfg.get('strategy')}: {e}"
+                    STATE["errors"].append(f"{sym} {cfg.get('strategy')} {cfg.get('tf')}: {e!r}"[:200])
         for s in sigs:
             if s.get("outcome") == "open":
                 df = frames.get((s["symbol"], s["tf"]))

@@ -67,7 +67,11 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   alert's exact SL/TP prices (`alert_levels`, lots sized on the real distance); forward tracking (`scanner._track`) uses the
   alerted SL/TP too. The robot publishes its MT5 positions + recent closes (with signal_id, reason SL/TP) in pc_status.json
   whenever they change (`watch_positions`, closes pushed to ntfy); the Signals page shows them (robot KPI, table, card banner).
-  The card button 'ฉันเปิดเอง' is only a manual-account log. PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
+  The card button 'ฉันเปิดเอง' is only a manual-account log. AUDIT 28 Oct 2026: `sync_exits` closes a robot position whose signal
+  the PC's tracking exited by 'Rev'; a capped reverse still closes the old position; a failed hourly scan is retried (last_hour
+  only advances on success); scans report `checked` + `errors` (incl. stale H1 data) in pc_status / cloud_state and the web
+  warns; data/cloud_state.json is committed by the bot so the static site knows the cloud's last scan; the web caches GitHub
+  API reads 3 min (60 req/h limit). PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
   Never help hide automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 

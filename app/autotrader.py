@@ -153,14 +153,18 @@ def execute(c: dict, s: dict, balance: float) -> str:
     mt5 = _mt5()
     sym, d = s["symbol"], int(s["dir"])
     tag = _tag(s["strategy"], s["tf"])
-    if s.get("capped") and c.get("follow_cap", True):
-        _log("skip", symbol=sym, system=tag, reason="capped like the alert (per-symbol risk cap)")
-        return "done"
     name = data.mt5_resolve(load_settings()["mt5_symbol_map"].get(sym, sym))
     if name is None:
         _log("skip", symbol=sym, system=tag, reason="broker has no such symbol — set mt5_symbol_map in data/local.json")
         return "done"
     mt5.symbol_select(name, True)
+    if s.get("capped") and c.get("follow_cap", True):
+        # the new entry is skipped like the alert, but an opposite signal still ends this system's old position
+        for q in [q for q in _positions(c) if q.symbol == name and q.comment == tag]:
+            if (q.type == mt5.POSITION_TYPE_BUY) != (d > 0) and not _close(c, q, "สัญญาณกลับทิศ"):
+                return "retry"
+        _log("skip", symbol=sym, system=tag, reason="capped like the alert (per-symbol risk cap)")
+        return "done"
     mine = [q for q in _positions(c) if q.symbol == name and q.comment == tag]
     if any((q.type == mt5.POSITION_TYPE_BUY) == (d > 0) for q in mine):
         _log("skip", symbol=sym, system=tag, reason="already holding this direction")
@@ -276,13 +280,17 @@ def watch_positions(c: dict, st: dict, force: bool = False) -> None:
     before = st.get("open_tickets", [])
     closed = [t for t in before if t not in now]
     for t in closed:
-        row = {"ticket": int(t), "signal_id": st["tickets"].get(t), "time": datetime.now(timezone.utc).isoformat()}
+        known = st.get("rows", {}).get(t, {})
+        row = {"ticket": int(t), "signal_id": st["tickets"].get(t), "time": datetime.now(timezone.utc).isoformat(),
+               **{k: known[k] for k in ("symbol", "system", "side", "lots", "price_open") if k in known}}
         try:
             deals = mt5.history_deals_get(position=int(t)) or []
             out = [d for d in deals if d.entry in (1, 3)]                    # DEAL_ENTRY_OUT / OUT_BY
             if out:
                 d = out[-1]
-                row.update(symbol=d.symbol, system=d.comment or "", price=d.price, reason=REASONS.get(d.reason, str(d.reason)),
+                row.setdefault("symbol", d.symbol)
+                row.setdefault("system", d.comment or "")
+                row.update(price=d.price, reason=REASONS.get(d.reason, str(d.reason)),
                            profit=round(sum(x.profit + x.swap + x.commission for x in deals), 2))
         except Exception as e:
             log.warning("deal history %s: %s", t, e)
@@ -293,6 +301,8 @@ def watch_positions(c: dict, st: dict, force: bool = False) -> None:
               f"ราคา {row.get('price', '–')} · กำไร/ขาดทุน {row.get('profit', 0):+.2f} USD")
     changed = sorted(now) != sorted(before)
     st["open_tickets"] = sorted(now)
+    st["rows"] = {t: {"symbol": p.symbol, "system": p.comment, "side": "BUY" if p.type == mt5.POSITION_TYPE_BUY else "SELL",
+                      "lots": p.volume, "price_open": p.price_open} for t, p in now.items()}
     if changed or force:
         publish_status(c, st)
 
@@ -302,7 +312,7 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
     status = {**st.get("status", {}), **extra, "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
               "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
               "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15]}
-    st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals") if k in status}
+    st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)
 
 
@@ -349,13 +359,28 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     data._mem.clear()                                                  # rebuild candles from MT5 for the new close
     new = scanner.scan_once()                                          # records + pushes the normal alert at once
     pub = ghsync.publish(new)                                          # website + cloud see them (no second alert)
-    hb = publish_status(c, st, last_scan_hour=str(pd.Timestamp.now(tz="UTC").floor("h")), new_signals=[s["id"] for s in new])
-    _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb)
+    sync_exits(c, st)
+    health = {"checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]}
+    hb = publish_status(c, st, last_scan_hour=str(pd.Timestamp.now(tz="UTC").floor("h")), new_signals=[s["id"] for s in new],
+                        scan=health)
+    _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb, **health)
+    st["scan_ok"] = True
     for s in new:
         if s.get("system_status") == "ACTIVE":
             _queue(c, st, s, "pc")
     follow_alerts(c, st, pull=False)
     return new
+
+
+def sync_exits(c: dict, st: dict) -> None:
+    """A position whose signal the system has exited by an OPPOSITE signal (forward tracking on the broker's candles,
+    reason "Rev") is closed too - normally the reverse signal itself closes it, this catches the cases where no new
+    entry was made (reverse skipped by the cap, or the position came from a cloud signal the PC's backtest never held)."""
+    sigs = {x["id"]: x for x in scanner.load_signals()}
+    for p in _positions(c):
+        sig = sigs.get(_signal_of(st, p) or "")
+        if sig and sig.get("outcome") != "open" and sig.get("exit_reason") == "Rev":
+            _close(c, p, "ระบบออกด้วยสัญญาณกลับทิศ")
 
 
 def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
@@ -428,6 +453,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
 
 _upd = {"at": 0.0}
 _poll = {"at": 0.0}
+_retry = {"at": 0.0}
 CODE_PATHS = ["app", "tools", "requirements.txt"]
 
 
@@ -490,13 +516,15 @@ def main() -> None:
                     data._mt5_init(load_settings())
                 now = pd.Timestamp.now(tz="UTC")
                 hour = str(now.floor("h"))
-                new_bar = hour != last_hour and (now - now.floor("h")).total_seconds() >= 5
+                new_bar = hour != last_hour and (now - now.floor("h")).total_seconds() >= 5 and time.time() >= _retry["at"]
                 if not new_bar and time.time() - _poll["at"] > 120:   # alerts the cloud sent (between candles)
                     _poll["at"] = time.time()
                     follow_alerts(c, st)
                 cycle(c, st, new_bar)
-                if new_bar:
+                if new_bar and st.pop("scan_ok", False):         # a failed scan (MT5 not connected...) is retried
                     last_hour = st["last_hour"] = hour
+                elif new_bar:
+                    _retry["at"] = time.time() + 60
                     _log("bar", hour=hour, guard=st.get("guard"), equity=st.get("equity"), total_dd=st.get("total_dd"),
                          positions=len(_positions(c)))
                 write_json(STATE_FILE, st)

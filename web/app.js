@@ -66,7 +66,15 @@ async function staticGet(file, text = false) {
 // live files straight from the repository (the PC auto-trader publishes signals there seconds after a candle closes;
 // the Pages copy only follows after a site build) — falls back to the Pages copy
 const GH_REPO = "mintandmos-cell/tradinglab";
+const _ghCache = {};   // one GitHub API read per file per 3 min (the free API allows 60 an hour per phone / network)
 async function ghLive(path) {
+  const hit = _ghCache[path];
+  if (hit && Date.now() - hit.t < 180000) return hit.v;
+  const v = await ghFetch(path);
+  if (v) _ghCache[path] = { t: Date.now(), v };
+  return v || (hit ? hit.v : null);
+}
+async function ghFetch(path) {
   try {
     const r = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${path}?ref=main&t=${Date.now()}`,
       { headers: { Accept: "application/vnd.github.raw+json" }, cache: "no-store" });
@@ -430,9 +438,14 @@ async function refreshStatus() {
   try {
     S.status = await api("/api/status");
     const st = S.status;
-    const src = st.static ? `<span class="dot on"></span> คลาวด์` : st.mt5.connected ? `<span class="dot on"></span> MT5 ${esc(st.mt5.account?.server || "")}` : `<span class="dot mid"></span> ข้อมูลฟรี`;
-    const scan = st.scanner.last_scan ? `<span class="dot on"></span> สแกน ${ago(st.scanner.last_scan)}` : `<span class="dot off"></span> ยังไม่สแกน`;
-    $("#statusLine").innerHTML = `${src} <span class="faint">·</span> ${scan}${st.research.running ? ` <span class="faint">·</span> <span class="spinner"></span> วิจัย ${esc(st.research.progress)}` : ""}`;
+    let src;
+    if (st.static) {
+      const pc = await pcStatus(); S.pc = pc || S.pc;
+      const age = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
+      src = age !== null && age < 70 ? `<span class="dot on"></span> คอม MT5 · ${ago(pc.time)}` : `<span class="dot mid"></span> คลาวด์ (คอมออฟไลน์)`;
+    } else src = st.mt5.connected ? `<span class="dot on"></span> MT5 ${esc(st.mt5.account?.server || "")}` : `<span class="dot mid"></span> ข้อมูลฟรี`;
+    const scan = st.static ? "" : st.scanner.last_scan ? `<span class="dot on"></span> สแกน ${ago(st.scanner.last_scan)}` : `<span class="dot off"></span> ยังไม่สแกน`;
+    $("#statusLine").innerHTML = `${src}${scan ? ` <span class="faint">·</span> ${scan}` : ""}${st.research.running ? ` <span class="faint">·</span> <span class="spinner"></span> วิจัย ${esc(st.research.progress)}` : ""}`;
     $("#sideFoot").innerHTML = `<span class="dot ${st.scanner.last_scan ? "on" : "off"}" data-tip="สแกนล่าสุด ${ago(st.scanner.last_scan)} · วิจัย ${ago(st.research_generated)}"></span>`;
   } catch (e) { $("#statusLine").innerHTML = `<span class="dot off"></span> เชื่อมต่อไม่ได้`; }
 }
@@ -592,6 +605,11 @@ const footItem = (k, v, cls = "", wide = false) => `<span class="fi${wide ? " wi
 
 // ------------------------------------------------------------------ SIGNALS
 // what the PC robot really did with a signal (data/pc_status.json, published by the auto-trader)
+function robotTag(x) {   // "TL56-H1" (older close records carried the broker's deal comment instead)
+  if (x.system && !String(x.system).startsWith("[")) return x.system;
+  const p = String(x.signal_id || "").split("-");
+  return p.length >= 4 ? `TL${stratById(p[2])?.no ?? "?"}-${p[1]}` : (x.system || "");
+}
 function robotOf(s) {
   const pc = S.pc; if (!pc || !s) return null;
   const p = (pc.positions || []).find((x) => x.signal_id === s.id);
@@ -1792,41 +1810,38 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - **ไม่ต้องเปิด MT5 หรือคอมเพื่อให้ระบบทำงาน** — คลาวด์สแกนทุกชั่วโมงเอง (GitHub อาจช้า 5–20 นาที)
 - ระบบตัดสินใจจากแท่งที่ **ปิดแล้ว** เท่านั้น ราคาสดมีไว้ดูเฉย ๆ
 - **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง`],
-    ["autotrade", "10. เทรดอัตโนมัติบนคอม + แจ้งเตือนให้ตรงกัน", `
-โปรแกรม **TradingLab auto-trader** รันบนคอมคู่กับ MT5 (ไม่ใช่ EA — เป็นโปรแกรม Python ที่สั่ง MT5 จากภายนอก) แล้วเปิด/ปิดออเดอร์ตามระบบ ACTIVE ให้เอง
+    ["autotrade", "10. เทรดอัตโนมัติบนคอม + ทุกอย่างให้ตรงกัน", `
+โปรแกรม **TradingLab auto-trader** (autotrade.bat) รันบนคอมคู่กับ MT5 — ไม่ใช่ EA แต่เป็นโปรแกรมที่สั่ง MT5 จากภายนอก แล้วเปิด/ปิดออเดอร์ตามระบบ ACTIVE ให้เอง
 ### เปรียบเทียบ
-เหมือนมี “ผู้ช่วยประจำโต๊ะ” 1 คนที่ทำ 3 อย่างพร้อมกันทุกครั้งที่แท่ง H1 ปิด: ① ดูกราฟ MT5 ว่ามีสัญญาณไหม ② ส่งข้อความแจ้งเตือนเข้ามือถือ + ลงบันทึกบนเว็บ ③ กดซื้อขายใน MT5 — ทั้ง 3 อย่างมาจาก **สัญญาณเดียวกัน** จึงตรงกันเสมอ
-### ลำดับการทำงานทุกชั่วโมง (นาทีที่ 0 + ~5 วินาที)
-1. ดึงรายชื่อระบบ ACTIVE ล่าสุด + รายการสัญญาณจาก GitHub
-2. ตรวจสัญญาณด้วย **แท่งเทียนของโบรกเกอร์ใน MT5** (กติกาเดียวกับระบบบนคลาวด์ทุกอย่าง)
-3. มีสัญญาณใหม่ → ส่งแจ้งเตือนแบบเดิม (🟢 BUY / 🔴 SELL …) เข้ามือถือ **ทันที**
-4. ส่งสัญญาณขึ้น GitHub → เว็บอัปเดตภายใน ~2 นาที และระบบบนคลาวด์จะ **ไม่แจ้งซ้ำ** (เห็นว่ามีสัญญาณนี้แล้ว)
-5. เปิดออเดอร์ใน MT5 แล้วส่ง “🤖 DEMO/REAL · BUY … lot” บอก Lot และราคาที่ได้จริง (ส่งไม่ผ่าน → ลองซ้ำทุก 15 วินาที นาน 10 นาที)
-### ลำดับความสำคัญ (ใครเป็นคนตัดสินสัญญาณ)
-1. **คอม (ราคา MT5 ของโบรกเกอร์) = ตัวหลัก** — สแกนวินาทีที่ 5 หลังแท่งปิด → แจ้งเตือน “💻 จากคอม” + เปิดออเดอร์ทันที และส่ง “สัญญาณชีพ” ขึ้น GitHub ทุกชั่วโมง
-2. **คลาวด์ = ตัวสำรอง** — ถ้าคอมสแกนแท่งนั้นไปแล้ว คลาวด์จะไม่สร้างสัญญาณซ้ำ/ขัดแย้ง (ราคาคนละแหล่งอาจเห็นต่างกันในแท่งที่เฉียดเงื่อนไข) · ถ้าคอมไม่ได้สแกนเกิน 2 ชั่วโมง คลาวด์แจ้ง “☁️ จากคลาวด์” แทน (ช้า 10–60 นาที เพราะ GitHub เลื่อนรอบเอง)
-3. **รอบไหนพลาด** (คลาวด์มาช้า, คอมรีสตาร์ท) → ระบบย้อนดู 1–2 แท่งก่อน ถ้าเทรดของสัญญาณนั้นยังไม่จบ จะแจ้ง “แจ้งช้า … นาที” แทนที่จะเงียบไป
-4. **โปรแกรมเปิดตามแจ้งเตือนทุกอัน** (เช็กทุก 2 นาที) ภายใน 3 แท่งหลังสัญญาณ — แต่ **ไม่ไล่ราคา**: ถ้าราคาวิ่งไปทางกำไรเกิน 0.5R หรือเกือบถึง SL แล้ว จะไม่เข้าและแจ้ง “ไม่เข้า — ราคาวิ่งไปแล้ว”
-5. **เว็บ** ดึงรายการสัญญาณสดจาก GitHub ทุกครั้งที่เปิด/โหลดใหม่ และหน้าสัญญาณบอกว่า 💻 คอมออนไลน์ หรือ ☁️ คอมออฟไลน์
+เหมือนมี “กรรมการหลักข้างสนาม” (คอม) กับ “กรรมการสำรองดูถ่ายทอดสด” (คลาวด์) — ปกติคอมตัดสินคนเดียว คลาวด์ช่วยเฉพาะตอนคอมไม่อยู่ ทุกฝ่ายจึงได้คำตัดสินเดียวกัน
+### ลำดับการทำงานทุกต้นชั่วโมง (นาทีที่ 0 + ~5 วินาที)
+1. คอมดึงรายชื่อระบบ ACTIVE + รายการสัญญาณล่าสุดจาก GitHub
+2. ตรวจสัญญาณด้วย **แท่งเทียนของโบรกเกอร์ใน MT5** (เวลาเซิร์ฟเวอร์วัดจาก MT5 เอง — Exness = UTC)
+3. มีสัญญาณ → แจ้งเตือน “💻 จากคอม” เข้ามือถือ **ทันที** + ส่งขึ้นเว็บ + เปิดออเดอร์ใน MT5 → แจ้ง “🤖 … เปิดแล้ว”
+4. ส่ง “สัญญาณชีพ” + รายการออเดอร์ใน MT5 ขึ้น GitHub → คลาวด์ไม่สร้างสัญญาณซ้ำ/ขัดแย้งในแท่งที่คอมตรวจแล้ว
+- **คอมปิด/หลุด:** คลาวด์แจ้งแทน “☁️ จากคลาวด์” (ช้า 10–60 นาที เพราะ GitHub เลื่อนรอบเอง, ไม่มีการเปิดออเดอร์อัตโนมัติ)
+- **รอบไหนพลาด:** ย้อนดู 1–2 แท่ง ถ้าเทรดของสัญญาณนั้นยังไม่จบ จะแจ้ง “แจ้งช้า … นาที” · โปรแกรมเปิดตามได้ถ้าราคายังไม่วิ่งเกิน 0.5R (ไม่ไล่ราคา)
+### ราคาเดียวกันทุกที่
+- ออเดอร์ใน MT5 ใช้ **SL / TP ราคาเดียวกับในแจ้งเตือนและบนเว็บ** (Lot คำนวณจากระยะจริง) → ชน SL ที่ราคาเดียวกัน
+- การติดตามผลบนเว็บใช้ SL / TP ตามแจ้งเตือน · เส้นบนกราฟแสดงระดับของออเดอร์ที่แจ้งเตือนจริง
+- SL / TP ฝากไว้ที่โบรกเกอร์ — ราคาแตะเมื่อไหร่ **โบรกเกอร์ปิดให้ทันที** แม้คอมดับ · ระบบออกด้วยสัญญาณกลับทิศ → โปรแกรมปิดให้ตอนต้นชั่วโมง
+### บนเว็บ (หน้า “สัญญาณ”)
+- 💻 คอมออนไลน์ / ☁️ คอมออฟไลน์ · **🤖 ถือใน MT5** = ออเดอร์จริงที่โปรแกรมถืออยู่ + กำไร/ขาดทุน · ตาราง **MT5 ปิดล่าสุด** (ปิดด้วย SL / TP / กลับทิศ)
+- การ์ดแต่ละสัญญาณมีแถบ 🤖 บอกว่าโปรแกรมถืออยู่หรือปิดแล้ว · ถ้าคอมสแกนบางระบบไม่สำเร็จ จะมีแถบ ⚠️ เตือน
+- ปุ่ม **✋ ฉันเปิดเอง / ข้าม** ไม่ต้องกด — มีไว้จดเฉพาะบัญชีที่คุณเทรดมือ (เช่น The5ers)
+- “สัญญาณที่ยังเข้าได้ตอนนี้” = สัญญาณที่ยังทันเข้าแบบเทรดมือ (ภายใน 2 แท่ง) ไม่ใช่จำนวนออเดอร์ที่ถืออยู่
 ### เริ่มใช้งาน (ทำครั้งเดียว)
 1. ล็อกอินบัญชีใน MT5 → กดปุ่ม **Algo Trading** ให้เป็นสีเขียว
-2. เปิด start_server.bat → เว็บบนคอม (localhost:8800) → **ตั้งค่า**: ใส่ **ntfy topic ชื่อเดียวกับที่แอป ntfy บนมือถือติดตาม** และ **ทุน (USD) เท่ากับที่ตั้งบน GitHub** (ตัวแปร ACCOUNT_BALANCE) → บันทึก แล้วปิดหน้าต่าง server ได้
-3. ดับเบิลคลิก **autotrade.bat** → หน้าต่างดำต้องขึ้น ✅ MT5, ntfy topic ถูกต้อง และ “เชื่อม GitHub ได้”
-4. ตั้งคอม **ไม่ให้หลับ** และเปิด MT5 + หน้าต่างดำไว้ตลอด
-### กติกาการเทรด
-- เทรดทุกระบบ ACTIVE ของไตรมาส · SL มองเห็นได้ในทุกออเดอร์ · TP ตามระบบ (ไม่มี TP ถ้าระบบ rr = 0) · สัญญาณกลับทิศ → ปิดของเดิมแล้วเปิดฝั่งใหม่
-- ออเดอร์มีคอมเมนต์ \`TL{เลขระบบ}-{TF}\` และ magic 5600000 — โปรแกรมแตะเฉพาะออเดอร์ของตัวเอง ออเดอร์ที่คุณเปิดเองไม่ถูกยุ่ง
-- ความเสี่ยงต่อไม้เท่ากับแจ้งเตือน (ระบบเดี่ยว 0.25%, ระบบพอร์ต 0.10%) แต่คิดจาก **ทุนจริงใน MT5** — Lot ต่ำกว่าขั้นต่ำ → เปิด **0.01 lot** (ทุกสินทรัพย์)
-- สัญญาณที่แจ้งเตือน “ข้าม” เพราะเกินเพดานความเสี่ยงรวมต่อสินทรัพย์ 0.75% → โปรแกรมก็ข้ามด้วย (ให้ตรงกัน)
-- ราคาเข้า: แจ้งเตือนบอกราคาปิดแท่ง ส่วนโปรแกรมเข้าที่ราคาตลาดตอนแท่งใหม่เปิด — ต่างกันเล็กน้อยตามสเปรด/ช่องว่างราคา ระยะ SL/TP เท่ากัน
-### กันล้างพอร์ต (คิดจาก Equity จริง)
-- ขาดทุนรวมจากทุนเริ่ม **≥ 25% → หยุดเปิดออเดอร์ใหม่** · **≥ 30% → ปิดทุกออเดอร์ของโปรแกรม** (ตั้งเป็น 0 = ปิดการป้องกัน)
-- ป้องกันได้เฉพาะตอนคอม + MT5 เปิดอยู่ ราคากระโดด (gap) อาจทะลุได้
-### ใช้กับบัญชีเงินจริง
-โปรแกรมล็อกไว้ให้เทรดเฉพาะบัญชี Demo (บัญชีจริงยังแจ้งเตือน/ขึ้นเว็บได้ แต่ไม่ส่งคำสั่ง) — ถ้าจะใช้บัญชีจริง ใส่ \`"allow_live": true\` ใน data/local.json → "autotrade" แล้วรัน autotrade.bat ใหม่
+2. data/local.json: ntfy topic = ชื่อเดียวกับแอป ntfy บนมือถือ · account_balance = ทุนที่ใช้คำนวณ Lot ในแจ้งเตือน (บัญชีเทรดมือ)
+3. ดับเบิลคลิก **autotrade.bat** → ต้องเห็น [OK] MT5, รายชื่อสินทรัพย์ไม่มี [NOT FOUND], ntfy topic ถูก, Website: [OK]
+4. เปิดคอม + MT5 + หน้าต่างดำ + แอป Claude บนคอม ทิ้งไว้ (ตั้งคอมไม่ให้หลับ) — โปรแกรม **อัปเดตตัวเอง** เมื่อมีโค้ดใหม่บน GitHub
+### กติกาความเสี่ยง
+- ความเสี่ยงต่อไม้เท่ากับแจ้งเตือน (ระบบเดี่ยว 0.25%, ระบบพอร์ต 0.10%) คิดจาก **ทุนจริงใน MT5** · Lot ต่ำกว่าขั้นต่ำ → เปิด 0.01 lot
+- สัญญาณที่แจ้งเตือน “ข้าม” (เกินเพดานความเสี่ยงรวมต่อสินทรัพย์ 0.75%) → โปรแกรมไม่เปิดใหม่เช่นกัน (แต่ยังปิดออเดอร์เดิมถ้าเป็นสัญญาณกลับทิศ)
+- กันล้างพอร์ต: ขาดทุนรวม ≥ 25% หยุดเปิดใหม่ · ≥ 30% ปิดทุกออเดอร์ของโปรแกรม
+- บัญชีเงินจริง: โปรแกรมไม่ส่งคำสั่งจนกว่าจะตั้ง \`"allow_live": true\` ใน data/local.json → "autotrade"
 ### ปรับค่าได้ใน data/local.json → "autotrade"
-\`risk_scale\` (1 = ตามแจ้งเตือน), \`pause_total_dd_pct\`, \`close_total_dd_pct\`, \`pause_daily_dd_pct\`, \`close_daily_dd_pct\` (0 = ปิด), \`min_lot_always\` ("*" = ทุกสินทรัพย์), \`follow_cap\`, \`allow_live\`, \`dry_run\` (true = ทดลองไม่ส่งคำสั่ง), \`enabled\`
-บันทึกทุกการทำงานอยู่ที่ data/autotrade_log.jsonl · ขณะ autotrade.bat ทำงาน เว็บบนคอม (start_server) จะหยุดสแกนเอง เพื่อไม่ให้แจ้งเตือนซ้ำ
+\`risk_scale\`, \`pause_total_dd_pct\`, \`close_total_dd_pct\`, \`pause_daily_dd_pct\`, \`close_daily_dd_pct\` (0 = ปิด), \`min_lot_always\`, \`follow_cap\`, \`alert_levels\`, \`max_chase_r\`, \`allow_live\`, \`dry_run\`, \`enabled\` · บันทึกการทำงาน: data/autotrade_log.jsonl
 `],
     ["monday", "11. วันจันทร์กับ Claude", `
 - เปิดคอม → เปิด Claude ในโฟลเดอร์ \`D:\\Backtest\` → พิมพ์ เช่น “อัปเดตระบบเทรด” หรือ “ทุนเปลี่ยนเป็น 6000”
@@ -1855,6 +1870,9 @@ async function renderSignals(view) {
   S.pc = pc;
   const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
   const rpos = (pc && pc.positions) || [], rpnl = rpos.reduce((a, x) => a + (+x.profit || 0), 0);
+  const pcErr = pc && pc.scan && (pc.scan.errors || []).length && pcAge !== null && pcAge < 70
+    ? `<div class="banner" style="margin-top:10px"><span class="ic">⚠️</span><div><b>คอมสแกนบางระบบไม่สำเร็จ</b> (${pc.scan.errors.length}) — ${pc.scan.errors.slice(0, 3).map(esc).join(" · ")}</div></div>` : "";
+  const rclosed = ((pc && pc.closed) || []).slice(0, 8);
   const pcLine = !STATIC ? "" : pcAge !== null && pcAge < 70
     ? `<div class="hero-s"><span class="pos">💻 คอมออนไลน์</span> · สแกนราคา MT5 ทุกต้นชั่วโมง · ล่าสุด ${ago(pc.time)} — แจ้งเตือน + เปิดออเดอร์ภายในไม่กี่วินาที</div>`
     : `<div class="hero-s"><span class="neg">☁️ คอมออฟไลน์</span> · ใช้คลาวด์แทน (แจ้งช้า 10–60 นาที, ไม่เปิดออเดอร์อัตโนมัติ)${pc && pc.time ? ` · คอมสแกนล่าสุด ${ago(pc.time)}` : ""}</div>`;
@@ -1886,7 +1904,7 @@ async function renderSignals(view) {
   view.innerHTML = `<div class="page">
     <div class="hero">
       <div class="hero-main"><div class="hero-k">สัญญาณที่ยังเข้าได้ตอนนี้ (สำหรับเทรดมือ)</div><div class="hero-v">${actionable.length}</div>${pcLine}
-        <div class="hero-s">${STATIC ? `คลาวด์สแกนทุกชั่วโมง · ล่าสุด ${ago(STATIC.last_scan)}` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`} · แจ้งเตือนเข้ามือถือเมื่อระบบ ACTIVE มีสัญญาณ</div></div>
+        <div class="hero-s">${STATIC ? `☁️ คลาวด์ (สำรอง) สแกนล่าสุด ${STATIC.last_scan ? ago(STATIC.last_scan) : "–"} · ทำงานแทนเมื่อคอมออฟไลน์` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`}</div>${pcErr}</div>
       <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.reduce((n, x) => n + Math.max(1, (x.systems || []).length), 0), active.map((x) => x.symbol + ((x.systems || []).length > 1 ? ` ×${x.systems.length}` : "")).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
         ${STATIC ? kpi("🤖 ถือใน MT5", rpos.length, pc && pc.time ? `กำไร/ขาดทุนตอนนี้ ${rpnl >= 0 ? "+" : ""}$${fnum(rpnl, 2)} · อัปเดต ${ago(pc.time)}` : "ยังไม่มีข้อมูลจากคอม", rpos.length ? cls(rpnl) : "") : ""}
         ${kpi("กำลังติดตาม", tracking.length, "สัญญาณที่ยังไม่จบ")}
@@ -1898,6 +1916,10 @@ async function renderSignals(view) {
     ${rpos.length ? `<div class="sec-h"><h2>🤖 ออเดอร์ใน MT5 (โปรแกรมเทรดให้)</h2><span class="badge">${rpos.length}</span><span class="muted small" style="margin-left:auto">อัปเดตเมื่อเปิด/ปิดออเดอร์ และทุกต้นชั่วโมง · ${ago(pc.time)}</span></div>
       <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th class="num">Lot</th><th class="num">ราคาเข้า</th><th class="num">SL</th><th class="num">TP</th><th class="num">กำไร</th></tr></thead><tbody>
       ${rpos.map((x) => `<tr><td><b>${esc(x.symbol)}</b></td><td class="mono">${esc(x.system)}</td><td>${statusBadge(x.side === "BUY" ? "LONG" : "SHORT")}</td><td class="num">${fnum(x.lots, 2)}</td><td class="num">${x.price_open}</td><td class="num neg">${x.sl ?? "–"}</td><td class="num pos">${x.tp ?? "ไม่ตั้ง"}</td><td class="num ${cls(x.profit)}">${x.profit >= 0 ? "+" : ""}$${fnum(x.profit, 2)}</td></tr>`).join("")}
+      </tbody></table></div></div>` : ""}
+    ${rclosed.length ? `<div class="sec-h"><h2>🤖 MT5 ปิดล่าสุด</h2><span class="badge">${rclosed.length}</span></div>
+      <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th>ปิดด้วย</th><th class="num">ราคา</th><th class="num">กำไร</th></tr></thead><tbody>
+      ${rclosed.map((x) => `<tr><td>${fdt(x.time)}</td><td><b>${esc(x.symbol || "")}</b></td><td class="mono">${esc(robotTag(x))}</td><td>${x.side ? statusBadge(x.side === "BUY" ? "LONG" : "SHORT") : "–"}</td><td>${esc(x.reason || "")}</td><td class="num">${x.price ?? "–"}</td><td class="num ${cls(x.profit)}">${x.profit >= 0 ? "+" : ""}$${fnum(x.profit, 2)}</td></tr>`).join("")}
       </tbody></table></div></div>` : ""}
     <div class="sec-h"><h2>ระบบที่เฝ้าสัญญาณ</h2><a class="muted small" href="#/systems">รายละเอียดระบบ →</a></div>
     <div class="tiles">${syms.map(tile).join("")}</div>

@@ -195,7 +195,7 @@ jobs:
           for i in 1 2 3 4; do
             git fetch -q origin main
             python -m tools.merge_signals origin/main
-            git add data/signals.json data/research
+            git add data/signals.json data/research; git add data/cloud_state.json 2>/dev/null || true
             if ! git diff --cached --quiet; then git commit -q -m "cloud: update signals/research [skip ci]"; fi
             if [ "$(git rev-list --count origin/main..HEAD)" = "0" ]; then echo "nothing to push"; exit 0; fi
             git rebase -X theirs origin/main || { git rebase --abort; git reset -q --soft origin/main; continue; }

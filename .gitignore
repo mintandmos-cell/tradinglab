@@ -6,7 +6,6 @@ site/
 data/cache/
 data/local.json
 data/server.log*
-data/cloud_state.json
 data/*.tmp
 .dukascopy-cache/
 node_modules/
