@@ -60,7 +60,10 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   API (`ghLive`), falling back to the Pages copy; the Signals page shows PC online/offline. GitHub cron really fires every
   ~45-50 min, not 10. REMOTE UPDATES: between candles (min 20-50, nothing pending) it exits with code 3 when origin/main has new
   code under app/ tools/ requirements.txt; autotrade.bat loops (pull + restart) - so pushing a fix to main updates the PC. Keep the
-  bat itself stable (cmd reads a running .bat by offset). PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
+  bat itself stable (cmd reads a running .bat by offset). LIVE MT5 CLOCK: bars from the running terminal are converted with the
+  server offset measured from the newest tick (`data.mt5_utc_offset`; Exness = UTC+0, unlike the NY-close history files that
+  `settings.mt5_server_time` describes) and MT5 bars are never merged with an old cache. Chart: an open alerted signal's levels
+  win over the chart's own backtest position (`openPosition`). PC folder: D:\Backtest\TradingLab (bridge root D:\Backtest).
   Never help hide automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 

@@ -109,6 +109,35 @@ def mt5_resolve(name: str) -> str | None:
     return None
 
 
+_off_cache = {"at": 0.0, "v": None}
+
+
+def mt5_utc_offset() -> float | None:
+    """Hours the connected MT5 server clock is ahead of UTC, measured from the newest tick of the mapped symbols
+    (crypto ticks at weekends too). Brokers differ: Exness = 0, most FX brokers = New York close (+2/+3).
+    Bar times from the live terminal are converted with THIS, not with settings.mt5_server_time (that one describes
+    the exported history files)."""
+    if time.time() - _off_cache["at"] < 600:
+        return _off_cache["v"]
+    import MetaTrader5 as mt5
+    newest = 0
+    for name in set(load_settings()["mt5_symbol_map"].values()):
+        r = mt5_resolve(name)
+        t = mt5.symbol_info_tick(r) if r else None
+        if t is not None and t.time:
+            newest = max(newest, int(t.time))
+    v = None
+    if newest:
+        diff = (newest - time.time()) / 3600
+        off = round(diff * 2) / 2
+        if abs(diff - off) < 0.25 and -14 <= off <= 14:     # a tick from the last ~15 min -> a reliable reading
+            v = off
+    _off_cache.update(at=time.time(), v=v)
+    if v is not None:
+        log.info("MT5 server clock = UTC%+g", v)
+    return v
+
+
 def _fetch_mt5(sym: str, settings) -> pd.DataFrame | None:
     import MetaTrader5 as mt5
     name = mt5_resolve(settings["mt5_symbol_map"].get(sym, sym))
@@ -120,7 +149,11 @@ def _fetch_mt5(sym: str, settings) -> pd.DataFrame | None:
         log.warning("MT5 no data for %s: %s", name, mt5.last_error())
         return None
     df = pd.DataFrame(rates)
-    df.index = server_to_utc(pd.to_datetime(df["time"], unit="s"), settings)
+    off = mt5_utc_offset()
+    if off is None:                     # no fresh tick anywhere (all markets closed): the configured broker clock
+        df.index = server_to_utc(pd.to_datetime(df["time"], unit="s"), settings)
+    else:                               # the LIVE terminal's own clock (Exness = UTC+0, many brokers = NY close)
+        df.index = pd.to_datetime(df["time"], unit="s", utc=True) - pd.Timedelta(hours=off)
     return df.rename(columns={"tick_volume": "volume"})[["open", "high", "low", "close", "volume"]]
 
 
@@ -359,7 +392,8 @@ def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataF
         if hit and not refresh and time.time() - hit[0] < REFRESH_SEC:
             return hit[1]
         path = _cache_path(sym, src)
-        cached = pd.read_pickle(path) if path.exists() else None
+        # MT5 hands over 60 000 bars every time: never merge with an older cache (it may hold another broker's clock)
+        cached = pd.read_pickle(path) if path.exists() and src != "mt5" else None
         try:
             if cached is not None and os.environ.get("TL_OFFLINE"):   # research matrix jobs: prices were fetched once by "prefetch"
                 new = None

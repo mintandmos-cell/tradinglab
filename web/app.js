@@ -686,12 +686,17 @@ async function pollResearch() {
 
 // ------------------------------------------------------------------ CHART
 function openPosition(d, openSigs) {
-  // the system's own running position (exact backtest rules) first, else a fresh signal waiting for its entry bar
-  // a live signal newer than the backtest's running trade (e.g. a reversal waiting for the next open) wins: that is
-  // what the alert told the user to do
+  // the order that was really sent (the alert = what the phone, the robot and you traded) wins over the chart's own
+  // backtest position: the backtest is recomputed on the newest price feed and its entry / SL can drift a little from
+  // the alerted levels (user's report 28 Oct 2026: "SL hit but the order did not close" was the backtest's SL line)
   const s = [...openSigs].sort((a, b) => new Date(b.bar_time) - new Date(a.bar_time))[0];
-  if (d.open_trade && !(s && Math.floor(new Date(s.bar_time).getTime() / 1000) >= d.open_trade.entry_time)) return { ...d.open_trade, from: d.open_trade.entry_time, pending: false };
-  return s ? { dir: s.dir, entry: s.entry, sl: s.sl, tp: s.tp, from: Math.floor(new Date(s.bar_time).getTime() / 1000), close_by: Math.floor(new Date(s.close_by).getTime() / 1000), pending: true } : null;
+  if (s) {
+    const from = Math.floor(new Date(s.bar_time).getTime() / 1000);
+    const step = { H1: 3600, H4: 14400, D1: 86400 }[s.tf] || 3600;
+    return { dir: s.dir, entry: s.entry, sl: s.sl, tp: s.tp, from, close_by: s.close_by ? Math.floor(new Date(s.close_by).getTime() / 1000) : null,
+      pending: Date.now() / 1000 < from + 2 * step, alerted: true };
+  }
+  return d.open_trade ? { ...d.open_trade, from: d.open_trade.entry_time, pending: false } : null;
 }
 
 function drawTradeLevels(ch, d, open) {
