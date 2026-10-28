@@ -41,12 +41,14 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.124,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-28T18:00:00+00:00",
   "user_status": "new",
   "late": true,
-  "origin": "pc"
+  "origin": "pc",
+  "exit_reason": "SL",
+  "exit_price": 157.891
  },
  {
   "id": "ETHUSD-H1-vol_breakout-1793188800",
@@ -90,12 +92,14 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.097,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-28T18:00:00+00:00",
   "user_status": "new",
   "late": true,
-  "origin": "pc"
+  "origin": "pc",
+  "exit_reason": "SL",
+  "exit_price": 2356.92
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793149200",
