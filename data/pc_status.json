@@ -7,10 +7,10 @@
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T15:00:19.288491+00:00",
+ "time": "2026-10-28T15:00:37.751966+00:00",
  "account": "DEMO",
  "balance": 9990.95,
- "equity": 9990.54,
+ "equity": 9989.29,
  "positions": [
   {
    "ticket": 2757748035,
@@ -22,9 +22,23 @@
    "price_open": 2330.29,
    "sl": 2356.92,
    "tp": 2295.3,
-   "price": 2331.41,
-   "profit": -0.41,
+   "price": 2332.73,
+   "profit": -0.9,
    "time": "2026-10-28T14:00:27+00:00"
+  },
+  {
+   "ticket": 2758119554,
+   "symbol": "USDJPY",
+   "system": "TL56-H1",
+   "signal_id": "USDJPY-H1-vol_breakout-1793192400",
+   "side": "BUY",
+   "lots": 0.05,
+   "price_open": 158.183,
+   "sl": 157.891,
+   "tp": null,
+   "price": 158.159,
+   "profit": -0.76,
+   "time": "2026-10-28T15:00:21+00:00"
   }
  ],
  "closed": [
