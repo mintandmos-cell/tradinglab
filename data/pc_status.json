@@ -7,11 +7,26 @@
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T14:00:25.725462+00:00",
+ "time": "2026-10-28T14:00:44.390491+00:00",
  "account": "DEMO",
  "balance": 9990.95,
- "equity": 9990.95,
- "positions": [],
+ "equity": 9990.98,
+ "positions": [
+  {
+   "ticket": 2757748035,
+   "symbol": "ETHUSD",
+   "system": "TL56-H1",
+   "signal_id": "ETHUSD-H1-vol_breakout-1793188800",
+   "side": "SELL",
+   "lots": 0.37,
+   "price_open": 2330.29,
+   "sl": 2356.92,
+   "tp": 2295.3,
+   "price": 2330.22,
+   "profit": 0.03,
+   "time": "2026-10-28T14:00:27+00:00"
+  }
+ ],
  "closed": [
   {
    "ticket": 2754889530,
