@@ -77,9 +77,20 @@ def mt5_symbol_info(sym: str) -> dict | None:
             "digits": i.digits, "bid": i.bid, "ask": i.ask, "spread_price": (i.ask - i.bid) if i.ask and i.bid else None}
 
 
+def mt5_resolve(name: str) -> str | None:
+    """Broker symbol name: the mapped one, else a suffixed variant (XAUUSD.r, XAUUSDm, ...)."""
+    import MetaTrader5 as mt5
+    if mt5.symbol_info(name) is not None:
+        return name
+    cands = sorted((s.name for s in (mt5.symbols_get(f"*{name}*") or [])), key=len)
+    return cands[0] if cands else None
+
+
 def _fetch_mt5(sym: str, settings) -> pd.DataFrame | None:
     import MetaTrader5 as mt5
-    name = settings["mt5_symbol_map"].get(sym, sym)
+    name = mt5_resolve(settings["mt5_symbol_map"].get(sym, sym))
+    if name is None:
+        return None
     mt5.symbol_select(name, True)
     rates = mt5.copy_rates_from_pos(name, mt5.TIMEFRAME_H1, 0, 60000)
     if rates is None or len(rates) == 0:

@@ -39,6 +39,13 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   The chart tail is replaced by real recent H1 candles from the live feed's family (Binance klines for BTC/ETH; Twelve Data with the
   user's optional free key for FX/gold) — `recentBars` / `aggregate` in `web/app.js`. H4/D1 are cut on the BROKER clock everywhere
   (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time, a day = New York close.
+- Auto-trader on the PC (user's request 28 Oct 2026, DEMO account 10,000 USD): `app/autotrader.py` + `autotrade.bat` drive MT5 from
+  outside through the MetaTrader5 package (no EA). Each closed H1 bar: ACTIVE systems from GitHub latest.json, signals on MT5 broker
+  candles with the same rules as the scanner, market order + visible SL/TP, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse,
+  risk = system risk × `risk_scale` (0.35), lot below min → skip (`min_lot_up_to_pct` 0), per-symbol cap. Equity guards: total DD
+  pause 5 % / close-all 5.6 % (limit 6 %), daily pause 2.5 % / close-all 2.8 % (limit 3 %). Refuses REAL accounts unless
+  `allow_live`. Config `data/local.json → autotrade`; log `data/autotrade_log.jsonl`. Cloud alerts unchanged. Never help hide
+  automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout

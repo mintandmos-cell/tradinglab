@@ -85,7 +85,7 @@ DEFAULT_SETTINGS = {
 }
 
 # keys that belong to the person, not to the research: kept in local.json / env, never in git
-LOCAL_KEYS = ("account_balance", "account_currency", "data_source", "mt5_path", "notify", "public_url", "access_pin")
+LOCAL_KEYS = ("account_balance", "account_currency", "data_source", "mt5_path", "notify", "public_url", "access_pin", "autotrade")
 ENV_OVERRIDES = {  # GitHub Actions secrets / variables
     "TL_DATA_SOURCE": ("data_source",), "TL_ACCOUNT_BALANCE": ("account_balance",), "TL_PUBLIC_URL": ("public_url",),
     "NTFY_TOPIC": ("notify", "ntfy_topic"), "NTFY_SERVER": ("notify", "ntfy_server"),

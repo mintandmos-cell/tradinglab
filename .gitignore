@@ -11,3 +11,5 @@ data/*.tmp
 .dukascopy-cache/
 node_modules/
 data/research/parts/
+data/autotrade_state.json
+data/autotrade_log.jsonl
