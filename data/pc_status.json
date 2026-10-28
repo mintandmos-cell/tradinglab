@@ -1,17 +1,14 @@
 {
- "last_scan_hour": "2026-10-28 20:00:00+00:00",
- "new_signals": [
-  "XAUUSD-H1-vol_breakout-1793214000",
-  "BTCUSD-H1-vol_breakout-1793214000"
- ],
+ "last_scan_hour": "2026-10-28 21:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T20:29:03.075174+00:00",
+ "time": "2026-10-28T21:00:20.635275+00:00",
  "account": "DEMO",
  "balance": 9965.61,
- "equity": 9946.69,
+ "equity": 9958.17,
  "positions": [
   {
    "ticket": 2760562520,
@@ -23,8 +20,8 @@
    "price_open": 4076.425,
    "sl": 4051.74,
    "tp": null,
-   "price": 4057.506,
-   "profit": -18.92,
+   "price": 4068.994,
+   "profit": -7.44,
    "time": "2026-10-28T20:00:58+00:00"
   }
  ],
