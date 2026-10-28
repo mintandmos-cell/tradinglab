@@ -265,7 +265,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
     if a.trade_mode == mt5.ACCOUNT_TRADE_MODE_REAL and not c["allow_live"]:
         if not st.get("warned_live"):
             _log("refused", reason="REAL account — set autotrade.allow_live = true to trade it")
-            print("⛔ บัญชีนี้เป็นบัญชีจริง — โปรแกรมไม่ส่งคำสั่ง (ตั้ง autotrade.allow_live = true ถ้าต้องการ)")
+            print("[STOP] REAL account - no orders are sent (set autotrade.allow_live = true in data/local.json to allow)")
             st["warned_live"] = True
         st["pending"] = []
         return
@@ -307,29 +307,30 @@ def main() -> None:
     c = cfg()
     settings = load_settings()
     if settings.get("data_source") == "free":
-        print("❌ data/local.json ตั้ง data_source = free — เปลี่ยนเป็น auto เพื่อใช้ราคาจาก MT5")
+        print("[X] data/local.json has data_source = free - change it to auto to use MT5 prices")
         return
     if not data._mt5_init(settings):
-        print("❌ เชื่อม MT5 ไม่ได้ — เปิดโปรแกรม MT5 และล็อกอินก่อน แล้วรันใหม่")
+        print("[X] Cannot connect to MT5 - open MT5, log in, then run again")
         return
     mt5 = _mt5()
     a = mt5.account_info()
-    print(f"✅ MT5: {a.server} · บัญชี {a.login} · {_kind()} · ทุน {a.balance:,.2f} {a.currency}")
+    print(f"[OK] MT5: {a.server} | account {a.login} | {_kind()} | balance {a.balance:,.2f} {a.currency}")
     if not mt5.terminal_info().trade_allowed:
-        print("⚠️  ใน MT5 ให้กดปุ่ม 'Algo Trading' ให้เป็นสีเขียว ไม่งั้นส่งคำสั่งไม่ได้")
+        print("[!] Turn on the 'Algo Trading' button in MT5 (green) - otherwise orders are rejected")
     names = {sym: data.mt5_resolve(settings["mt5_symbol_map"].get(sym, sym)) for sym in settings["mt5_symbol_map"]}
-    print("   ชื่อสินทรัพย์ใน MT5: " + " · ".join(f"{k}→{v or '❌ ไม่พบ'}" for k, v in names.items()))
+    print("   MT5 symbols: " + " | ".join(f"{k}->{v or '[NOT FOUND]'}" for k, v in names.items()))
     topic = (settings.get("notify") or {}).get("ntfy_topic") or ""
-    print(f"   แจ้งเตือนมือถือ: ntfy topic = {topic or '(ยังไม่ได้ตั้ง)'} — ต้องเป็นชื่อเดียวกับที่แอป ntfy บนมือถือติดตาม")
-    print(f"   เว็บไซต์: {'เชื่อม GitHub ได้ — สัญญาณจากคอมขึ้นเว็บทันที' if ghsync.token() else '⚠️ ไม่มี GitHub token — สัญญาณจากคอมจะไม่ขึ้นเว็บ'}")
-    print(f"   Lot ในข้อความแจ้งเตือนคิดจากทุน {float(settings['account_balance']):,.0f} USD (หน้าตั้งค่า) · "
-          f"โปรแกรมเทรดคิดจากทุนจริงใน MT5")
+    print(f"   Phone alerts: ntfy topic = {topic or '(not set)'}  <- must be the topic your phone's ntfy app subscribes to")
+    print(f"   Website: {'[OK] GitHub connected - PC signals go to the website' if ghsync.token() else '[!] no GitHub token - PC signals will NOT reach the website'}")
+    print(f"   Alert lots use balance {float(settings['account_balance']):,.0f} USD (Settings page) | "
+          f"robot lots use the real MT5 balance")
     st = read_json(STATE_FILE, {})
     st.setdefault("start_balance", float(c.get("start_balance") or a.balance))
-    off = lambda v: f"{v}%" if float(v or 0) > 0 else "ปิด"
-    print(f"   กันล้างพอร์ต: ขาดทุนรวม {off(c['pause_total_dd_pct'])} หยุดเปิดใหม่ · {off(c['close_total_dd_pct'])} ปิดทั้งหมด "
-          f"(จากทุนเริ่ม {st['start_balance']:,.2f}) · ความเสี่ยง x{c['risk_scale']}"
-          + (" · DRY RUN (ไม่ส่งคำสั่งจริง)" if c["dry_run"] else ""))
+    off = lambda v: f"{v}%" if float(v or 0) > 0 else "off"
+    print(f"   Anti-wipeout: total loss {off(c['pause_total_dd_pct'])} = no new trades | {off(c['close_total_dd_pct'])} = close all "
+          f"(start balance {st['start_balance']:,.2f}) | risk x{c['risk_scale']}"
+          + (" | DRY RUN (no real orders)" if c["dry_run"] else ""))
+    print("   Running. Scans + trades right after every H1 close. Keep this window and MT5 open. Log: data/autotrade_log.jsonl")
     _log("start", login=a.login, server=a.server, balance=a.balance, kind=_kind(), config=c)
     last_hour = st.get("last_hour")
     while True:
@@ -349,14 +350,14 @@ def main() -> None:
                          positions=len(_positions(c)))
                 write_json(STATE_FILE, st)
         except KeyboardInterrupt:
-            print("หยุดแล้ว")
+            print("stopped")
             return
         except Exception as e:
             _log("error", reason=repr(e))
         try:
             time.sleep(15)
         except KeyboardInterrupt:
-            print("หยุดแล้ว")
+            print("stopped")
             return
 
 
