@@ -92,12 +92,14 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.013,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-28T22:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "pc"
+  "origin": "pc",
+  "exit_reason": "SL",
+  "exit_price": 4051.74
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793192400",
