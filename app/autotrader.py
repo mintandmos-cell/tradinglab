@@ -55,6 +55,8 @@ DEFAULTS = {
     "close_daily_dd_pct": 2.8,
     "min_lot_up_to_pct": 0.0,      # 0 = skip a trade whose lot is below the broker minimum (user's choice);
                                    # e.g. 0.30 = trade the minimum lot when that risks at most 0.30 % of the balance
+    "min_lot_always": ["XAUUSD"],  # user's choice 28 Oct 2026: gold always trades at least the minimum lot, even when
+                                   # that risks more than planned (and the per-symbol cap is not applied to it)
     "start_balance": None,         # set on the first run (the demo's starting balance)
     "magic": 5_600_000,
     "deviation_points": 30,
@@ -178,16 +180,17 @@ def _open(c: dict, sym: str, name: str, system: dict, d: int, sl_dist: float, rr
     step, vmin, vmax = info.volume_step or 0.01, info.volume_min or 0.01, info.volume_max or 100
     lots = min(vmax, math.floor(raw / step + 1e-9) * step)
     tag = _tag(system["strategy"], system["tf"])
+    forced = sym in (c.get("min_lot_always") or [])
     if lots < vmin:
         min_risk_pct = vmin * sl_dist * vpu / balance * 100
-        if min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
+        if not forced and min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
             _log("skip", symbol=sym, system=tag,
                  reason=f"lot {raw:.4f} < min {vmin} (risk {risk_pct:.3f}%; {vmin} lot would risk {min_risk_pct:.2f}%)")
             return
         lots = vmin
     risk_usd = lots * sl_dist * vpu
     cap_usd = balance * float(c["max_symbol_risk_pct"]) * float(c["risk_scale"]) / 100
-    if open_risk_usd + risk_usd > cap_usd + 1e-6:
+    if not forced and open_risk_usd + risk_usd > cap_usd + 1e-6:
         _log("skip", symbol=sym, system=tag, reason=f"symbol risk cap {cap_usd:.2f} USD reached")
         return
     digits = info.digits
