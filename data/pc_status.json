@@ -1,11 +1,13 @@
 {
- "last_scan_hour": "2026-10-28 13:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-10-28 14:00:00+00:00",
+ "new_signals": [
+  "ETHUSD-H1-vol_breakout-1793188800"
+ ],
  "scan": {
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-28T13:00:20.227086+00:00",
+ "time": "2026-10-28T14:00:25.725462+00:00",
  "account": "DEMO",
  "balance": 9990.95,
  "equity": 9990.95,
