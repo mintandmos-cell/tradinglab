@@ -296,6 +296,23 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
     st["pending"] = keep
 
 
+_upd = {"at": 0.0}
+CODE_PATHS = ["app", "tools", "requirements.txt"]
+
+
+def code_update_available() -> bool:
+    """Does origin/main have newer program code than this folder? (data files are ignored)"""
+    import subprocess
+    try:
+        subprocess.run(["git", "fetch", "-q", "origin", "main"], capture_output=True, timeout=60, check=True)
+        out = subprocess.run(["git", "diff", "--name-only", "HEAD", "origin/main", "--", *CODE_PATHS],
+                             capture_output=True, text=True, timeout=30, check=True).stdout
+        return bool(out.strip())
+    except Exception as e:
+        log.warning("update check failed: %s", e)
+        return False
+
+
 def main() -> None:
     import sys
     for f in (sys.stdout, sys.stderr):
@@ -349,6 +366,15 @@ def main() -> None:
                     _log("bar", hour=hour, guard=st.get("guard"), equity=st.get("equity"), total_dd=st.get("total_dd"),
                          positions=len(_positions(c)))
                 write_json(STATE_FILE, st)
+                # remote updates (user's request 28 Oct 2026: Claude fixes the program while the user is away): when the
+                # program code on GitHub changed, exit with code 3 -> autotrade.bat pulls the new code and starts again.
+                # Checked between candles only (minute 20-50) and never with an order still waiting.
+                if 20 <= now.minute <= 50 and not st.get("pending") and time.time() - _upd["at"] > 300:
+                    _upd["at"] = time.time()
+                    if code_update_available():
+                        _log("update", reason="new program code on GitHub - restarting")
+                        print("Update found on GitHub - restarting with the new code ...")
+                        raise SystemExit(3)
         except KeyboardInterrupt:
             print("stopped")
             return
