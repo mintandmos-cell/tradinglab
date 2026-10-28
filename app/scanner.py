@@ -129,6 +129,8 @@ def scan_once() -> list[dict]:
             for cfg in research.live_systems(entry):
                 if cfg.get("status") not in track or not cfg.get("params"):
                     continue
+                if research._forced_off(settings, sym, cfg):     # veto takes effect at once, not only at the next research merge
+                    continue
                 try:
                     key = (sym, cfg["tf"])
                     df = frames.get(key)
@@ -258,7 +260,13 @@ def loop(stop: threading.Event) -> None:
             if research_due(settings) and not research.STATE["running"]:
                 log.info("scheduled research starting")
                 research.run_in_background()
-            scan_once()
+            # the PC auto-trader (autotrade.bat) scans, alerts and trades each candle itself; a second scanner here would
+            # record the signal first and the robot would never see it as new -> stay quiet while its heartbeat is fresh
+            hb = SIGNALS_FILE.parent / "autotrade_state.json"
+            if hb.exists() and time.time() - hb.stat().st_mtime < 120:
+                STATE["note"] = "auto-trader is running: it scans and alerts"
+            else:
+                scan_once()
         except Exception as e:
             STATE["last_error"] = repr(e)
             log.exception("scan loop error")

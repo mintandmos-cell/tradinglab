@@ -39,15 +39,17 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   The chart tail is replaced by real recent H1 candles from the live feed's family (Binance klines for BTC/ETH; Twelve Data with the
   user's optional free key for FX/gold) — `recentBars` / `aggregate` in `web/app.js`. H4/D1 are cut on the BROKER clock everywhere
   (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time, a day = New York close.
-- Auto-trader on the PC (user's request 28 Oct 2026, DEMO account 10,000 USD): `app/autotrader.py` + `autotrade.bat` drive MT5 from
-  outside through the MetaTrader5 package (no EA). Each closed H1 bar: ACTIVE systems from GitHub latest.json, signals on MT5 broker
-  candles with the same rules as the scanner, market order + visible SL/TP, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse,
-  risk = system risk × `risk_scale` (1.0 = same as alerts). Lot below min → trade the MIN lot for every symbol (`min_lot_always` "*",
-  user's choice 28 Oct 2026; no per-symbol cap then). Opens/closes push "🤖 DEMO" via ntfy at once. User dropped the prop 6 % / 3 %
-  limits (28 Oct 2026, may go live: "just don't blow the account"): only an anti-wipeout guard — total DD 25 % pause / 30 % close-all,
-  daily guards 0 = off. Refuses REAL accounts unless
-  `allow_live`. Config `data/local.json → autotrade`; log `data/autotrade_log.jsonl`. Cloud alerts unchanged. Never help hide
-  automation from a prop firm (The5ers needs written approval for automated trading).
+- Auto-trader on the PC (user's requests 28 Oct 2026; DEMO 10,000 USD, maybe real later): `app/autotrader.py` + `autotrade.bat` drive MT5
+  from outside through the MetaTrader5 package (no EA). ONE SIGNAL, THREE PLACES: each UTC hour + 5 s it `ghsync.pull`s latest.json +
+  signals.json from GitHub, runs the cloud's own `scanner.scan_once` on MT5 candles (same ids, same alert text pushed at once), then
+  `ghsync.publish`es the new signals to GitHub (contents API, token = local.json `github_token` or the PC's git credential) -> site
+  rebuild (push path data/signals.json) and the cloud scan finds the id and does not alert again; the cloud commit step unions
+  signals.json by id (`tools/merge_signals.py`). New ACTIVE signals are executed: market order, visible SL (signal's sl_dist), TP rr x
+  SL, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse, retry 10 min. Risk = signal risk x `risk_scale` (1.0) on the MT5
+  balance; below min lot -> min lot (`min_lot_always` "*"); signals the alert marks `capped` are skipped (`follow_cap`). Anti-wipeout
+  guard only (user dropped 6 %/3 %): total DD 25 % pause / 30 % close-all, daily 0 = off. Refuses REAL accounts unless `allow_live`.
+  While its heartbeat (data/autotrade_state.json) is fresh the local server's scanner loop stays quiet. Scanner skips `force_off`
+  systems at once. Never help hide automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
 ## Layout
