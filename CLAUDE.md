@@ -42,9 +42,10 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Auto-trader on the PC (user's request 28 Oct 2026, DEMO account 10,000 USD): `app/autotrader.py` + `autotrade.bat` drive MT5 from
   outside through the MetaTrader5 package (no EA). Each closed H1 bar: ACTIVE systems from GitHub latest.json, signals on MT5 broker
   candles with the same rules as the scanner, market order + visible SL/TP, comment `TL{no}-{TF}`, magic 5600000, stop-and-reverse,
-  risk = system risk × `risk_scale` (0.35), lot below min → skip (`min_lot_up_to_pct` 0), per-symbol cap; EXCEPT `min_lot_always`
-  (["XAUUSD"], user's choice 28 Oct 2026): gold always trades the minimum lot, no per-symbol cap. Opens/closes push "🤖 DEMO" via ntfy at once. Equity guards: total DD
-  pause 5 % / close-all 5.6 % (limit 6 %), daily pause 2.5 % / close-all 2.8 % (limit 3 %). Refuses REAL accounts unless
+  risk = system risk × `risk_scale` (1.0 = same as alerts). Lot below min → trade the MIN lot for every symbol (`min_lot_always` "*",
+  user's choice 28 Oct 2026; no per-symbol cap then). Opens/closes push "🤖 DEMO" via ntfy at once. User dropped the prop 6 % / 3 %
+  limits (28 Oct 2026, may go live: "just don't blow the account"): only an anti-wipeout guard — total DD 25 % pause / 30 % close-all,
+  daily guards 0 = off. Refuses REAL accounts unless
   `allow_live`. Config `data/local.json → autotrade`; log `data/autotrade_log.jsonl`. Cloud alerts unchanged. Never help hide
   automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.

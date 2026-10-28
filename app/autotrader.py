@@ -15,9 +15,8 @@ How it works
   * lot = risk % of the balance / SL distance (risk = the system's risk x risk_scale); below the broker's minimum lot
     the trade is skipped (user's choice); open risk per symbol is capped like the alerts (0.75 % x risk_scale)
   * account guards (equity, measured like a prop firm):
-      - total: loss from the starting balance >= pause_total_dd_pct -> no new trades; >= close_total_dd_pct -> close all
-      - daily: loss from the day's starting equity (broker midnight) >= pause_daily_dd_pct -> no new trades today;
-               >= close_daily_dd_pct -> close all
+      - total: loss from the starting balance >= pause_total_dd_pct (25 %) -> no new trades; >= close_total_dd_pct (30 %) -> close all
+      - daily: loss from the day's starting equity (broker midnight) — off by default (0); set the *_daily_dd_pct to use it
   * safety: trades only on a DEMO account unless allow_live = true; dry_run = true only logs.
 
 Settings live in data/local.json -> "autotrade" (never committed). Start with autotrade.bat.
@@ -46,17 +45,18 @@ DEFAULTS = {
     "enabled": True,
     "dry_run": False,              # true = log what it would do, send nothing to MT5
     "allow_live": False,           # refuse to trade a REAL account unless set to true
-    "risk_scale": 0.35,            # x each system's risk (0.25 % single, 0.10 % portfolio) -> 0.0875 % / 0.035 %
-                                   # history of all ACTIVE systems together: max DD ~15.7 % at x1 -> ~5.5 % at x0.35
+    "risk_scale": 1.0,             # x each system's risk (0.25 % single, 0.10 % portfolio) = same sizing as the alerts
+                                   # (history of all ACTIVE systems together: max DD ~15.7 % at x1; 0.35 was for the old 6 % limit)
     "max_symbol_risk_pct": 0.75,   # x risk_scale
-    "pause_total_dd_pct": 5.0,     # account limit 6 %: stop opening trades at 5 %
-    "close_total_dd_pct": 5.6,     # ... close everything at 5.6 %
-    "pause_daily_dd_pct": 2.5,     # daily limit 3 %
-    "close_daily_dd_pct": 2.8,
+    # user's rule 28 Oct 2026: no prop-style 6 % / 3 % limits any more, only "don't blow the account" (0 = off)
+    "pause_total_dd_pct": 25.0,    # loss from the starting balance: stop opening new trades
+    "close_total_dd_pct": 30.0,    # ... close everything
+    "pause_daily_dd_pct": 0,       # daily limits off
+    "close_daily_dd_pct": 0,
     "min_lot_up_to_pct": 0.0,      # 0 = skip a trade whose lot is below the broker minimum (user's choice);
                                    # e.g. 0.30 = trade the minimum lot when that risks at most 0.30 % of the balance
-    "min_lot_always": ["XAUUSD"],  # user's choice 28 Oct 2026: gold always trades at least the minimum lot, even when
-                                   # that risks more than planned (and the per-symbol cap is not applied to it)
+    "min_lot_always": "*",         # user's choice 28 Oct 2026: every symbol ("*", or a list like ["XAUUSD"]) trades at least the
+                                   # minimum lot even when that risks more than planned (no per-symbol cap for those)
     "start_balance": None,         # set on the first run (the demo's starting balance)
     "magic": 5_600_000,
     "deviation_points": 30,
@@ -84,7 +84,10 @@ def _log(event: str, **kw) -> None:
 def _push(c: dict, title: str, msg: str) -> None:
     if c.get("notify"):
         try:
-            notify.send("🤖 DEMO · " + title, msg, priority=3, tags=["robot"])
+            mt5 = _mt5()
+            a = mt5.account_info()
+            kind = "DEMO" if a is None or a.trade_mode == mt5.ACCOUNT_TRADE_MODE_DEMO else "REAL"
+            notify.send(f"🤖 {kind} · " + title, msg, priority=3, tags=["robot"])
         except Exception:
             pass
 
@@ -180,7 +183,8 @@ def _open(c: dict, sym: str, name: str, system: dict, d: int, sl_dist: float, rr
     step, vmin, vmax = info.volume_step or 0.01, info.volume_min or 0.01, info.volume_max or 100
     lots = min(vmax, math.floor(raw / step + 1e-9) * step)
     tag = _tag(system["strategy"], system["tf"])
-    forced = sym in (c.get("min_lot_always") or [])
+    mla = c.get("min_lot_always") or []
+    forced = mla == "*" or sym in mla
     if lots < vmin:
         min_risk_pct = vmin * sl_dist * vpu / balance * 100
         if not forced and min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
@@ -226,9 +230,10 @@ def _guards(c: dict, st: dict) -> str:
     total_dd = (start - a.equity) / start * 100
     day_dd = (st["day_equity"] - a.equity) / st["day_equity"] * 100
     st.update(equity=float(a.equity), balance=float(a.balance), total_dd=round(total_dd, 2), day_dd=round(day_dd, 2))
-    if total_dd >= c["close_total_dd_pct"] or day_dd >= c["close_daily_dd_pct"]:
+    hit = lambda v, lim: float(lim or 0) > 0 and v >= float(lim)
+    if hit(total_dd, c["close_total_dd_pct"]) or hit(day_dd, c["close_daily_dd_pct"]):
         return "close"
-    if total_dd >= c["pause_total_dd_pct"] or day_dd >= c["pause_daily_dd_pct"]:
+    if hit(total_dd, c["pause_total_dd_pct"]) or hit(day_dd, c["pause_daily_dd_pct"]):
         return "pause"
     return "ok"
 
@@ -336,8 +341,9 @@ def main() -> None:
     st = read_json(STATE_FILE, {})
     if not st.get("start_balance"):
         st["start_balance"] = float(c.get("start_balance") or a.balance)
-    print(f"   เพดาน: รวม {c['close_total_dd_pct']}% (พักที่ {c['pause_total_dd_pct']}%) จากทุนเริ่ม {st['start_balance']:,.2f} · "
-          f"ต่อวัน {c['close_daily_dd_pct']}% (พักที่ {c['pause_daily_dd_pct']}%) · ความเสี่ยง x{c['risk_scale']}"
+    off = lambda v: f"{v}%" if float(v or 0) > 0 else "ปิด"
+    print(f"   กันล้างพอร์ต: ขาดทุนรวม {off(c['pause_total_dd_pct'])} หยุดเปิดใหม่ · {off(c['close_total_dd_pct'])} ปิดทั้งหมด "
+          f"(จากทุนเริ่ม {st['start_balance']:,.2f}) · ต่อวัน {off(c['close_daily_dd_pct'])} · ความเสี่ยง x{c['risk_scale']}"
           + (" · DRY RUN (ไม่ส่งคำสั่งจริง)" if c["dry_run"] else ""))
     _log("start", login=a.login, server=a.server, balance=a.balance, demo=a.trade_mode == mt5.ACCOUNT_TRADE_MODE_DEMO, config=c)
     last_bar = st.get("last_bar")
