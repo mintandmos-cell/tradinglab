@@ -139,12 +139,14 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.012,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-29T04:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "pc"
+  "origin": "pc",
+  "exit_reason": "SL",
+  "exit_price": 4036.43
  },
  {
   "id": "BTCUSD-H1-vol_breakout-1793214000",
