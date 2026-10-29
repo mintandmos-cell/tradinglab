@@ -9,11 +9,54 @@
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-29T02:00:28.007958+00:00",
+ "time": "2026-10-29T02:00:54.780939+00:00",
  "account": "DEMO",
  "balance": 9940.92,
- "equity": 9940.92,
- "positions": [],
+ "equity": 9939.19,
+ "positions": [
+  {
+   "ticket": 2761696400,
+   "symbol": "XAUUSD",
+   "system": "TL56-H1",
+   "signal_id": "XAUUSD-H1-vol_breakout-1793235600",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 4061.578,
+   "sl": 4036.43,
+   "tp": null,
+   "price": 4061.218,
+   "profit": -0.36,
+   "time": "2026-10-29T02:00:30+00:00"
+  },
+  {
+   "ticket": 2761696486,
+   "symbol": "BTCUSD",
+   "system": "TL56-H1",
+   "signal_id": "BTCUSD-H1-vol_breakout-1793235600",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 79841.14,
+   "sl": 80573.53,
+   "tp": 78570.55,
+   "price": 79873.25,
+   "profit": -0.32,
+   "time": "2026-10-29T02:00:31+00:00"
+  },
+  {
+   "ticket": 2761696789,
+   "symbol": "ETHUSD",
+   "system": "TL56-H1",
+   "signal_id": "ETHUSD-H1-vol_breakout-1793235600",
+   "side": "SELL",
+   "lots": 0.31,
+   "price_open": 2306.61,
+   "sl": 2337.91,
+   "tp": 2257.59,
+   "price": 2309.99,
+   "profit": -1.05,
+   "time": "2026-10-29T02:00:33+00:00"
+  }
+ ],
  "closed": [
   {
    "ticket": 2760562520,
