@@ -589,9 +589,12 @@
   "reverse_of": "SHORT",
   "price_source": "yahoo",
   "cost_r": 0.014,
-  "outcome": "open",
-  "outcome_r": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
   "user_status": "new",
-  "note": "re-check 28 Oct: tracked with the alerted SL 4020.87 (old tracking used a recomputed SL)"
+  "note": "re-check 28 Oct: tracked with the alerted SL 4020.87 (old tracking used a recomputed SL)",
+  "exit_reason": "SL",
+  "exit_time": "2026-10-29T08:00:00+00:00",
+  "exit_price": 4020.87
  }
 ]
