@@ -1,11 +1,15 @@
 {
- "last_scan_hour": "2026-10-29 01:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-10-29 02:00:00+00:00",
+ "new_signals": [
+  "XAUUSD-H1-vol_breakout-1793235600",
+  "BTCUSD-H1-vol_breakout-1793235600",
+  "ETHUSD-H1-vol_breakout-1793235600"
+ ],
  "scan": {
   "checked": 10,
   "errors": []
  },
- "time": "2026-10-29T01:00:16.601099+00:00",
+ "time": "2026-10-29T02:00:28.007958+00:00",
  "account": "DEMO",
  "balance": 9940.92,
  "equity": 9940.92,
