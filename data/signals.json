@@ -896,10 +896,12 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.004,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
-  "user_status": "new"
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-30T01:00:00+00:00",
+  "user_status": "new",
+  "exit_reason": "SL",
+  "exit_price": 3992.67
  },
  {
   "id": "XAUUSD-H1-ichimoku_tk-1793120400",
