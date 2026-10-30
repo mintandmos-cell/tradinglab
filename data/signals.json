@@ -237,12 +237,14 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.069,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-10-30T16:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "cloud",
+  "exit_reason": "SL",
+  "exit_price": 157.646
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793318400",
