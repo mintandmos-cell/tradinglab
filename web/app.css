@@ -49,6 +49,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .badge.ACTIVE, .badge.win, .badge.LONG { background: var(--long-bg); color: var(--long); border-color: rgba(22,199,132,.35); }
 .badge.OFF, .badge.loss, .badge.SHORT { background: var(--short-bg); color: var(--short); border-color: rgba(239,68,68,.35); }
 .badge.WATCH { background: rgba(167,139,250,.12); color: var(--watch); border-color: rgba(167,139,250,.35); }
+.badge.TRIAL { background: rgba(56,189,248,.12); color: #38bdf8; border-color: rgba(56,189,248,.35); }
 .badge.open, .badge.new { background: var(--accent-bg); color: var(--accent2); border-color: rgba(59,130,246,.35); }
 .badge.time, .badge.skipped { background: var(--warn-bg); color: var(--warn); border-color: rgba(245,165,36,.35); }
 .badge.taken { background: var(--long-bg); color: var(--long); border-color: rgba(22,199,132,.35); }

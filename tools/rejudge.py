@@ -14,6 +14,7 @@ from app.config import load_settings, write_json
 def main() -> int:
     lat = research.latest()
     settings = load_settings()
+    by_sym = {}
     for sym, r in list(lat.get("symbols", {}).items()):
         cands = r.get("candidates") or []
         if not cands:
@@ -28,14 +29,18 @@ def main() -> int:
         old = r.get("previous") or {}
         prev_sym = {"quarter": old.get("quarter"), "history_source": old.get("history_source"),
                     "systems": [{"strategy": s, "tf": t} for s, t in old.get("systems", [])]}
+        by_sym[sym] = parts
         new = research.merge_symbol(sym, parts, settings, prev_sym)
         new["previous"] = r.get("previous")
         lat["symbols"][sym] = new
         print(sym, r.get("status"), "->", new["status"], [(x["strategy"], x["tf"]) for x in new["systems"]])
-    # portfolio: candidates that were only 'kept' lose ACTIVE unless they pass every gate now
-    for pc in (lat.get("portfolio") or {}).get("candidates", []):
-        if pc.get("kept") and not all(g["pass"] for g in pc["gates"]):
-            pc["status"], pc["kept"] = ("WATCH" if pc["t_month"] >= 2 and pc["exp"] > 0 else "OFF"), False
+    # portfolio: judged again from the same parts (nothing carried over: the price histories changed)
+    if len(by_sym) >= 4:
+        lat["portfolio"] = research.portfolio_research(by_sym, settings, None)
+        for pc in lat["portfolio"]["candidates"]:
+            print("portfolio", pc["strategy"], pc["tf"], pc["status"], pc["t_month"], "need", lat["portfolio"]["t_needed"])
+            if pc["status"] != "WATCH":
+                continue
     write_json(research.LATEST_RESEARCH, lat)
     return 0
 

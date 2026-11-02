@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import indicators as ta
 from .data import add_months, period_start
-from .engine import cost_price, exit_rules, hold_bars, run, simulate, week_guard
+from .engine import cost_price, exit_rules, hold_bars, rollover_weights, run, simulate, swap_r, week_guard
 from .strategies import signals as strat_signals
 from .metrics import summarize
 from .strategies import grid
@@ -125,6 +125,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
     a = ta.atr(h, l, c, 14)
     idx = df.index
     cost = cost_price(spec)
+    W = rollover_weights(idx, spec)
     rules = exit_rules()
     if rules["friday"]:
         wlast, wblock, _ = week_guard(idx, tf)
@@ -157,9 +158,10 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
                 d = 1 if rng.random() < p_long else -1
                 sl_dist = f["p"]["sl_atr"] * a[i]
                 res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost,
-                               int(wlast[i + 1]) if wlast is not None else None, opp)
+                               int(wlast[i + 1]) if wlast is not None else None, opp,
+                               float(f["p"].get("trail_atr") or 0) * a[i])
                 if res:
-                    rs.append(d * (res[1] - res[3]) / sl_dist)
+                    rs.append(d * (res[1] - res[3]) / sl_dist - swap_r(W, i + 1, res[0], d, sl_dist, spec))
         means[s] = np.mean(rs) if rs else 0.0
     actual = float(np.mean([t["r"] for t in trades]))
     return {"sims": sims, "actual_exp": round(actual, 4), "random_mean": round(float(means.mean()), 4),

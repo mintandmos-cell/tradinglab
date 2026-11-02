@@ -46,6 +46,32 @@ def adjusted_t(n_candidates: int, alpha: float = 0.05) -> float:
     return round(NormalDist().inv_cdf(1 - p), 2)
 
 
+def effective_tests(series: list) -> tuple[float, int]:
+    """How many INDEPENDENT tests a set of candidates is worth (user, 2 Nov 2026: similar systems must not count as
+    separate lottery tickets). Weekly OOS R of every candidate -> correlation matrix -> eigenvalues -> Li & Ji (2005)
+    effective number M_eff = sum over eigenvalues of [lambda >= 1] + (lambda - floor(lambda)). Identical candidates
+    count once, unrelated ones count fully. The same idea as the Deflated Sharpe Ratio's 'independent trials'
+    (Bailey & Lopez de Prado 2014). Returns (M_eff, number of usable series)."""
+    cols = [x for x in series if x is not None and len(x) and float(np.std(x.to_numpy())) > 0]
+    k = len(cols)
+    if k <= 1:
+        return float(max(k, 1)), k
+    M = pd.concat(cols, axis=1).fillna(0.0).to_numpy()
+    C = np.nan_to_num(np.corrcoef(M.T))
+    np.fill_diagonal(C, 1.0)
+    lam = np.clip(np.linalg.eigvalsh(C), 0, None)
+    m_eff = float(np.sum((lam >= 1).astype(float) + (lam - np.floor(lam))))
+    return max(1.0, min(m_eff, float(k))), k
+
+
+def weekly_r(oos_eq: list) -> pd.Series | None:
+    """OOS trades [(unix time, R), …] -> R summed per calendar week."""
+    if not oos_eq:
+        return None
+    t = pd.to_datetime([int(x[0]) for x in oos_eq], unit="s", utc=True)
+    return pd.Series([float(x[1]) for x in oos_eq], index=t).resample("W").sum()
+
+
 def only_mt_failed(gates: list[dict]) -> bool:
     """True when the multiple-testing gate (the 4th, "t ปรับตาม…") is the only failed gate."""
     failed = [i for i, x in enumerate(gates) if not x["pass"]]
@@ -59,7 +85,7 @@ def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: in
         ("OOS trades", o["trades"], g["min_oos_trades"], o["trades"] >= g["min_oos_trades"]),
         ("OOS expectancy (R)", o["expectancy"], g["min_expectancy"], o["expectancy"] >= g["min_expectancy"]),
         ("OOS t-stat", o["t_stat"], g["min_t"], o["t_stat"] >= g["min_t"]),
-        (f"t ปรับตามจำนวนระบบที่เทียบ ({n_cand})", o["t_stat"], t_need, o["t_stat"] >= t_need),
+        (f"t ปรับตามจำนวนการทดสอบอิสระ (~{n_cand})", o["t_stat"], t_need, o["t_stat"] >= t_need),
         ("MC PF @95%", mc.get("pf_p5"), g["min_mc_pf_p5"], (mc.get("pf_p5") or 0) >= g["min_mc_pf_p5"]),
         ("ชนะการสุ่มจุดเข้า (percentile)", rb["percentile"] if rb else None, g["min_random_pct"],
          bool(rb) and rb["percentile"] >= g["min_random_pct"]),
@@ -152,7 +178,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
     from collections import defaultdict
     tfs = settings["research"].get("timeframes", ["H1", "H4", "D1"])
     n_port = (len(STRATEGIES) + len(RETIRED)) * len(tfs)
-    t_need = adjusted_t(n_port)
+    t_need = adjusted_t(n_port)          # replaced below by the effective number of independent portfolio candidates
     cands = []
     for sid in STRATEGIES:
         for tf in tfs:
@@ -199,11 +225,25 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
             ]
             ok = all(g["pass"] for g in gates)
             status = "ACTIVE" if ok else ("WATCH" if t_m >= 2 and pr.mean() > 0 else "OFF")
-            cands.append({"strategy": sid, "name": STRATEGIES[sid]["name"], "tf": tf, "status": status, "t_month": round(t_m, 2),
+            cands.append({"_mr": pd.Series(mr, index=[str(m) for m in months]),
+                          "strategy": sid, "name": STRATEGIES[sid]["name"], "tf": tf, "status": status, "t_month": round(t_m, 2),
                           "months": len(mr), "trades": len(pr), "exp": round(float(pr.mean()), 4), "net_r": round(float(pr.sum()), 1),
                           "r_month": round(float(mr.mean()), 3), "breadth": round(breadth, 2), "gates": gates, "legs": legs,
                           "max_dd_r": round(float(np.max(np.maximum.accumulate(np.cumsum(mr)) - np.cumsum(mr))), 1) if len(mr) else None})
     # same quarter: portfolio systems already ACTIVE stay until the quarter ends
+    n_raw = n_port
+    if settings["research"].get("effective_trials", True) and cands:
+        m_eff, k = effective_tests([c["_mr"] for c in cands])
+        n_port = max(1, int(round(m_eff * n_raw / max(k, 1))))
+        t_need = adjusted_t(n_port)
+        for c in cands:
+            g1 = c["gates"][1]
+            g1.update(name=f"t รายเดือนของพอร์ต (ปรับตาม ~{n_port} การทดสอบอิสระ จาก {n_raw})", need=t_need,
+                      **{"pass": g1["value"] >= t_need})
+            ok = all(g["pass"] for g in c["gates"])
+            c["status"] = "ACTIVE" if ok else ("WATCH" if c["t_month"] >= 2 and c["exp"] > 0 else "OFF")
+    for c in cands:
+        c.pop("_mr", None)
     # same rule as single systems: same quarter + same price histories + only the multiple-testing gate (index 1) failed
     hist = {s: p[0].get("history_source") for s, p in by_sym.items()}
     if prev and prev.get("cutoff") == (next(iter(by_sym.values()))[0].get("cutoff")) and prev.get("history") == hist:
@@ -212,7 +252,8 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
             if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and [i for i, x in enumerate(c["gates"]) if not x["pass"]] == [1]:
                 c["status"], c["kept"] = "ACTIVE", True
     cands.sort(key=lambda c: ({"ACTIVE": 2, "WATCH": 1, "OFF": 0}[c["status"]], c["t_month"]), reverse=True)
-    return {"cutoff": next(iter(by_sym.values()))[0].get("cutoff"), "history": hist, "n_candidates": n_port, "t_needed": t_need,
+    return {"cutoff": next(iter(by_sym.values()))[0].get("cutoff"), "history": hist, "n_candidates": n_port, "n_raw": n_raw,
+            "t_needed": t_need,
             "candidates": cands}
 
 
@@ -231,6 +272,22 @@ def _forced_off(settings: dict, sym: str, c: dict) -> bool:
     return sym in fo or f"{sym}:{c['strategy']}:{c['tf']}" in fo
 
 
+def trial_systems(sym: str, cands: list[dict], settings: dict) -> list[dict]:
+    """Near-misses traded on the DEMO account only, at a small risk, to collect live evidence (user, 2 Nov 2026):
+    WATCH candidates that pass every gate except the multiple-testing one. H4 / D1 first (lower costs), then t."""
+    tcfg = settings.get("trials", {})
+    if not tcfg.get("enabled", True):
+        return []
+    near = [c for c in cands if c["status"] == "WATCH" and c.get("current_params") and only_mt_failed(c["gates"])
+            and not _forced_off(settings, sym, c)]
+    near.sort(key=lambda c: (c["tf"] != "H1", c["oos"]["t_stat"]), reverse=True)
+    return [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
+             "params": c["current_params"], "status": "TRIAL", "source": "trial",
+             "risk_pct": float(tcfg.get("risk_pct", 0.1)), "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"],
+             "trades": c["oos"]["trades"], "max_dd_r": c["oos"].get("max_dd_r"),
+             "robust": (c["robustness"] or {}).get("score")} for c in near[:int(tcfg.get("max_per_symbol", 2))]]
+
+
 def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None = None) -> dict:
     """Judge every candidate with the same gates. EVERY candidate that passes is ACTIVE and traded for the quarter
     (user's rule, 27 Oct 2026). A re-run in the same quarter keeps systems that were already ACTIVE until the quarter ends
@@ -242,8 +299,16 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": [], "systems": []}
     cutoff = pd.Timestamp(parts[0].get("cutoff") or research_cutoff(settings))
     until = data.add_months(cutoff, cfg.get("oos_months", 3))
-    # retired strategies stay in the count (user's rule): dropping losers must never lower the bar for the rest
-    n_cand = sum(1 for c in cands if c["oos"]["trades"] >= 10) + n_retired_candidates(settings)
+    # retired strategies stay in the count (user's rule): dropping losers must never lower the bar for the rest.
+    # The count is the EFFECTIVE number of independent tests (correlated candidates count less), retired ones scaled alike.
+    used = [c for c in cands if c["oos"]["trades"] >= 10]
+    raw_n = len(used) + n_retired_candidates(settings)
+    if cfg.get("effective_trials", True) and used:
+        heavy_of = {(p["tf"], sid): h for p in parts for sid, h in p["heavy"].items()}
+        m_eff, k = effective_tests([weekly_r(heavy_of.get((c["tf"], c["strategy"]), {}).get("oos_eq", [])) for c in used])
+        n_cand = max(1, int(round(m_eff * raw_n / max(k, 1)))) if k else raw_n
+    else:
+        n_cand = raw_n
     for c in cands:
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
@@ -272,7 +337,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     systems = [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
                 "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")), "source": "single",
                 "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
-                "robust": (c["robustness"] or {}).get("score")} for c in active]
+                "max_dd_r": c["oos"].get("max_dd_r"), "robust": (c["robustness"] or {}).get("score")} for c in active]
     mc = best["mc_1y"] or {}
     part = next(p for p in parts if p["tf"] == best["tf"])
     heavy = part["heavy"].get(best["strategy"], {})
@@ -292,7 +357,8 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         "random_benchmark": best["random_benchmark"], "mc_1y": mc, "mc_pf_p5": best["mc_pf_p5"], "robustness": best["robustness"],
         "gates": best["gates"], "failed": [x["name"] for x in best["gates"] if not x["pass"]],
         "trials": int(sum(c["n_combos"] for c in cands)), "n_candidates": n_cand, "t_needed": adjusted_t(n_cand),
-        "n_active": len(active), "n_watch": sum(c["status"] == "WATCH" for c in cands),
+        "n_active": len(active), "n_watch": sum(c["status"] == "WATCH" for c in cands), "n_raw": raw_n,
+        "trial_systems": trial_systems(sym, cands, settings),
         "candidates": cands, "oos_r": r, "oos_equity": equity_points([x[0] for x in eq], r, 1.0, 10000.0),
     }
 

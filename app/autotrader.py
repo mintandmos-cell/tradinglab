@@ -61,6 +61,8 @@ DEFAULTS = {
     "max_chase_r": 0.5,            # a late signal is not entered once price ran > 0.5 R in its favour (or to within 0.1 R of SL)           # a failed order is retried every 15 s for this long after the signal
     "notify": True,                # push "🤖 DEMO/REAL ..." to the ntfy topic in data/local.json
     "autostart": True,             # start autotrade.bat after every Windows logon (Startup folder)
+    "trade_trials": True,          # near-miss WATCH systems ("TRIAL" signals, 0.1 % risk) — DEMO accounts only, never REAL
+    "trail_stops": True,           # move the SL of positions whose system uses a trailing stop (after each hourly scan)
 }
 STATE_FILE = DATA_DIR / "autotrade_state.json"
 LOG_FILE = DATA_DIR / "autotrade_log.jsonl"
@@ -119,6 +121,12 @@ def _filling(info) -> int:
 
 def _value_per_unit(info) -> float:
     return float(info.trade_tick_value) / float(info.trade_tick_size) if info and info.trade_tick_size else 0.0
+
+
+def _tradable(c: dict, s: dict) -> bool:
+    """ACTIVE signals always; TRIAL signals only on a DEMO account and when trade_trials is on (user, 2 Nov 2026)."""
+    st_ = s.get("system_status")
+    return st_ == "ACTIVE" or (st_ == "TRIAL" and c.get("trade_trials", True) and _kind() == "DEMO")
 
 
 def _forced(c: dict, sym: str) -> bool:
@@ -197,7 +205,10 @@ def execute(c: dict, s: dict, balance: float) -> str:
     raw = balance * risk_pct / 100 / (sl_dist * vpu)
     step, vmin, vmax = info.volume_step or 0.01, info.volume_min or 0.01, info.volume_max or 100
     lots = min(vmax, math.floor(raw / step + 1e-9) * step)
-    forced = _forced(c, sym)
+    trial = s.get("system_status") == "TRIAL"
+    forced = _forced(c, sym) and not trial          # a trial never risks more than ~3x its small budget for the min lot
+    if trial and lots < vmin and vmin * sl_dist * vpu / balance * 100 <= 3 * risk_pct:
+        lots = vmin
     if lots < vmin:
         min_risk_pct = vmin * sl_dist * vpu / balance * 100
         if not forced and min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
@@ -236,6 +247,15 @@ def execute(c: dict, s: dict, balance: float) -> str:
     if not ok:
         return "retry"
     _opened[str(getattr(r, "order", "") or "")] = s["id"]
+    # execution quality (user, 2 Nov 2026): what the fill really cost vs the price asked and vs the signal's entry
+    pt = float(info.point or 0) or 1e-9
+    _fills.insert(0, {"time": datetime.now(timezone.utc).isoformat(), "signal": s["id"], "symbol": sym, "tf": s["tf"],
+                      "status": s.get("system_status"), "side": side, "asked": price, "fill": fill, "signal_entry": s["entry"],
+                      "slip_pts": round(d * (fill - price) / pt, 1),                  # + = worse than the quote
+                      "drift_r": round(d * (fill - float(s["entry"])) / float(s["sl_dist"]), 3) if s.get("sl_dist") else None,
+                      "delay_s": round((pd.Timestamp.now(tz="UTC") - pd.Timestamp(s["bar_time"])
+                                        - pd.Timedelta(minutes=TIMEFRAMES[s["tf"]])).total_seconds())})
+    del _fills[100:]
     _push(c, f"{side} {name} {lots:.2f} lot · {tag}",
           f"เปิดแล้ว @ {fill:.{digits}f} · SL {sl}" + (f" · TP {tp}" if tp else " · ไม่มี TP")
           + f" · เสี่ยง {risk_usd:.2f} USD ({risk_usd / balance * 100:.2f}% ของทุน)")
@@ -244,6 +264,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
 
 # ------------------------------------------------------------------------------------------------ positions -> website
 _opened: dict[str, str] = {}          # position ticket -> signal id, filled by execute()
+_fills: list[dict] = []                # newest fills (execute) -> state "fills" -> pc_status.json
 REASONS = {0: "ปิดเอง", 1: "ปิดเอง (มือถือ)", 2: "ปิดเอง (เว็บ)", 3: "โปรแกรมปิด", 4: "SL", 5: "TP", 6: "Stop out"}
 
 
@@ -277,6 +298,10 @@ def watch_positions(c: dict, st: dict, force: bool = False) -> None:
     mt5 = _mt5()
     st.setdefault("tickets", {}).update(_opened)
     _opened.clear()
+    if _fills:
+        st["fills"] = (_fills + st.get("fills", []))[:100]
+        _fills.clear()
+        force = True
     now = {str(p.ticket): p for p in _positions(c)}
     before = st.get("open_tickets", [])
     closed = [t for t in before if t not in now]
@@ -313,7 +338,8 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
     status = {**st.get("status", {}), **extra, "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
               "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
               "start_balance": st.get("start_balance"),
-              "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15]}
+              "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15],
+              "fills": st.get("fills", [])[:40]}
     st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)
 
@@ -374,10 +400,36 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
         st["gh_warned"] = False
     st["scan_ok"] = True
     for s in new:
-        if s.get("system_status") == "ACTIVE":
+        if _tradable(c, s):
             _queue(c, st, s, "pc")
     follow_alerts(c, st, pull=False)
+    if c.get("trail_stops", True):
+        trail_positions(c, st)
     return new
+
+
+def trail_positions(c: dict, st: dict) -> None:
+    """Systems with a trailing stop: move the position's SL to the stop the forward tracking computed on the broker's
+    COMPLETED candles (signal 'stop_now' — the same rule as the backtest). Only ever tightens."""
+    mt5 = _mt5()
+    sigs = {x["id"]: x for x in scanner.load_signals()}
+    for p in _positions(c):
+        sig = sigs.get(_signal_of(st, p) or "")
+        if not sig or not sig.get("trail_dist") or sig.get("stop_now") is None or sig.get("outcome") != "open":
+            continue
+        info = mt5.symbol_info(p.symbol)
+        new = round(float(sig["stop_now"]), info.digits if info else 5)
+        buy = p.type == mt5.POSITION_TYPE_BUY
+        if p.sl and ((buy and new <= p.sl + (info.point if info else 0)) or (not buy and new >= p.sl - (info.point if info else 0))):
+            continue
+        req = {"action": mt5.TRADE_ACTION_SLTP, "symbol": p.symbol, "position": p.ticket, "sl": new, "tp": p.tp, "magic": c["magic"]}
+        if c["dry_run"]:
+            _log("trail_dry", symbol=p.symbol, ticket=p.ticket, sl=new)
+            continue
+        r = mt5.order_send(req)
+        ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
+        _log("trail" if ok else "trail_failed", symbol=p.symbol, ticket=p.ticket, old_sl=p.sl, sl=new,
+             retcode=getattr(r, "retcode", None), msg=getattr(r, "comment", None) or str(mt5.last_error()))
 
 
 def sync_exits(c: dict, st: dict) -> None:
@@ -503,7 +555,7 @@ def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
     for s in scanner.load_signals():
         try:
             tfm = pd.Timedelta(minutes=TIMEFRAMES[s["tf"]])
-            if (s.get("system_status") == "ACTIVE" and s.get("outcome") == "open" and not s.get("capped")
+            if (_tradable(c, s) and s.get("outcome") == "open" and not s.get("capped")
                     and pd.Timestamp(s["bar_time"]) + 4 * tfm > now and pd.Timestamp(s["created"]) >= since - pd.Timedelta(hours=2)):
                 _queue(c, st, s, s.get("origin") or "alert")
         except Exception:

@@ -684,6 +684,8 @@ function signalCard(s, compact = false) {
       <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">${s.reward_usd == null ? "ปล่อยกำไรวิ่ง" : "$" + fnum(s.reward_usd, 2)}</div></div>
     </div>
     ${robotLine(s)}
+    ${s.system_status === "TRIAL" ? `<div class="banner info" style="margin:0 16px 12px 18px"><span class="ic">🧪</span><div><b>ทดลองบน DEMO</b> — ระบบนี้ยังไม่ผ่านด่านหักโชค โปรแกรมเปิดให้เฉพาะบัญชี demo ที่ความเสี่ยงต่ำ เพื่อเก็บผลจริง · ไม่ต้องเปิดในบัญชีจริง</div></div>` : ""}
+    ${s.trail_dist ? `<div class="banner info" style="margin:0 16px 12px 18px"><span class="ic">📐</span><div><b>SL เลื่อนตาม (trailing)</b> ห่างจากราคาดีที่สุด ${fpx(s.trail_dist, d)} · SL ตอนนี้ <b>${fpx(s.stop_now ?? s.sl, d)}</b> — ขยับเฉพาะทางที่ล็อกกำไร หลังแท่งปิด (ถ้าเทรดเอง ให้เลื่อน SL ใน MT5 ตามนี้)</div></div>` : ""}
     ${s.capped ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⛔</span><div>${esc(s.note || "ข้าม: เกินเพดานความเสี่ยงรวมของสินทรัพย์นี้")} — ไม่ได้ส่งแจ้งเตือน (ระบบยังติดตามผลไม้นี้เพื่อวัดผลของระบบ)</div></div>` : ""}
     ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ 0.01 —
       ถ้าเปิด 0.01 lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
@@ -1217,7 +1219,7 @@ async function renderLab(view) {
     { name: "OOS trades", value: o.trades, need: G.min_oos_trades, pass: o.trades >= G.min_oos_trades },
     { name: "OOS expectancy (R)", value: o.expectancy, need: G.min_expectancy, pass: o.expectancy >= G.min_expectancy },
     { name: "OOS t-stat", value: o.t_stat, need: G.min_t, pass: o.t_stat >= G.min_t },
-    { name: `t ปรับตามจำนวนระบบที่เทียบ (${R.n_candidates ?? "?"})`, value: o.t_stat, need: tNeed, pass: tNeed != null && o.t_stat >= tNeed },
+    { name: `t ปรับตามจำนวนการทดสอบอิสระ (~${R.n_candidates ?? "?"})`, value: o.t_stat, need: tNeed, pass: tNeed != null && o.t_stat >= tNeed },
     { name: "MC PF @95%", value: mcFull ? +mcFull.pf5.toFixed(3) : null, need: G.min_mc_pf_p5, pass: !!mcFull && mcFull.pf5 >= G.min_mc_pf_p5 },
     { name: "Parameter plateau", value: cand.plateau, need: G.min_plateau, pass: cand.plateau >= G.min_plateau },
     { name: "ชนะการสุ่มจุดเข้า / Robustness", value: null, need: "ทดสอบเฉพาะตัวที่ดีที่สุด", pass: null },
@@ -1239,6 +1241,7 @@ async function renderLab(view) {
     ${step(6, "Robustness — พยายามทำให้ระบบพัง", rob?.tests?.length ? `${robustBar(rob)}<div class="tbl-wrap" style="margin-top:10px"><table class="tbl"><tbody>${rob.tests.map((t) => `<tr><td>${t.pass === null ? '<span class="faint">–</span>' : t.pass ? '<span class="pos">✓</span>' : '<span class="neg">✗</span>'}</td><td class="wrap">${esc(t.name)}${t.note ? `<div class="tiny faint">${esc(t.note)}</div>` : ""}</td><td class="num">${esc(t.value ?? "–")}</td><td class="muted small wrap">${esc(t.need)}</td></tr>`).join("")}</tbody></table></div>`
       : '<div class="hint">ยังไม่มีผล หรือมีเทรด OOS ไม่พอ (ต้อง ≥ 10 ไม้)</div>', rob ? (rob.score >= (G.min_robust_score ?? 60) ? "ok" : "no") : "na")}
     ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
+      ${streakHtml(rOos, o?.trades_per_year)}
       <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
     ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? (cand?.kept && passed < judged ? `<b class="neg">ไม่ผ่านเกณฑ์รอบล่าสุด (${passed}/${judged})</b> แต่ยังเทรดอยู่เพราะกติกา “คงไว้จนจบไตรมาส” (ตกแค่ด่านหักโชค)` : "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง") : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
   </div>`;
@@ -1472,6 +1475,19 @@ function personalSettingsHtml() {
   </div>`;
 }
 // fund-style basket test: one system on all 8 symbols, judged on the pooled monthly OOS result
+// losing streaks (user, 2 Nov 2026: know in advance how many losses in a row are normal, so a streak never scares you
+// into stopping a system at the worst moment): worst run in the OOS history + the run a year of trading reaches 95% of the time
+function streakHtml(r, perYear) {
+  if (!r || r.length < 20) return "";
+  let worst = 0, cur = 0;
+  for (const x of r) { cur = x < 0 ? cur + 1 : 0; worst = Math.max(worst, cur); }
+  const p = r.filter((x) => x < 0).length / r.length, n = Math.max(10, Math.round(perYear || 20)), runs = [];
+  for (let k = 0; k < 2000; k++) { let c = 0, w = 0; for (let i = 0; i < n; i++) { c = Math.random() < p ? c + 1 : 0; if (c > w) w = c; } runs.push(w); }
+  runs.sort((a, b) => a - b);
+  const typ = runs[Math.floor(runs.length * 0.5)], bad = runs[Math.floor(runs.length * 0.95)];
+  return `<div class="kpis" style="margin-top:10px">${kpi("แพ้ติดกันมากสุด (อดีต)", worst + " ไม้", `จาก ${r.length} ไม้ OOS`, "neg")}${kpi("แพ้ติดกันใน 1 ปี (ปกติ)", typ + " ไม้", `${n} ไม้/ปี · แพ้ ${Math.round(p * 100)}%`)}${kpi("แพ้ติดกันใน 1 ปี (แย่ 5%)", bad + " ไม้", "เจอได้โดยระบบไม่ได้เสีย", "neg")}</div>
+    <div class="hint">ถ้าแพ้ติดกันไม่เกินตัวเลขนี้ = ยังปกติของระบบ อย่าหยุดเพราะใจ · ระบบจะหยุดเองเมื่อขาดทุนสะสมเกิน ${S.settings?.kill_dd_mult ?? 2} เท่าของที่แย่ที่สุดในการทดสอบ</div>`;
+}
 function portfolioHtml(P) {
   if (!P?.candidates?.length) return "";
   const top = P.candidates.filter((c) => c.status !== "OFF").slice(0, 15);
@@ -1768,10 +1784,12 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 ### ขั้นที่ 1 — เตรียมข้อมูลและกติกาการเทรด
 - ใช้แท่งเทียน H1 (H4 / D1 สร้างจาก H1) จาก **MT5 ของ Exness** (คอมส่งราคาย้อนหลังขึ้น GitHub ให้) ต่อท้ายด้วยราคาล่าสุดจาก Twelve Data / Yahoo / Binance
 - **ตัดสินใจตอนแท่งปิด แล้วเข้าที่ราคาเปิดแท่งถัดไป** — ไม่แอบดูอนาคต (ทดสอบแล้วกับกราฟสุ่มล้วน ผลออกมาใกล้ 0R ทุกกลยุทธ์ แปลว่าไม่มีการแอบดูข้อมูลล่วงหน้า)
-- ทางออกเหมือนกันทุกกลยุทธ์ มีแค่ 3 แบบ: **ชน SL (= k × ATR14)**, **ชน TP (= R:R × ระยะ SL)** หรือ **มีสัญญาณตรงข้าม** → ปิดที่ราคาเปิดแท่งถัดไปแล้วกลับทิศ · ไม่จำกัดเวลาถือ
+- ทางออกเหมือนกันทุกกลยุทธ์: **ชน SL (= k × ATR14)**, **ชน TP (= R:R × ระยะ SL)** หรือ **มีสัญญาณตรงข้าม** → ปิดที่ราคาเปิดแท่งถัดไปแล้วกลับทิศ · ไม่จำกัดเวลาถือ
+  - ระบบตามเทรนด์ / เบรกเอาต์ / โมเมนตัม ลองเพิ่มอีกแบบ: **ไม่มี TP + SL เลื่อนตาม (trailing) 3 × ATR** — SL ขยับตามราคาดีที่สุดของแท่งที่ปิดแล้ว ล็อกกำไรเมื่อเทรนด์วิ่งไกล (แบบ Turtle / Clenow) · Walk-Forward เลือกเองว่าจะใช้หรือไม่
   - Backtest, Walk-Forward, การสุ่มจุดเข้า และ forward test ใช้กฎนี้เหมือนกันทั้งหมด
 - ถ้าแท่งเดียวแตะทั้ง SL และ TP ให้ถือว่า **ชน SL ก่อน** (คิดแบบร้ายไว้ก่อน) และถ้าราคากระโดดข้าม SL จะออกที่ราคาเปิด
-- **หักต้นทุนทุกไม้:** spread + slippage × 2 + ค่าคอม
+- **หักต้นทุนทุกไม้ด้วยตัวเลขจริงของ Exness:** spread (ค่ากลางค่อนแพงของแท่ง H1 ย้อนหลัง ~3 ปี) + slippage × 2 + ค่าคอม
+- **หักค่า swap ทุกคืนที่ถือ** ตามอัตราจริงของบัญชีคุณ (วันพุธหรือวันศุกร์คิด 3 เท่าแทนเสาร์-อาทิตย์ · คริปโตคิดทุกคืน) — นับเฉพาะส่วนที่ต้องจ่าย ส่วนที่ได้รับคืนไม่นับ (คิดแบบร้ายไว้ก่อน)
 - วัดผลเป็น **R** (1R = เงินที่เสี่ยงต่อไม้) จึงเทียบข้ามสินทรัพย์ได้
 ### ขั้นที่ 2 — Backtest ทุกชุดพารามิเตอร์ (ชุดเล็ก ๆ)
 - ${S.strategies.length || 50} กลยุทธ์ × ${(S.settings?.research?.timeframes || ["H1", "H4", "D1"]).join(" / ")} แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือกไม่เกิน 16 ชุด
@@ -1798,14 +1816,18 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 ### ขั้นที่ 7 — “หักค่าโชค” แล้วตัดสินทุกระบบด้วยเกณฑ์เดียวกัน
 - **ทุกระบบ × ทุก TF × ทุกสินทรัพย์ ผ่านขั้น 1–6 ครบเหมือนกันหมด** (บนคลาวด์แบ่งเป็น 24 งานรันพร้อมกัน ใช้เวลาราว 1–2 ชม.)
 - ทุกสินทรัพย์มีผู้สมัครประมาณ ${(S.settings?.research?.timeframes || [1, 2, 3]).length * (S.strategies.length || 50)} ตัว (กลยุทธ์ × TF) ทุกตัวได้สถานะของตัวเอง และ **ทุกตัวที่ ACTIVE ถูกนำไปเทรด** (หน้ากราฟ / Lab เปิดมาที่ตัวที่ t สูงสุด)
-- ปัญหา: **ถ้าให้คนจำนวนมากโยนเหรียญ คนที่ได้หัวมากที่สุดก็ดูเก่งเพราะโชค** จึงต้องตั้งเกณฑ์สูงขึ้นตามจำนวนผู้สมัคร
-- เกณฑ์ “t ปรับตามจำนวนระบบที่เทียบ” ใช้ Šidák correction: 8 ผู้สมัคร ≈ t 2.5 · 20 ผู้สมัคร ≈ t 2.8 · 40 ผู้สมัคร ≈ t 3.0 · 150 ผู้สมัคร ≈ t 3.4 (ข้อเสนอของ Harvey, Liu & Zhu คือ t > 3)
-- **ยิ่งเพิ่มกลยุทธ์ เกณฑ์ยิ่งสูง** — การมีกลยุทธ์มากขึ้นไม่ได้ทำให้มีระบบผ่านง่ายขึ้น
+- ปัญหา: **ถ้าให้คนจำนวนมากโยนเหรียญ คนที่ได้หัวมากที่สุดก็ดูเก่งเพราะโชค** จึงต้องตั้งเกณฑ์สูงขึ้นตามจำนวนผู้สมัคร (จำนวนไม้ของแต่ละระบบอยู่ในสูตร t อยู่แล้ว ส่วนนี้แก้อีกปัญหาหนึ่ง คือการ “หยิบตัวที่ดีที่สุดจากหลายตัว”)
+- **นับเฉพาะการทดสอบที่เป็นอิสระจริง** (ปรับ 2 พ.ย. 2026): ระบบที่ผลขึ้นลงเหมือนกันนับเป็นตัวเดียว เหมือนคนหลายคนโยนเหรียญเหรียญเดียวกัน — วัดจากความสัมพันธ์ของผล OOS รายสัปดาห์ทุกผู้สมัคร (วิธี eigenvalue ของ Li & Ji 2005 · หลักการเดียวกับ Deflated Sharpe Ratio ของ Bailey & López de Prado)
+- แล้วใช้ Šidák correction กับจำนวนนั้น: 20 การทดสอบ ≈ t 2.8 · 50 ≈ t 3.1 · 100 ≈ t 3.3 · 300 ≈ t 3.6 (ข้อเสนอของ Harvey, Liu & Zhu คือ t > 3)
+- **ยิ่งเพิ่มกลยุทธ์ที่ต่างจากเดิม เกณฑ์ยิ่งสูง** — การมีกลยุทธ์มากขึ้นไม่ได้ทำให้มีระบบผ่านง่ายขึ้น
 ### ขั้นที่ 8 — ตัดสินสถานะ
 - **ACTIVE:** ผ่านทุกเกณฑ์ → ส่งแจ้งเตือนจริงตลอดไตรมาส (★ ในหน้าเว็บ)
 - **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ไม่เทรด ไม่แจ้งเตือน (ดูผลได้ในปุ่ม ⚡ ด่วน)
 - **OFF:** ไม่พบ edge → ไม่เทรด
+- **TRIAL (ทดลองบน demo):** WATCH ที่ผ่านทุกด่าน **ยกเว้นด่านหักโชค** (สูงสุด ${S.settings?.trials?.max_per_symbol ?? 2} ระบบต่อสินทรัพย์ เน้น H4/D1) — โปรแกรมเปิดให้ **เฉพาะบัญชี demo** ที่ความเสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% ไม่แจ้งเตือน เพื่อเก็บหลักฐานจากตลาดจริง
 - หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF
+- **หยุดอัตโนมัติ (ตกลงกันไว้ล่วงหน้า):** ถ้าขาดทุนสะสมจริงของระบบใดเกิน ${S.settings?.kill_dd_mult ?? 2} เท่าของ drawdown ที่แย่ที่สุดใน OOS → หยุดเปิดออเดอร์ใหม่ทันทีและแจ้งเตือน (ไม่ต้องตัดสินใจตอนกำลังขาดทุน)
+- **คงไว้จนจบไตรมาส** เฉพาะเมื่อตกแค่ด่านหักโชคและราคาที่ใช้ทดสอบยังเป็นชุดเดิม
 ### ขั้นที่ 9 — ทดสอบแบบพอร์ต (แบบกองทุน)
 - กองทุนตามแนวโน้ม (CTA) ไม่ได้ดูระบบทีละตลาด แต่ใช้ระบบเดียวกับหลายตลาดพร้อมกันแล้วดูผลรวม — แต่ละตลาดเดี่ยว ๆ กำไรน้อยและแกว่ง แต่รวมกันแล้วเรียบขึ้นมาก (Moskowitz, Ooi & Pedersen 2012; Hurst, Ooi & Pedersen 2017)
 - ระบบจึงนำผล Walk-Forward OOS ของ **ระบบเดียวกันบนทุกสินทรัพย์** มารวมเป็นผลรายเดือน (ทุกไม้เสี่ยงเท่ากัน) แล้วตัดสินด้วยเกณฑ์: OOS ≥ 36 เดือน · t รายเดือน ≥ เกณฑ์หักค่าโชค (นับผู้สมัครทุกระบบ × ทุก TF รวมระบบที่เลิกใช้) · สินทรัพย์ที่เป็นบวก ≥ 60% · MC PF@95% ≥ 1 · ชนะการสุ่มจุดเข้า (มัธยฐาน) ≥ 75% · Robustness เฉลี่ย ≥ 50
@@ -1818,6 +1840,7 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 เปรียบเหมือน **นักฟุตบอลในทีม**:
 - **ACTIVE (ตัวจริง)** — ผ่านการคัดเลือกทุกด่าน ลงเล่นจริงทั้งไตรมาส → ระบบส่งแจ้งเตือนให้คุณเปิดออเดอร์ · มีตัวจริงได้หลายคนพร้อมกัน (หลายระบบต่อสินทรัพย์) — บัญชี Hedging จึงอาจมีทั้ง Buy และ Sell ของสินทรัพย์เดียวกันจากคนละระบบ
 - **WATCH (ตัวสำรองที่ฟอร์มดี)** — ผล Out-of-Sample เป็นบวก แต่หลักฐานยังไม่พอ เช่น t-stat ต่ำกว่าเกณฑ์ หรือ Monte Carlo ยังไม่มั่นใจ
+  - ตัวสำรองที่ตกแค่ด่านหักโชค = **TRIAL** ลงซ้อมในบัญชี demo ด้วยเงินเดิมพันเล็ก ๆ (ป้ายสีฟ้า) เพื่อดูฟอร์มจริง
   - **ไม่ส่งแจ้งเตือน** และไม่นับเป็นระบบเทรด · ถ้าข้อมูลไตรมาสถัดไปทำให้หลักฐานพอ รอบวิจัยหน้าอาจเลื่อนเป็น ACTIVE เอง
   - **ไม่ควรเทรดด้วยเงินจริง** ใช้ดูเพื่อเรียนรู้หรือเทรด demo
 - **OFF (ไม่ติดทีม)** — ไม่พบความได้เปรียบที่แยกออกจากโชคได้ → ไม่เทรด
@@ -1949,8 +1972,9 @@ async function renderSignals(view) {
   S.sigs = sigs;
   S.symbols = sortSyms(syms);
   const now = new Date();
-  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
-  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s));
+  const trials = sigs.filter((s) => s.system_status === "TRIAL" && s.outcome === "open");
+  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now && s.system_status !== "TRIAL");
+  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s) && s.system_status !== "TRIAL");
   const closed = sigs.filter((s) => s.outcome !== "open");
   S.newCount = actionable.length; renderNav(S.newCount);
   const active = syms.filter((x) => x.status === "ACTIVE");
@@ -1968,6 +1992,7 @@ async function renderSignals(view) {
     ${actionable.length ? `<div class="sec-h"><h2>🔔 เข้าได้ตอนนี้</h2></div><div class="sig-grid">${actionable.map((s) => signalCard(s)).join("")}</div>`
       : `<div class="calm"><div class="big">🔕</div><div><b>ยังไม่มีสัญญาณใหม่</b><div class="muted small">ระบบกำลังเฝ้าตลาดให้ — เมื่อมีสัญญาณ มือถือจะเด้งแจ้งเตือนพร้อม Lot / SL / TP</div></div></div>`}
     ${STATIC && (rpos.length || rclosed.length) ? `<a class="banner ok link" href="#/port" style="margin-top:14px"><span class="ic">🤖</span><div><b>MT5 ถือ ${rpos.length} ออเดอร์</b> · กำไร/ขาดทุนตอนนี้ <span class="${cls(rpnl)}">${fusd(rpnl)}</span> — ดูพอร์ต ความเสี่ยงแยกกลุ่ม และออเดอร์ที่ปิดแล้วในหน้า <b>พอร์ต MT5 →</b></div></a>` : ""}
+    ${trials.length ? `<div class="sec-h"><h2>🧪 ทดลองบนบัญชี DEMO</h2><span class="badge">${trials.length}</span><span class="muted small" style="margin-left:auto">ระบบที่เกือบผ่าน · เสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% · โปรแกรมเปิดเฉพาะบัญชี demo · ไม่แจ้งเตือน ไม่ต้องเปิดเอง</span></div><div class="sig-grid">${trials.map((s) => signalCard(s)).join("")}</div>` : ""}
     ${tracking.length ? `<div class="sec-h"><h2>กำลังติดตาม</h2><span class="badge">${tracking.length}</span></div><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div>` : ""}
     <div class="sec-h"><h2>ประวัติสัญญาณ</h2><span class="badge">${closed.length}</span>${fa ? `<span class="muted small" style="margin-left:auto">Expectancy ${fr(fa.expectancy, 3)} · PF ${fnum(fa.pf, 2)} · Max DD ${fnum(fa.max_dd_r, 1)}R</span>` : ""}</div>
     <div class="card"><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
@@ -1981,8 +2006,25 @@ async function renderSignals(view) {
 }
 
 // ------------------------------------------------------------------ PORTFOLIO: what the PC robot holds in MT5, risk by asset class, systems per symbol
+// execution quality: how much the real fills cost compared with the quote and with the signal's entry
+function fillsHtml(f) {
+  if (!f.length) return "";
+  const by = {};
+  f.forEach((x) => { (by[x.symbol] ||= []).push(x); });
+  const avg = (a, k) => { const v = a.map((x) => +x[k]).filter((x) => Number.isFinite(x)); return v.length ? v.reduce((p, q) => p + q, 0) / v.length : null; };
+  return `<div class="sec-h"><h2>คุณภาพการเปิดออเดอร์</h2><span class="badge">${f.length}</span><span class="muted small" style="margin-left:auto">ราคาที่ได้จริงเทียบราคาที่สั่ง และเทียบราคาเข้าในสัญญาณ</span></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th class="num">ออเดอร์</th><th class="num">Slippage เฉลี่ย (จุด)</th><th class="num">ห่างจากราคาสัญญาณ (R)</th><th class="num">เปิดหลังแท่งปิด (วินาที)</th></tr></thead><tbody>
+    ${Object.entries(by).map(([k, a]) => { const sl = avg(a, "slip_pts"), dr = avg(a, "drift_r"), dl = avg(a, "delay_s");
+      return `<tr><td><b>${esc(k)}</b></td><td class="num">${a.length}</td><td class="num ${sl > 0 ? "neg" : "pos"}">${sl == null ? "–" : fnum(sl, 1)}</td><td class="num ${dr > 0.05 ? "neg" : ""}">${dr == null ? "–" : (dr > 0 ? "+" : "") + fnum(dr, 3)}</td><td class="num">${dl == null ? "–" : fnum(dl, 0)}</td></tr>`; }).join("")}
+    </tbody></table></div><div class="hint pad-x" style="padding:8px 14px 12px">+ = ได้ราคาแย่กว่า · ถ้า "ห่างจากราคาสัญญาณ" เกิน ~0.05R เป็นประจำ ต้นทุนจริงสูงกว่าที่ใช้ทดสอบ ต้องปรับต้นทุนในการทดสอบ</div></div>`;
+}
+// markets that move together share one risk budget (same groups as app/scanner.py CLUSTERS)
+const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]], jpy_cross: ["คู่เงิน JPY", ["GBPJPY"]],
+  metals: ["โลหะ", ["XAUUSD", "XAGUSD"]], energy: ["พลังงาน", ["USOIL"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"]],
+  world_equity: ["ดัชนียุโรป/ญี่ปุ่น", ["DE30", "JP225"]], crypto: ["คริปโต", ["BTCUSD", "ETHUSD"]] };
+const clusterCap = (k) => { const c = S.settings?.cluster_risk_pct || {}; return +(c[k] ?? c.default ?? 1.5); };
 async function renderPort(view) {
-  const [sigs, syms, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus()]);
+  const [sigs, syms, pc, killed] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus(), ghLive("data/research/auto_off.json")]);
   S.pc = pc || S.pc; S.sigs = sigs; S.symbols = sortSyms(syms);
   const age = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null, online = age !== null && age < 70;
   const pos = (pc && pc.positions) || [], closed = (pc && pc.closed) || [];
@@ -2017,6 +2059,11 @@ async function renderPort(view) {
     ${!pc ? `<div class="banner" style="margin-top:14px"><span class="ic">ℹ️</span><div>ยังไม่มีข้อมูลจากคอม — หน้านี้แสดงผลเมื่อโปรแกรมเทรดอัตโนมัติ (autotrade.bat) ทำงานบนคอมและส่งสถานะขึ้น GitHub</div></div>` : ""}
     <div class="sec-h"><h2>ความเสี่ยงแยกตามกลุ่มสินทรัพย์</h2><span class="muted small" style="margin-left:auto">ทุกไม้เสี่ยง ${S.settings?.risk_per_trade_pct ?? 0.5}% · รวมไม่เกิน ${cap}% ต่อสินทรัพย์</span></div>
     <div class="gcards">${symGroups().map(groupCard).join("")}</div>
+    <div class="card" style="margin-top:4px"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>กลุ่มที่เคลื่อนไหวไปด้วยกัน</th><th>สินทรัพย์</th><th class="num">สัญญาณ ACTIVE ที่เปิดอยู่</th><th class="num">เพดาน</th></tr></thead><tbody>
+      ${Object.entries(CLUSTERS).map(([k, [name, list]]) => { const r = sigs.filter((x) => list.includes(x.symbol) && x.outcome === "open" && !x.capped && x.system_status === "ACTIVE").reduce((a, x) => a + (+x.risk_pct || 0), 0);
+        return `<tr><td><b>${name}</b></td><td class="small muted">${list.map((x) => ABBR[x] || x).join(" · ")}</td><td class="num ${r > 0 ? "neg" : ""}">${fnum(r, 2)}%</td><td class="num">${fnum(clusterCap(k), 1)}%</td></tr>`; }).join("")}
+    </tbody></table></div><div class="hint pad-x" style="padding:8px 14px 12px">ตลาดที่มักขึ้นลงพร้อมกันใช้งบความเสี่ยงร่วมกัน — ถ้าเต็มเพดาน สัญญาณใหม่ของกลุ่มนั้นจะถูกข้าม (บันทึกผลแต่ไม่แจ้งเตือน ไม่เปิดออเดอร์)</div></div>
+    ${killed && Object.keys(killed).length ? `<div class="banner" style="margin-top:12px"><span class="ic">⛔</span><div><b>ระบบที่หยุดอัตโนมัติ</b> (ขาดทุนสะสมจริงเกิน ${S.settings?.kill_dd_mult ?? 2} เท่าของที่แย่ที่สุดในการทดสอบ): ${Object.entries(killed).map(([k, v]) => { const [sy, sid, tf] = k.split(":"); return `${sy} #${stratById(sid)?.no ?? sid} ${tf} (−${fnum(v.dd_r, 1)}R จากเพดาน ${fnum(v.limit_r, 1)}R)`; }).join(" · ")}</div></div>` : ""}
     <div class="sec-h"><h2>🤖 ออเดอร์ที่ถืออยู่</h2><span class="badge">${pos.length}</span></div>
     <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th class="num">Lot</th><th class="num">ราคาเข้า</th><th class="num">ตอนนี้</th><th class="num">SL</th><th class="num">TP</th><th class="num">เสี่ยง</th><th class="num">กำไร</th></tr></thead><tbody>
       ${pos.length ? sortSyms(pos).map((x) => `<tr class="click" data-href="#/chart?symbol=${x.symbol}&tf=${(robotTag(x).split("-")[1]) || "H1"}"><td><b>${esc(x.symbol)}</b></td><td class="mono">${esc(robotTag(x))}</td><td>${statusBadge(x.side === "BUY" ? "LONG" : "SHORT")}</td><td class="num">${fnum(x.lots, 2)}</td>
@@ -2030,6 +2077,7 @@ async function renderPort(view) {
         <td class="num">${x.price_open != null ? fpx(x.price_open, dg(x.symbol)) : "–"}</td><td class="num">${x.price != null ? fpx(x.price, dg(x.symbol)) : "–"}</td><td class="num ${cls(x.profit)}">${fusd(x.profit)}</td></tr>`).join("")
         : `<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">ยังไม่มีออเดอร์ที่ปิด</td></tr>`}
     </tbody></table></div></div>
+    ${fillsHtml((pc && pc.fills) || [])}
     <div class="sec-h"><h2>ระบบของแต่ละสินทรัพย์</h2><a class="muted small" href="#/systems" style="margin-left:auto">รายละเอียดระบบ →</a></div>
     ${groupedTiles(S.symbols, sigs)}
   </div>`;

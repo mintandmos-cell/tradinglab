@@ -82,6 +82,24 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Never help hide automation from a prop firm (The5ers needs written approval for automated trading).
 - Settings: `data/settings.json` = shared research config (committed). `data/local.json` = balance, ntfy topic, PIN, MT5 path (git-ignored). Never commit secrets.
 
+## Real-trading upgrades (user: "do everything", 2 Nov 2026)
+- COSTS: `data/exness/costs.json` (PC task `cost_stats` -> `autotrader.broker_costs`: 75th pct of the H1 bars' spread over ~3 y,
+  swap_long/short + swap_mode + triple day) -> `config.broker_costs` merges into `symbol_spec` (spread, swap in price/night).
+  `engine.rollover_weights` / `swap_r`: swap charged per rollover (21:00 UTC; crypto daily, others Mon-Fri with the triple day),
+  only charges, credits ignored; trades carry `swap_r` (included in `r` and `cost_r`). Random benchmark pays it too.
+- TRAILING: param `trail_atr` (0 = off); trend families also try every no-TP combo with `TRAIL_ATR` 3.0 (grids up to 32).
+  The stop follows the best price of COMPLETED bars only (backtest `simulate(trail=)`, tracking `scanner._track` -> `stop_now`,
+  robot `trail_positions` moves the MT5 SL after each hourly scan; only tightens). Exit reason "Trail".
+- LUCK GATE: `research.effective_tests` = Li & Ji eigenvalue count of independent tests from weekly OOS R correlations
+  (settings research.effective_trials); n = M_eff x (raw incl. retired) / usable. Same for the portfolio test (monthly R).
+- TRIALS: `trial_systems` per symbol = WATCH candidates failing ONLY the luck gate (max 2, H4/D1 first), status "TRIAL",
+  risk `trials.risk_pct` 0.1, no push, robot trades them on DEMO accounts only (`trade_trials`, `_tradable`).
+- RISK: `cluster_risk_pct` caps open ACTIVE risk per group of markets that move together (`scanner.CLUSTERS`, capped + note).
+  Kill switch: `scanner.kill_switch` -> `data/research/auto_off.json` when a live system's forward DD > `kill_dd_mult` (2) x its
+  OOS max_dd_r (>= 5 closed trades this quarter); skipped like force_off, push sent once.
+- EXECUTION: robot records each fill (`fills` in pc_status: slippage points vs quote, drift in R vs the signal entry, delay);
+  พอร์ต MT5 page shows them, cluster risk and auto-stopped systems. Lab step 7 shows losing-streak stats (`streakHtml`).
+
 ## Layout
 - `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance.
   With the repo secret `TWELVE_DATA_KEY` (user's request 27 Oct 2026) the newest FX/gold H1 bars come from Twelve Data spot

@@ -62,7 +62,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     rr = float(p["rr"])
     sl, tp = entry - d * sl_dist, (entry + d * rr * sl_dist if rr > 0 else None)      # rr 0 = no take-profit
     info = data.mt5_symbol_info(sym)
-    risk_pct = (float(settings.get("portfolio_risk_pct") or 0.1) if cfg.get("source") == "portfolio" else 0) or \
+    risk_pct = (float(cfg.get("risk_pct") or 0.1) if cfg.get("source") == "trial" else 0) or \
+               (float(settings.get("portfolio_risk_pct") or 0.1) if cfg.get("source") == "portfolio" else 0) or \
                (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
                 or settings["default_risk_pct"] / 2)
     balance = float(settings["account_balance"])
@@ -76,6 +77,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
     if rules["friday"]:
         close_by = min(close_by, friday_cutoff(entry_t)) if close_by is not None else friday_cutoff(entry_t)
     rev = None if late else (res.get("open_trade") or {}).get("reverse_pending")
+    trail = float(res["open_trade"].get("trail") or 0) if late else float(p.get("trail_atr") or 0) * float(res["atr_last"])
     return {
         "id": f"{sym}-{cfg['tf']}-{cfg['strategy']}-{int(bar_t.timestamp())}",
         "created": datetime.now(timezone.utc).isoformat(),
@@ -95,7 +97,9 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "reverse_of": ("SHORT" if d > 0 else "LONG") if rev else None,
         "price_source": data.price_source(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
         "outcome": "open", "outcome_r": None, "exit_time": None, "user_status": "new",
-        "late": late, "origin": "cloud" if CLOUD else "pc",
+        "late": late, "origin": "cloud" if CLOUD else "pc", "cluster": cluster_of(sym),
+        "trail_dist": round(trail, spec["digits"]) if trail > 0 else None,
+        "stop_now": round(sl, spec["digits"]),
     }
 
 
@@ -113,19 +117,81 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
     risk = abs(entry - sl) or 1e-12
     rules = exit_rules()
     opp = strat_signals(sig["strategy"], df, sig["params"])[0] if rules["opposite"] else None
+    trail = float(sig.get("trail_dist") or 0)
+    stop, best = sl, entry
     for k in range(i + 1, len(df)):
+        if trail > 0 and k > i + 1:          # the trailing stop follows COMPLETED bars only (same rule as the backtest)
+            best = max(best, h[k - 1]) if d > 0 else min(best, l[k - 1])
+            stop = max(stop, best - trail) if d > 0 else min(stop, best + trail)
         if opp is not None and k - 1 > i and opp[k - 1] == -d:             # opposite signal on the previous close
             px, reason = o[k], "Rev"
-        elif (l[k] <= sl) if d > 0 else (h[k] >= sl):                    # SL first when both are touched (conservative)
-            px, reason = sl, "SL"
+        elif (l[k] <= stop) if d > 0 else (h[k] >= stop):                # SL first when both are touched (conservative)
+            gap = (o[k] < stop) if d > 0 else (o[k] > stop)
+            px, reason = (o[k] if gap else stop), ("Trail" if stop != sl else "SL")
         elif tp is not None and ((h[k] >= tp) if d > 0 else (l[k] <= tp)):
             px, reason = tp, "TP"
         else:
             continue
+        sig["stop_now"] = round(float(stop), spec["digits"])
         r = round(d * (px - entry) / risk, 3)
         sig.update(outcome={"SL": "loss", "TP": "win"}.get(reason) or ("win" if r > 0 else "loss" if r < 0 else "time"),
                    exit_reason=reason, outcome_r=r, exit_time=df.index[k].isoformat(), exit_price=round(float(px), spec["digits"]))
         return
+    if trail > 0:                            # still open: the stop for the next bar, from every completed bar so far
+        best = max(best, h[len(df) - 1]) if d > 0 else min(best, l[len(df) - 1])
+        stop = max(stop, best - trail) if d > 0 else min(stop, best + trail)
+        sig["stop_now"] = round(float(stop), spec["digits"])
+
+
+# Markets that move together share one risk budget (user, 2 Nov 2026): five 0.5% trades on US stocks are one bet.
+CLUSTERS = {
+    "usd_fx": ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"), "jpy_cross": ("GBPJPY",),
+    "metals": ("XAUUSD", "XAGUSD"), "energy": ("USOIL",),
+    "us_equity": ("NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"), "world_equity": ("DE30", "JP225"),
+    "crypto": ("BTCUSD", "ETHUSD"),
+}
+CLUSTER_TH = {"usd_fx": "คู่เงิน USD", "jpy_cross": "คู่เงิน JPY", "metals": "โลหะ", "energy": "พลังงาน",
+              "us_equity": "หุ้นสหรัฐ", "world_equity": "ดัชนียุโรป/ญี่ปุ่น", "crypto": "คริปโต"}
+
+
+def cluster_of(sym: str) -> str:
+    return next((k for k, v in CLUSTERS.items() if sym in v), sym)
+
+
+AUTO_OFF_FILE = SIGNALS_FILE.parent / "research" / "auto_off.json"
+
+
+def auto_off() -> dict:
+    return read_json(AUTO_OFF_FILE, {})
+
+
+def kill_switch(sigs: list[dict], latest: dict, settings: dict) -> list[str]:
+    """Pre-agreed stop (user, 2 Nov 2026): a live system whose forward-test drawdown (closed trades, in R) grows beyond
+    `kill_dd_mult` (2x) its worst walk-forward OOS drawdown is switched off at once (data/research/auto_off.json) —
+    decided in advance, not in the middle of a losing streak. Returns the keys newly switched off."""
+    mult = float(settings.get("kill_dd_mult", 2.0))
+    off = auto_off()
+    new = []
+    for sym, entry in latest.items():
+        for cfg in research.live_systems(entry) + list(entry.get("trial_systems") or []):
+            key = f"{sym}:{cfg['strategy']}:{cfg['tf']}"
+            limit = float(cfg.get("max_dd_r") or 0) * mult
+            if key in off or limit <= 0:
+                continue
+            rs = [float(x.get("outcome_r") or 0) for x in reversed(sigs) if x["symbol"] == sym and x["strategy"] == cfg["strategy"]
+                  and x["tf"] == cfg["tf"] and x.get("outcome") not in (None, "open")
+                  and x.get("created", "") >= str((entry.get("quarter") or {}).get("cutoff") or "")]
+            if len(rs) < 5:
+                continue
+            eq = np.cumsum(rs)
+            dd = float(np.max(np.maximum.accumulate(np.concatenate(([0.0], eq)))[1:] - eq))
+            if dd > limit:
+                off[key] = {"time": datetime.now(timezone.utc).isoformat(), "dd_r": round(dd, 2), "limit_r": round(limit, 2),
+                            "trades": len(rs)}
+                new.append(key)
+    if new:
+        write_json(AUTO_OFF_FILE, off)
+    return new
 
 
 def pc_status() -> dict:
@@ -150,7 +216,7 @@ def scan_once() -> list[dict]:
     settings = load_settings()
     latest = research.latest().get("symbols", {})
     allow = {"ACTIVE"} | ({"WATCH"} if settings["alerts"].get("watch") else set())
-    track = {"ACTIVE", "WATCH"}
+    track = {"ACTIVE", "WATCH", "TRIAL"}
     new = []
     STATE.update(errors=[], checked=0)
     with _lock:
@@ -158,12 +224,17 @@ def scan_once() -> list[dict]:
         known = {s["id"] for s in sigs}
         frames: dict[tuple, pd.DataFrame] = {}
         cap = float(settings.get("max_symbol_risk_pct", 0.75))
+        ccaps = settings.get("cluster_risk_pct", {})
+        stopped = auto_off()
         for sym, entry in latest.items():
             # every ACTIVE system of the quarter is traded (several per symbol / TF allowed)
-            for cfg in research.live_systems(entry):
+            trials = list(entry.get("trial_systems") or []) if settings.get("trials", {}).get("enabled", True) else []
+            for cfg in research.live_systems(entry) + trials:
                 if cfg.get("status") not in track or not cfg.get("params"):
                     continue
                 if research._forced_off(settings, sym, cfg):     # veto takes effect at once, not only at the next research merge
+                    continue
+                if f"{sym}:{cfg['strategy']}:{cfg['tf']}" in stopped:    # the pre-agreed drawdown stop fired
                     continue
                 try:
                     key = (sym, cfg["tf"])
@@ -208,6 +279,15 @@ def scan_once() -> list[dict]:
                         if s["system_status"] == "ACTIVE" and open_risk + float(s["risk_pct"]) > cap + 1e-9:
                             s.update(capped=True, user_status="skipped",
                                      note=f"ข้าม: ความเสี่ยงรวม {sym} จะเป็น {open_risk + float(s['risk_pct']):.2f}% เกินเพดาน {cap}%")
+                        cl = cluster_of(sym)
+                        ccap = float(ccaps.get(cl, ccaps.get("default", 0)) or 0)
+                        if s["system_status"] == "ACTIVE" and not s.get("capped") and ccap > 0:
+                            c_risk = sum(float(x.get("risk_pct") or 0) for x in sigs
+                                         if cluster_of(x["symbol"]) == cl and x.get("outcome") == "open" and not x.get("capped")
+                                         and x.get("system_status") == "ACTIVE" and not (x["symbol"] == sym and same_sys(x)))
+                            if c_risk + float(s["risk_pct"]) > ccap + 1e-9:
+                                s.update(capped=True, user_status="skipped",
+                                         note=f"ข้าม: ความเสี่ยงรวมกลุ่ม{CLUSTER_TH.get(cl, cl)} จะเป็น {c_risk + float(s['risk_pct']):.2f}% เกินเพดาน {ccap}%")
                         sigs.insert(0, s)
                         known.add(s["id"])
                         new.append(s)
@@ -224,7 +304,14 @@ def scan_once() -> list[dict]:
                     except Exception:
                         continue
                 _track(s, df, symbol_spec(s["symbol"], settings))
+        killed = kill_switch(sigs, latest, settings)
         save_signals(sigs)
+    for key in killed:
+        sym_, sid_, tf_ = key.split(":")
+        no = STRATEGIES[sid_]["no"] if sid_ in STRATEGIES else sid_
+        notify.send(f"⛔ หยุดระบบ #{no} {sym_} {tf_} อัตโนมัติ",
+                    f"ขาดทุนต่อเนื่องจริงเกิน {settings.get('kill_dd_mult', 2.0)} เท่าของที่แย่ที่สุดในการทดสอบ — ไม่เปิดออเดอร์ใหม่ของระบบนี้ "
+                    "(ออเดอร์ที่ถืออยู่ปล่อยจบด้วย SL/TP)", priority=4, tags=["no_entry"])
     for s in new:
         if s["system_status"] not in allow or s.get("capped"):
             continue

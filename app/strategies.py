@@ -18,7 +18,10 @@ EXIT_PARAMS = [
     {"key": "sl_atr", "label": "SL (x ATR14)", "type": "float", "default": 2.0, "min": 0.5, "max": 6, "step": 0.1},
     {"key": "rr", "label": "TP (x ระยะ SL = R:R) · 0 = ไม่มี TP (ออกด้วย SL หรือสัญญาณกลับทิศ)", "type": "float", "default": 2.0, "min": 0, "max": 10, "step": 0.1},
     {"key": "max_hold_h", "label": "ถือสูงสุด (ชม.) — ใช้เมื่อเปิดกฎจำกัดเวลา", "type": "int", "default": 120, "min": 4, "max": 120, "step": 1},
+    {"key": "trail_atr", "label": "Trailing stop (x ATR14) · 0 = ไม่ใช้", "type": "float", "default": 0, "min": 0, "max": 10, "step": 0.5},
 ]
+TRAIL_ATR = 3.0          # the trailing variant tried with every no-TP combo of trend / breakout / momentum systems (2 Nov 2026)
+TREND_FAMILIES = ("Trend following", "Volatility breakout", "Momentum")
 
 
 def _cross_up(a, b):
@@ -1125,7 +1128,7 @@ for _k in RETIRED:
 # "No TP" variant (user's choice): trend / breakout / momentum systems also try rr = 0 (exit only by SL or an opposite
 # signal, how trend-following funds let winners run). Walk-forward picks it in-sample like any other parameter.
 for _k, _v in STRATEGIES.items():
-    if _v["family"] in ("Trend following", "Volatility breakout", "Momentum") and 0 not in _v["grid"].get("rr", []):
+    if _v["family"] in TREND_FAMILIES and 0 not in _v["grid"].get("rr", []):
         _v["grid"]["rr"] = list(_v["grid"]["rr"]) + [0]
 
 
@@ -1149,8 +1152,13 @@ def normalize(strategy_id: str, params: dict | None) -> dict:
 def grid(strategy_id: str, max_hold_h: int) -> list[dict]:
     g = STRATEGIES[strategy_id]["grid"]
     keys = list(g)
-    return [normalize(strategy_id, dict(zip(keys, vals)) | {"max_hold_h": max_hold_h})
-            for vals in itertools.product(*(g[k] for k in keys))]
+    out = [normalize(strategy_id, dict(zip(keys, vals)) | {"max_hold_h": max_hold_h})
+           for vals in itertools.product(*(g[k] for k in keys))]
+    # trend families: every no-TP combo is also tried with a trailing stop (user, 2 Nov 2026 — how Turtle / Clenow style
+    # trend followers lock in big moves); walk-forward chooses in-sample like any other parameter
+    if STRATEGIES[strategy_id]["family"] in TREND_FAMILIES:
+        out += [p | {"trail_atr": TRAIL_ATR} for p in out if p["rr"] == 0 and not p.get("trail_atr")]
+    return out
 
 
 def signals(strategy_id: str, df: pd.DataFrame, params: dict):

@@ -102,7 +102,13 @@ DEFAULT_SETTINGS = {
                   "min_mc_pf_p5": 1.0, "min_random_pct": 90.0, "min_plateau": 0.4,
                   "min_robust_score": 60.0,
                   "multiple_testing": True},   # OOS t must also beat the Sidak-adjusted threshold for the number of candidates compared
+        "effective_trials": True,        # count correlated candidates as fewer independent tests (Li & Ji eigenvalues; 2 Nov 2026)
     },
+    # 2 Nov 2026 (user: "do everything"): risk shared by markets that move together, a pre-agreed drawdown stop, and
+    # near-miss systems traded on the DEMO account only at a small risk to collect live evidence
+    "cluster_risk_pct": {"default": 1.5, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0},
+    "kill_dd_mult": 2.0,
+    "trials": {"enabled": True, "risk_pct": 0.1, "max_per_symbol": 2},
     "alerts": {"active": True, "watch": False},
     "force_off": [],                    # vetoed by the user / AI review: "XAUUSD" (whole symbol) or "XAUUSD:ichimoku_tk:H1" (one system)
     "scan_interval_sec": 120,
@@ -186,9 +192,52 @@ def save_settings(patch: dict) -> dict:
         return load_settings()
 
 
+BROKER_COSTS = DATA_DIR / "exness" / "costs.json"
+_costs_cache: dict = {"mtime": None, "data": {}}
+# MetaTrader SYMBOL_SWAP_MODE: 1 points · 2 base currency · 3 margin currency · 4 deposit currency (money per lot)
+#                              5 interest on current price · 6 interest on open price (annual %)
+
+
+def broker_costs(sym: str) -> dict:
+    """The broker's real costs (data/exness/costs.json, exported by the PC robot): spread = median spread of the H1 bars
+    of ~3 years (price units), swaps converted to price units per night (negative = the trader pays)."""
+    try:
+        m = BROKER_COSTS.stat().st_mtime
+    except OSError:
+        return {}
+    if _costs_cache["mtime"] != m:
+        _costs_cache.update(mtime=m, data=_read_json(BROKER_COSTS, {}).get("symbols", {}))
+    x = _costs_cache["data"].get(sym) or {}
+    if not x or x.get("error"):
+        return {}
+    pt = float(x.get("point") or 0)
+    out = {}
+    # MetaTrader stores one spread per bar (close to the bar's lowest): the 75th percentile is the conservative choice
+    sp = x.get("spread_p75") or x.get("spread_median")
+    if sp and pt:
+        out["spread"] = float(sp) * pt
+    mode = int(x.get("swap_mode") or 1)
+    price = float(x.get("price") or 0)
+    tv, ts = float(x.get("tick_value") or 0), float(x.get("tick_size") or 0)
+    money_per_price = tv / ts if tv and ts else 0.0                 # account money of a 1.0 price move for 1 lot
+    for side in ("long", "short"):
+        v = float(x.get(f"swap_{side}") or 0)
+        if mode == 1:
+            px = v * pt
+        elif mode in (2, 3, 4):
+            px = v / money_per_price if money_per_price else 0.0
+        elif mode in (5, 6):
+            px = price * v / 100 / 360 if price else 0.0
+        else:
+            px = 0.0
+        out[f"swap_{side}"] = px
+    out["swap_3day"] = int(x.get("swap_3day", 3)) - 1 if x.get("swap_3day") is not None else 2   # MT5: 0 = Sunday
+    return out
+
+
 def symbol_spec(sym: str, settings: dict | None = None) -> dict:
     settings = settings or load_settings()
-    return {**SYMBOLS[sym], **settings.get("symbol_overrides", {}).get(sym, {}), "symbol": sym}
+    return {**SYMBOLS[sym], **broker_costs(sym), **settings.get("symbol_overrides", {}).get(sym, {}), "symbol": sym}
 
 
 def read_json(path: Path, default):

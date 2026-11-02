@@ -5,6 +5,8 @@ Rules (identical in backtest, walk-forward, forward-tracking and live signals):
   * entry pays spread + 2x slippage + commission (all in price units) against the trader
   * SL = entry -/+ sl_atr * ATR14(i);  TP = entry +/- rr * that distance
   * if one bar touches both SL and TP, SL is assumed first (conservative)
+  * optional trailing stop (params trail_atr x ATR14 at the signal bar) that follows completed bars only
+  * overnight swap (the broker's charges; credits ignored) is deducted in R per rollover held
   * gaps through SL fill at the bar open; exit by time at the close of the last allowed bar
   * exits are set in settings research.exit_* (user's choice, Oct 2026: TP / SL / opposite signal only):
       exit_opposite_signal  an opposite signal on bar j closes the trade at bar j+1 open ("Rev"); the new
@@ -73,6 +75,40 @@ def cost_price(spec: dict) -> float:
     return float(spec.get("spread", 0)) + 2 * float(spec.get("slippage", 0)) + float(spec.get("commission", 0))
 
 
+ROLLOVER_UTC = 21          # daily rollover ~ New York 17:00 (21:00 UTC in summer, 22:00 in winter: an hour does not matter here)
+
+
+def rollover_weights(times: pd.DatetimeIndex, spec: dict) -> np.ndarray | None:
+    """Per bar: weighted number of rollovers (swap nights) up to that bar's open. Crypto pays every night; other
+    markets Monday-Friday with one weekday charged three times (the weekend). None when the symbol has no swap cost."""
+    sw = (float(spec.get("swap_long") or 0), float(spec.get("swap_short") or 0))
+    if min(sw) >= 0 or not len(times):
+        return None
+    t = pd.DatetimeIndex(times)
+    day0 = (t[0] - pd.Timedelta(hours=ROLLOVER_UTC)).floor("D")
+    dn = ((t - pd.Timedelta(hours=ROLLOVER_UTC)).floor("D") - day0).days.to_numpy()   # rollovers passed: day index
+    days = pd.date_range(day0, periods=int(dn.max()) + 2, freq="D")
+    wd = days.dayofweek.to_numpy()
+    if spec.get("group") == "Crypto":
+        w = np.ones(len(days))
+    else:
+        triple = int(spec.get("swap_3day", 2))                    # Monday = 0 … Wednesday = 2 (FX default)
+        w = np.where(wd >= 5, 0.0, np.where(wd == triple, 3.0, 1.0))
+    cum = np.cumsum(w)
+    return cum[dn]
+
+
+def swap_r(W, e: int, k: int, d: int, sl_dist: float, spec: dict) -> float:
+    """Swap paid by a trade held from bar e to bar k, in R. Only charges (negative swaps) count — credits are ignored,
+    so the test never earns from the broker's carry (conservative)."""
+    if W is None or k <= e:
+        return 0.0
+    rate = float(spec.get("swap_long") or 0) if d > 0 else float(spec.get("swap_short") or 0)
+    if rate >= 0:
+        return 0.0
+    return float(-rate * (W[k] - W[e]) / sl_dist)
+
+
 def hold_bars(params: dict, tf: str, rules: dict | None = None) -> int:
     if not (rules or exit_rules())["max_hold"]:
         return NO_LIMIT
@@ -80,10 +116,12 @@ def hold_bars(params: dict, tf: str, rules: dict | None = None) -> int:
 
 
 def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost: float, last: int | None = None,
-             opp=None):
+             opp=None, trail: float = 0.0):
     """Simulate one trade entered at bar e open. Returns (exit_idx, exit_px, reason, entry, sl, tp) or None if still open.
-    last = last bar the trade may hold (Friday close, when enabled) -> "Fri";
-    opp  = the strategy's signal array: the first opposite signal at bar j exits at bar j+1 open -> "Rev"."""
+    last  = last bar the trade may hold (Friday close, when enabled) -> "Fri";
+    opp   = the strategy's signal array: the first opposite signal at bar j exits at bar j+1 open -> "Rev";
+    trail = trailing-stop distance in price (0 = off): the stop follows the best price of the COMPLETED bars
+            (bar k uses the extreme of bars e..k-1, never its own) and never moves back; hit -> "Trail"."""
     n = len(o)
     entry = o[e] + d * cost
     sl = entry - d * sl_dist
@@ -97,16 +135,24 @@ def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost
             j_opp = e + int(hits[0])
             end = j_opp + 1                       # SL / TP can still hit up to and including the signal bar
     hh, ll, oo = h[e:end], l[e:end], o[e:end]
+    stop = np.full(len(hh), sl)
+    if trail > 0 and len(hh):
+        if d > 0:
+            best = np.maximum.accumulate(np.concatenate(([entry], hh[:-1])))
+            stop = np.maximum(sl, best - trail)
+        else:
+            best = np.minimum.accumulate(np.concatenate(([entry], ll[:-1])))
+            stop = np.minimum(sl, best + trail)
     if d > 0:
-        sl_hit, tp_hit = ll <= sl, (hh >= tp if tp is not None else np.zeros(len(hh), bool))
+        sl_hit, tp_hit = ll <= stop, (hh >= tp if tp is not None else np.zeros(len(hh), bool))
     else:
-        sl_hit, tp_hit = hh >= sl, (ll <= tp if tp is not None else np.zeros(len(ll), bool))
+        sl_hit, tp_hit = hh >= stop, (ll <= tp if tp is not None else np.zeros(len(ll), bool))
     i_sl = int(np.argmax(sl_hit)) if sl_hit.any() else None
     i_tp = int(np.argmax(tp_hit)) if tp_hit.any() else None
     if i_sl is not None and (i_tp is None or i_sl <= i_tp):
-        k = e + i_sl
-        gap = (oo[i_sl] < sl) if d > 0 else (oo[i_sl] > sl)
-        return k, (oo[i_sl] if gap and i_sl > 0 else sl), "SL", entry, sl, tp
+        k, st_px = e + i_sl, float(stop[i_sl])
+        gap = (oo[i_sl] < st_px) if d > 0 else (oo[i_sl] > st_px)
+        return k, (oo[i_sl] if gap and i_sl > 0 else st_px), ("Trail" if st_px != sl else "SL"), entry, sl, tp
     if i_tp is not None:
         return e + i_tp, tp, "TP", entry, sl, tp
     if j_opp is not None:
@@ -127,7 +173,9 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
     sig, lines = signals(strategy_id, df, params)
     rules = exit_rules()
     cost, H, rr = cost_price(spec), hold_bars(params, tf, rules), float(params["rr"])
+    trail_k = float(params.get("trail_atr") or 0)
     times = df.index
+    W = rollover_weights(times, spec)
     n = len(o)
     if rules["friday"]:
         wlast, wblock, wcut = week_guard(times, tf)
@@ -147,22 +195,25 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
             continue
         d = int(sig[i])
         sl_dist = float(params["sl_atr"]) * a[i]
-        res = simulate(o, h, l, c, e, d, sl_dist, rr, H, cost, int(wlast[e]) if wlast is not None else None, opp)
+        res = simulate(o, h, l, c, e, d, sl_dist, rr, H, cost, int(wlast[e]) if wlast is not None else None, opp,
+                       trail_k * a[i])
         if res is None:
             entry = o[e] + d * cost
             close_by = times[e] + pd.Timedelta(minutes=TIMEFRAMES[tf] * H) if rules["max_hold"] else None
             if wcut is not None:
                 close_by = min(close_by, wcut[e]) if close_by is not None else wcut[e]
-            open_trade = {"signal_i": int(i), "entry_i": e, "entry_time": times[e], "dir": d,
+            open_trade = {"signal_i": int(i), "entry_i": e, "entry_time": times[e], "dir": d, "trail": trail_k * a[i],
                           "entry": entry, "sl_dist": sl_dist, "sl": entry - d * sl_dist, "tp": entry + d * rr * sl_dist if rr > 0 else None,
                           "close_by": close_by,
                           # an opposite signal on the last closed bar: close this one and reverse at the next open
                           "reverse_pending": bool(opp is not None and n and sig[-1] == -d and n - 1 >= e)}
             break
         k, px, reason, entry, sl, tp = res
+        sw = swap_r(W, e, k, d, sl_dist, spec)
         trades.append({"signal_i": int(i), "entry_i": e, "exit_i": int(k), "entry_time": times[e], "exit_time": times[k],
                        "dir": d, "entry": entry, "sl": sl, "tp": tp, "exit": float(px), "reason": reason,
-                       "r": d * (px - entry) / sl_dist, "bars": int(k - e + (0 if reason == "Rev" else 1)), "cost_r": cost / sl_dist})
+                       "r": d * (px - entry) / sl_dist - sw, "bars": int(k - e + (0 if reason == "Rev" else 1)),
+                       "cost_r": cost / sl_dist + sw, "swap_r": sw})
         free_from = k if reason == "Rev" else k + 1   # a reversal re-enters at the same open it exits on
     out = {"trades": trades, "open_trade": open_trade, "last_signal": int(sig[-1]) if len(sig) else 0,
            "atr_last": float(a[-1]) if len(a) else math.nan}
