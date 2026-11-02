@@ -443,13 +443,18 @@ def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataF
             df.to_pickle(path)
         except Exception as e:
             if cached is None:
-                raise
-            log.warning("refresh %s via %s failed (%s); using cache", sym, src, e)
-            df = cached
+                seed = _seed(sym)
+                if seed is None or seed.empty:
+                    raise
+                log.warning("refresh %s via %s failed (%s); using the broker history only", sym, src, e)
+                df = seed.iloc[:0]                       # empty live part -> with_history returns the seed
+            else:
+                log.warning("refresh %s via %s failed (%s); using cache", sym, src, e)
+                df = cached
         if src == "yahoo":
             df = with_history(sym, df)       # cache keeps the raw Yahoo bars; the history file is joined on read
             df = with_twelve(sym, df)        # spot FX / gold from Twelve Data when the key is configured
-        elif src == "binance" and _seed_exness(sym) is not None:
+        elif src == "binance" and (_seed_exness(sym) is not None or df.empty):
             df = with_history(sym, df)       # Exness crypto history + the newest Binance bars on top
         df = market_hours(sym, df, settings)
         _mem[key] = (time.time(), df)

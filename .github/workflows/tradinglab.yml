@@ -106,6 +106,7 @@ jobs:
       matrix:
         symbol: [EURUSD, GBPUSD, USDJPY, GBPJPY, AUDUSD, USDCAD, XAUUSD, XAGUSD, USOIL, NAS100, US500, DE30, JP225, NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
         tf: [H1, H4, D1]
+        chunk: ["0/3", "1/3", "2/3"]   # 109 strategies split over 3 jobs per symbol x TF (6 h job limit; FX H1 ~3 h whole)
     env:
       PYTHONWARNINGS: ignore
       TL_OFFLINE: "1"
@@ -123,10 +124,10 @@ jobs:
           key: prices-${{ github.run_id }}-research
           restore-keys: prices-
       - name: Research ${{ matrix.symbol }} ${{ matrix.tf }}
-        run: python -m app.cloud part ${{ matrix.symbol }} ${{ matrix.tf }}
+        run: python -m app.cloud part ${{ matrix.symbol }} ${{ matrix.tf }} ${{ matrix.chunk }}
       - uses: actions/upload-artifact@v4
         with:
-          name: part-${{ matrix.symbol }}-${{ matrix.tf }}
+          name: part-${{ matrix.symbol }}-${{ matrix.tf }}-${{ strategy.job-index }}
           path: data/research/parts/
           retention-days: 3
 

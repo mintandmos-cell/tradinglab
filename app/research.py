@@ -96,8 +96,9 @@ def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tu
     return summary, heavy
 
 
-def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
-    """All strategies on one symbol x TF, every step for every strategy (the cloud runs the 24 parts in parallel)."""
+def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | None = None) -> dict:
+    """All strategies on one symbol x TF, every step for every strategy (the cloud runs the parts in parallel).
+    chunk "k/n" = only every n-th strategy starting at k (109 strategies are split over 2 jobs per symbol x TF)."""
     settings = settings or load_settings()
     cfg = settings["research"]
     spec = symbol_spec(sym, settings)
@@ -111,7 +112,11 @@ def research_part(sym: str, tf: str, settings: dict | None = None) -> dict:
            "bars_h1": int(len(h1)), "bars": int(len(df)), "cutoff": cutoff.isoformat(), "candidates": [], "heavy": {}}
     if len(df) < 500:
         return out
-    for sid in STRATEGIES:
+    ids = list(STRATEGIES)
+    if chunk:
+        k, n = (int(x) for x in chunk.split("/"))
+        ids = ids[k::n]
+    for sid in ids:
         STATE["progress"] = f"{sym} {tf} {sid}"
         t0 = time.time()
         wf = walk_forward(df, sid, spec, tf, cfg)
@@ -305,6 +310,16 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
     settings = load_settings()
     prev = read_json(LATEST_RESEARCH, {"symbols": {}})
     out = {"generated": None, "settings": settings["research"], "symbols": dict(prev.get("symbols", {}))}
+    # parts split by strategy chunks: one part per symbol x TF again (candidates + heavy data joined)
+    joined: dict[tuple, dict] = {}
+    for p in parts:
+        key = (p["symbol"], p["tf"])
+        if key not in joined:
+            joined[key] = {**p, "candidates": list(p["candidates"]), "heavy": dict(p["heavy"])}
+        else:
+            joined[key]["candidates"] += p["candidates"]
+            joined[key]["heavy"].update(p["heavy"])
+    parts = list(joined.values())
     by_sym: dict[str, list[dict]] = {}
     for p in parts:
         by_sym.setdefault(p["symbol"], []).append(p)

@@ -34,9 +34,11 @@ def main(mode: str, *args: str) -> int:
         return 0
     if mode == "part":       # research run, step 2 (one matrix job per symbol x TF): every strategy, every step
         sym, tf = args[0], args[1]
-        part = research.research_part(sym, tf)
+        chunk = args[2] if len(args) > 2 else None
+        part = research.research_part(sym, tf, chunk=chunk)
         research.PARTS_DIR.mkdir(parents=True, exist_ok=True)
-        with gzip.open(research.PARTS_DIR / f"{sym}_{tf}.json.gz", "wt", encoding="utf-8") as f:
+        suffix = f"_{chunk.replace('/', 'of')}" if chunk else ""
+        with gzip.open(research.PARTS_DIR / f"{sym}_{tf}{suffix}.json.gz", "wt", encoding="utf-8") as f:
             json.dump(part, f, separators=(",", ":"), default=str)
         return 0
     if mode == "merge":      # research run, step 3: judge all candidates, write latest.json, then scan + build below
