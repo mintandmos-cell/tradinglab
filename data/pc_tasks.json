@@ -1,27 +1,10 @@
 {
- "id": "2026-11-02-exness-1",
- "list_symbols": true,
+ "id": "2026-11-02-exness-2",
+ "list_symbols": false,
  "export_history": {
-  "EURUSD": "EURUSD",
-  "GBPUSD": "GBPUSD",
-  "USDJPY": "USDJPY",
-  "XAUUSD": "XAUUSD",
-  "NAS100": "USTEC",
-  "US500": "US500",
-  "BTCUSD": "BTCUSD",
-  "ETHUSD": "ETHUSD",
-  "GBPJPY": "GBPJPY",
-  "AUDUSD": "AUDUSD",
-  "USDCAD": "USDCAD",
-  "NVDA": "NVDA",
-  "MSFT": "MSFT",
-  "AMZN": "AMZN",
-  "META": "META",
-  "AAPL": "AAPL",
-  "SOLUSD": "SOLUSD",
-  "XRPUSD": "XRPUSD",
-  "LTCUSD": "LTCUSD",
-  "USOIL": "USOIL"
+  "XAGUSD": "XAGUSD",
+  "DE30": "DE30",
+  "JP225": "JP225"
  },
  "bars": 200000
 }
