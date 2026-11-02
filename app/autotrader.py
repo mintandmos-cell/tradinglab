@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from . import data, ghsync, notify, scanner
-from .config import DATA_DIR, TIMEFRAMES, load_settings, read_json, write_json
+from .config import DATA_DIR, SYMBOLS, TIMEFRAMES, load_settings, read_json, write_json
 from .strategies import STRATEGIES
 
 log = logging.getLogger("tradinglab.autotrader")
@@ -392,6 +392,37 @@ def sync_exits(c: dict, st: dict) -> None:
 
 
 # ------------------------------------------------------------------------------------------------ jobs from Claude
+def broker_costs(mt5) -> dict:
+    """The broker's real trading costs per symbol (user, 2 Nov 2026: test on the broker's own costs): the median spread of
+    the H1 bars of the last ~3 years (overall and in the busiest hours), the swap rates with their unit (swap_mode) and the
+    weekday that is charged three times. Bars carry the spread in points (MetaTrader's per-bar minimum spread)."""
+    out = {"generated": datetime.now(timezone.utc).isoformat(), "symbols": {}}
+    for sym in SYMBOLS:
+        try:
+            real = data.mt5_resolve(sym) or sym
+            mt5.symbol_select(real, True)
+            i = mt5.symbol_info(real)
+            rates = mt5.copy_rates_from_pos(real, mt5.TIMEFRAME_H1, 0, 20000)
+            row = {"name": real, "point": i.point, "digits": i.digits, "contract": i.trade_contract_size,
+                   "tick_value": i.trade_tick_value, "tick_size": i.trade_tick_size, "volume_min": i.volume_min,
+                   "swap_mode": int(i.swap_mode), "swap_long": i.swap_long, "swap_short": i.swap_short,
+                   "swap_3day": int(getattr(i, "swap_rollover3days", 3)), "spread_now": i.spread,
+                   "currency_profit": i.currency_profit, "currency_margin": getattr(i, "currency_margin", ""),
+                   "price": (i.bid + i.ask) / 2 if i.bid and i.ask else None}
+            if rates is not None and len(rates):
+                df = pd.DataFrame(rates)
+                sp = df["spread"].astype(float)
+                sp = sp[sp > 0]
+                if len(sp):
+                    busy = sp[df.loc[sp.index, "tick_volume"] >= df["tick_volume"].quantile(0.5)]
+                    row.update(spread_median=float(sp.median()), spread_p75=float(sp.quantile(0.75)),
+                               spread_busy=float(busy.median()) if len(busy) else float(sp.median()), bars=int(len(df)))
+            out["symbols"][sym] = row
+        except Exception as e:
+            out["symbols"][sym] = {"error": repr(e)[:200]}
+    return out
+
+
 def run_tasks(c: dict, st: dict) -> None:
     """data/pc_tasks.json on GitHub = work Claude asks this PC to do (the cloud cannot reach the broker):
        {"id": "...", "list_symbols": true, "export_history": {"EURUSD": "EURUSD", "NAS100": "USTEC", ...}, "bars": 200000}
@@ -407,7 +438,8 @@ def run_tasks(c: dict, st: dict) -> None:
         task = ghsync.get_json("data/pc_tasks.json")
         if not task or not task.get("id") or task["id"] == st.get("task_done"):
             return
-        steps = (["__list__"] if task.get("list_symbols") else []) + list((task.get("export_history") or {}).items())
+        steps = (["__list__"] if task.get("list_symbols") else []) + (["__costs__"] if task.get("cost_stats") else []) \
+            + list((task.get("export_history") or {}).items())
         job = st["task"] = {"id": task["id"], "steps": steps, "bars": int(task.get("bars", 200000)),
                             "report": {"id": task["id"], "started": now.isoformat(), "symbols": {}}}
         _log("task", id=task["id"], steps=len(steps))
@@ -416,7 +448,11 @@ def run_tasks(c: dict, st: dict) -> None:
     rep.update(server=getattr(mt5.account_info(), "server", ""), utc_offset_h=data.mt5_utc_offset())
     if job["steps"]:
         step = job["steps"].pop(0)
-        if step == "__list__":
+        if step == "__costs__":
+            body = broker_costs(mt5)
+            ghsync.put_file("data/exness/costs.json", json.dumps(body, indent=1).encode(), "pc: Exness spreads + swaps [skip ci]")
+            rep["costs"] = {k: v.get("error") or "ok" for k, v in body["symbols"].items()}
+        elif step == "__list__":
             rows = [{k: getattr(i, k, None) for k in (
                 "name", "path", "description", "digits", "point", "spread", "trade_contract_size", "trade_tick_value",
                 "trade_tick_size", "volume_min", "volume_step", "swap_long", "swap_short", "currency_profit", "trade_mode")}

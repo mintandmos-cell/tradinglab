@@ -1,10 +1,7 @@
 {
- "id": "2026-11-02-exness-2",
+ "id": "2026-11-02-costs-1",
  "list_symbols": false,
- "export_history": {
-  "XAGUSD": "XAGUSD",
-  "DE30": "DE30",
-  "JP225": "JP225"
- },
+ "cost_stats": true,
+ "export_history": {},
  "bars": 200000
 }
