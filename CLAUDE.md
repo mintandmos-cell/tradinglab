@@ -96,6 +96,10 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Research matrix: 20 symbols x 3 TF x 4 chunks = 240 jobs. latest.json keeps SLIM candidates (`research.slim`); full records in
   `data/research/cands/{SYM}.json.gz` (`research.candidates`, Lab page via /api/research/candidates = site data/research/{SYM}.json).
   Full site payload build covers the 109 core systems + MR systems that are not OFF.
+- WFA WINDOWS PER TF (user, 3 Nov 2026, later the same day — replaces the expanding default): settings research.wfa =
+  H1 rolling IS 24 m / OOS 12 m, H4 and D1 rolling IS 36 m / OOS 12 m; folds counted BACKWARDS from the cut-off (the last fold
+  ends at the start of the current quarter); live set re-picked each quarterly run (lock 3 months, hysteresis). Robustness
+  variants per TF: IS +12 m, IS -12 m, OOS 6 m, expanding. Short histories (stocks / indices since 2019) leave few D1 OOS trades.
 - WFA (user, 3 Nov 2026, fixed before results): in-sample = all history before each quarter (`is_mode` expanding, >= 24 m);
   pick on a plateau (`plateau_weight` 0.5: own IS t + mean t of grid neighbours, `walkforward.neighbours`); keep last quarter's
   set unless another scores >= `switch_margin` 0.5 better. Robustness WF variants: expanding 36/3, 24/6, rolling 12/3, 24/3.

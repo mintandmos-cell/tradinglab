@@ -60,13 +60,17 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
                  runs: list[dict] | None = None) -> dict:
     """runs = the full-history backtest of every combo, reusable across window lengths (robustness test)."""
     combos = combos or grid(strategy_id, cfg.get("max_hold_hours", 120))
-    is_m, oos_m, min_tr = cfg.get("is_months", 24), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
+    win = (cfg.get("wfa") or {}).get(tf) if not cfg.get("wfa_override") else None
+    # per-TF windows (user, 3 Nov 2026): H1 IS 2 y / OOS 1 y, H4 and D1 IS 3 y / OOS 1 y, a new fold every year
+    is_m = int(win["is_months"]) if win else cfg.get("is_months", 24)
+    oos_m = int(win["oos_months"]) if win else cfg.get("oos_months", 3)
+    min_tr = cfg.get("min_is_trades", 20)
     # WFA rules (user, 3 Nov 2026 — fixed before seeing any result):
     #  * in-sample = ALL history before the fold ("expanding", at least is_months) — 12 rolling months gave H4/D1 systems
     #    too few trades to choose from, so they rarely traded; "rolling" keeps the old behaviour (robustness variants)
     #  * the set is chosen on a PLATEAU: half its own in-sample t, half the mean t of its neighbours on the parameter map
     #  * hysteresis: the set traded last quarter is kept unless another one scores clearly better (switch_margin in t)
-    mode = cfg.get("is_mode", "expanding")
+    mode = (win or {}).get("is_mode") or cfg.get("is_mode", "expanding")
     plateau_w = float(cfg.get("plateau_weight", 0.5))
     margin = float(cfg.get("switch_margin", 0.5))
     runs = runs if runs is not None else backtest_combos(df, strategy_id, spec, tf, combos)
@@ -76,11 +80,14 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
     # sit the same exam; the live parameters are what the in-sample window just before the cut-off picks, traded unchanged
     # for the following period (= the next out-of-sample fold, now happening live).
     first = df.index[0] + pd.Timedelta(days=30)
-    end = pd.Timestamp(cfg["cutoff"]) if cfg.get("cutoff") else period_start(df.index[-1], oos_m)
-    end = period_start(end, oos_m) if end != period_start(end, oos_m) else end
-    q = period_start(first, oos_m)
-    while add_months(q, -is_m) < first:
-        q = add_months(q, oos_m)
+    # folds are counted BACKWARDS from the research cut-off (start of the current quarter), so the last OOS fold ends
+    # exactly at the cut-off whatever the fold length (a 12-month fold must not snap the cut-off back to 1 January)
+    end = pd.Timestamp(cfg["cutoff"]) if cfg.get("cutoff") else period_start(df.index[-1], 3)
+    starts = []
+    q = add_months(end, -oos_m)
+    while add_months(q, -is_m) >= first:
+        starts.insert(0, q)
+        q = add_months(q, -oos_m)
     folds, oos_trades, is_rates = [], [], []
     last_pick = None
 
@@ -101,7 +108,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
             best, best_s = prev, score[prev]
         return best, (raw[best] if best is not None else -np.inf)
 
-    while q < end:
+    for q in starts:
         is_start = first if mode == "expanding" else add_months(q, -is_m)
         is_end, oos_end = q, min(add_months(q, oos_m), end)
         best, best_t = pick(is_start, is_end, last_pick)
@@ -122,11 +129,11 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
                         is_t=round(best_t, 2), oos_trades=int(len(x_oos)), oos_r=round(float(x_oos.sum()), 2),
                         oos_exp=round(float(x_oos.mean()), 4) if len(x_oos) else None)
         folds.append(fold)
-        q = add_months(q, oos_m)
 
     # live parameters: in-sample = the is_m months before the cut-off, traded from the cut-off for one period
     cur, cur_t = pick(first if mode == "expanding" else add_months(end, -is_m), end, last_pick)
-    lock = {"start": end.isoformat(), "end": add_months(end, oos_m).isoformat()}
+    # live set: chosen at the cut-off with the same rule; re-checked by the next quarterly research run (3 months)
+    lock = {"start": end.isoformat(), "end": add_months(end, 3).isoformat()}
     end_eff = end
     oos_trades.sort(key=lambda x: x["entry_time"])
     oos_r = np.array([x["r"] for x in oos_trades], float)

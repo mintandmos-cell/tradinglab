@@ -68,12 +68,20 @@ def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise
 
     # 1. walk-forward window lengths
     rows = []
-    for mode, is_m, oos_m in WF_WINDOWS:
-        if (mode, is_m, oos_m) == (cfg.get("is_mode", "expanding"), cfg.get("is_months", 24), cfg.get("oos_months", 3)):
+    win = (cfg.get("wfa") or {}).get(tf)
+    if win:     # per-TF windows: the chosen one, a year more / less in-sample, half-year folds, all history in-sample
+        b_is, b_oos = int(win["is_months"]), int(win["oos_months"])
+        windows = [("rolling", b_is, b_oos), ("rolling", b_is + 12, b_oos), ("rolling", max(12, b_is - 12), b_oos),
+                   ("rolling", b_is, 6), ("expanding", b_is, b_oos)]
+    else:
+        windows = WF_WINDOWS
+    for k, (mode, is_m, oos_m) in enumerate(windows):
+        if k == 0 and win or (not win and (mode, is_m, oos_m) == (cfg.get("is_mode", "expanding"), cfg.get("is_months", 24),
+                                                                  cfg.get("oos_months", 3))):
             o = wf["oos"]
         else:
-            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_mode": mode, "is_months": is_m, "oos_months": oos_m},
-                             runs=wf.get("_runs"))["oos"]
+            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_mode": mode, "is_months": is_m, "oos_months": oos_m,
+                                                            "wfa_override": True}, runs=wf.get("_runs"))["oos"]
         if o["trades"] >= 10:
             rows.append({"is": f"{'≥' if mode == 'expanding' else ''}{is_m}", "oos": oos_m, "trades": o["trades"],
                          "expectancy": o["expectancy"], "t": o["t_stat"]})
