@@ -19,6 +19,10 @@ on:
         description: "merge = judge the research parts of an earlier run again (its run id) without re-testing"
         type: string
         default: ""
+      artifact_ids:
+        description: "merge: comma-separated artifact ids (the cross-run artifact list stops at 200)"
+        type: string
+        default: ""
   push:
     branches: [main]
     paths: ["app/**", "web/**", "data/research/**", "data/settings.json", "data/history/**", "data/signals.json", ".github/workflows/**"]
@@ -182,7 +186,8 @@ jobs:
         if: needs.plan.outputs.mode == 'merge'
         uses: actions/download-artifact@v4
         with:
-          pattern: part-*
+          pattern: ${{ inputs.artifact_ids == '' && 'part-*' || '' }}
+          artifact-ids: ${{ inputs.artifact_ids }}
           path: data/research/parts
           merge-multiple: true
           run-id: ${{ inputs.from_run }}
