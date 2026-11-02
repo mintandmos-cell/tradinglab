@@ -37,7 +37,7 @@ def summarize(r, years: float, risk_pct: float = 1.0, bars=None, cost_r=None) ->
         "avg_win": round(float(wins.mean()), 3) if len(wins) else 0.0,
         "avg_loss": round(float(losses.mean()), 3) if len(losses) else 0.0,
         "max_dd_r": round(dd_r, 2),
-        "t_stat": round(float(r.mean() / (sd / math.sqrt(n))), 2) if sd > 0 else 0.0,
+        "t_stat": round(float(r.mean() / (sd / math.sqrt(n))), 2) if sd > 1e-9 * max(1.0, abs(float(r.mean()))) else 0.0,
         "trades_per_year": round(n / years, 1) if years > 0 else 0.0,
         "risk_pct": risk_pct,
         "cagr_pct": round(float(cagr), 2),
