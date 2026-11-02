@@ -45,7 +45,7 @@ DEFAULTS = {
     "risk_scale": 1.0,             # x each signal's risk (0.25 % single, 0.10 % portfolio) = same sizing as the alerts
     "follow_cap": True,            # skip a signal the alert also skips (per-symbol risk cap 0.75 %, "capped" on the website),
                                    # so the robot, the phone and the website always agree
-    "max_symbol_risk_pct": 0.75,   # robot's own cap, only for symbols NOT in min_lot_always
+    "max_symbol_risk_pct": 1.0,    # robot own cap per asset (user: max 1 % per asset), only for symbols NOT in min_lot_always
     # user's rule 28 Oct 2026: no prop-style 6 % / 3 % limits, only "don't blow the account" (0 = off)
     "pause_total_dd_pct": 25.0,    # loss from the starting balance: stop opening new trades
     "close_total_dd_pct": 30.0,    # ... close everything
@@ -60,6 +60,7 @@ DEFAULTS = {
     "alert_levels": True,          # place exactly the alert's SL / TP prices (lots sized on the real distance)
     "max_chase_r": 0.5,            # a late signal is not entered once price ran > 0.5 R in its favour (or to within 0.1 R of SL)           # a failed order is retried every 15 s for this long after the signal
     "notify": True,                # push "🤖 DEMO/REAL ..." to the ntfy topic in data/local.json
+    "autostart": True,             # start autotrade.bat after every Windows logon (Startup folder)
 }
 STATE_FILE = DATA_DIR / "autotrade_state.json"
 LOG_FILE = DATA_DIR / "autotrade_log.jsonl"
@@ -460,6 +461,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
 _upd = {"at": 0.0, "blocked": 0.0}
 _poll = {"at": 0.0}
 _retry = {"at": 0.0}
+_single = None
 CODE_PATHS = ["app", "tools", "requirements.txt"]
 
 
@@ -498,6 +500,28 @@ def code_update_available() -> bool:
         return False
 
 
+def ensure_autostart(c: dict) -> None:
+    """User's choice (2 Nov 2026): start the auto-trader by itself after every Windows logon / restart (MT5 is opened by
+    the MetaTrader5 package when the robot connects). Writes one small .cmd into the user's Startup folder."""
+    import os
+    import sys
+    if not c.get("autostart", True) or not sys.platform.startswith("win"):
+        return
+    try:
+        folder = os.path.join(os.environ["APPDATA"], r"Microsoft\Windows\Start Menu\Programs\Startup")
+        path = os.path.join(folder, "TradingLab-autotrade.cmd")
+        root = str(DATA_DIR.parent)
+        body = (f'@echo off\r\nREM TradingLab auto-trader - starts after logon (remove this file to stop that)\r\n'
+                f'timeout /t 60 /nobreak >NUL\r\ncd /d "{root}"\r\nstart "TradingLab auto-trader" /min cmd /c autotrade.bat\r\n')
+        if not os.path.exists(path) or open(path, encoding="utf-8", errors="ignore").read() != body.replace("\r\n", "\n"):
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                f.write(body)
+            _log("autostart", path=path)
+            print(f"   Auto-start after logon: {path}")
+    except Exception as e:
+        _log("autostart_failed", reason=repr(e))
+
+
 def main() -> None:
     import sys
     for f in (sys.stdout, sys.stderr):
@@ -506,6 +530,14 @@ def main() -> None:
         except Exception:
             pass
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    import socket
+    global _single
+    _single = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:                                                 # one robot per PC (Startup + a manual double-click = 2 robots)
+        _single.bind(("127.0.0.1", 8899))
+    except OSError:
+        print("[STOP] The auto-trader is already running in another window - this one closes.")
+        return
     c = cfg()
     settings = load_settings()
     if settings.get("data_source") == "free":
@@ -535,6 +567,7 @@ def main() -> None:
           f"(start balance {st['start_balance']:,.2f}) | risk x{c['risk_scale']}"
           + (" | DRY RUN (no real orders)" if c["dry_run"] else ""))
     print("   Running. Scans + trades right after every H1 close. Keep this window and MT5 open. Log: data/autotrade_log.jsonl")
+    ensure_autostart(c)
     _log("start", login=a.login, server=a.server, balance=a.balance, kind=_kind(), config=c)
     last_hour = st.get("last_hour")
     while True:

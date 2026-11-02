@@ -49,9 +49,9 @@ SYMBOLS: dict[str, dict] = {
 DEFAULT_SETTINGS = {
     "account_balance": 5000.0,
     "account_currency": "USD",
-    "risk_per_trade_pct": 0.25,         # fixed risk per signal (0 = use each system's Monte Carlo risk)
-    "portfolio_risk_pct": 0.10,         # risk per trade of fund-style portfolio systems (user's choice 27 Oct 2026)
-    "max_symbol_risk_pct": 0.75,        # cap on the open risk of ALL systems of one symbol (several ACTIVE systems allowed)
+    "risk_per_trade_pct": 0.5,          # fixed risk per signal, every asset alike (user's choice 2 Nov 2026; was 0.25)
+    "portfolio_risk_pct": 0.5,          # portfolio systems risk the same as single ones (user, 2 Nov 2026: equal risk per asset)
+    "max_symbol_risk_pct": 1.0,         # cap on the open risk of ALL systems of one symbol (user, 2 Nov 2026: max 1 % per asset)
     "default_risk_pct": 0.5,
     "max_risk_pct": 1.0,
     "target_max_dd_pct": 10.0,          # Monte Carlo 95th-percentile drawdown the sizing must respect
