@@ -116,11 +116,13 @@ def publish(new: list[dict]) -> bool:
         try:
             text, sha = _get("data/signals.json")
             remote = json.loads(text)
-            ids = {s.get("id") for s in remote}
-            add = [s for s in new if s["id"] not in ids]
+            have = {s.get("id"): s for s in remote}
+            # new ids, and ids the cloud alerted first on its free feed: the PC's copy replaces those (it is what MT5 traded)
+            add = [s for s in new if s["id"] not in have or (s.get("origin") == "pc" and have[s["id"]].get("origin") != "pc")]
             if not add:
                 return True
-            merged = sorted(add + remote, key=lambda s: s.get("created") or "", reverse=True)[:600]
+            from tools.merge_signals import union
+            merged = union(add, remote)
             body = json.dumps(merged, ensure_ascii=False, indent=1, default=str)
             names = ", ".join(f"{s['symbol']} {s['tf']} {s['strategy']}" for s in add)
             r = requests.put(API + "data/signals.json", headers=_hdr(), timeout=60, json={
@@ -128,9 +130,7 @@ def publish(new: list[dict]) -> bool:
                 "content": base64.b64encode(body.encode("utf-8")).decode()})
             if r.status_code in (200, 201):
                 local = read_json(SIGNALS_FILE, [])
-                write_json(SIGNALS_FILE, merged if not local else
-                           sorted(local + [s for s in merged if s["id"] not in {x["id"] for x in local}],
-                                  key=lambda s: s.get("created") or "", reverse=True)[:600])
+                write_json(SIGNALS_FILE, merged if not local else union(local, merged))
                 return True
             _fail(f"publish: HTTP {r.status_code} {r.text[:200]}")
             if r.status_code not in (409, 422):

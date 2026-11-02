@@ -13,3 +13,4 @@ data/research/parts/
 data/autotrade_state.json
 data/autotrade_log.jsonl
 data/cloud_state.json
+data/sys_cache/

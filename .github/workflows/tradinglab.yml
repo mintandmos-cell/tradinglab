@@ -173,6 +173,13 @@ jobs:
           path: data/research/parts
           merge-multiple: true
 
+      - name: Restore system payload cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/sys_cache
+          key: sys-${{ github.run_id }}
+          restore-keys: sys-
+
       - name: Run
         run: |
           MODE="${{ needs.plan.outputs.mode }}"
@@ -180,6 +187,13 @@ jobs:
           echo "mode=$MODE"
           python -m app.cloud "$MODE"
           if [ "$MODE" = "test" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi
+
+      - name: Save system payload cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/sys_cache
+          key: sys-${{ github.run_id }}
 
       - name: Save price cache
         if: always()

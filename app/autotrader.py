@@ -312,6 +312,7 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
     a = _mt5().account_info()
     status = {**st.get("status", {}), **extra, "time": datetime.now(timezone.utc).isoformat(), "account": _kind(),
               "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
+              "start_balance": st.get("start_balance"),
               "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15]}
     st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)

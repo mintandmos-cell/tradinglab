@@ -20,11 +20,11 @@
   "side": "LONG",
   "dir": 1,
   "entry": 157.943,
-  "sl": 157.643,
+  "sl": 157.631,
   "tp": null,
-  "sl_dist": 0.3,
+  "sl_dist": 0.312,
   "tp_dist": null,
-  "sl_pips": 30.0,
+  "sl_pips": 31.2,
   "tp_pips": null,
   "rr": 0.0,
   "risk_pct": 0.1,
@@ -46,7 +46,8 @@
   "exit_time": null,
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "pc",
+  "note": "SL ตามที่โปรแกรมบนคอมวางใน MT5 (คอมเห็นสัญญาณก่อนคลาวด์)"
  },
  {
   "id": "EURUSD-H1-vol_breakout-1793606400",

@@ -113,7 +113,7 @@ def system_params(symbol: str, tf: str, strategy: str, lat: dict | None = None) 
 
 
 def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = None, limit: int = 1500,
-                   lat: dict | None = None) -> dict:
+                   lat: dict | None = None, trades_cap: int = 1500) -> dict:
     """One strategy on one chart: indicator lines for the visible candles, every trade of the full history
     (equity curve), the detailed recent trades (markers / table), the position still running, and the
     walk-forward OOS trades from the research when that strategy x TF was a candidate.
@@ -143,7 +143,7 @@ def system_payload(symbol: str, tf: str, strategy: str, params: dict | None = No
         "t": [int(x) for x in t[-limit:]],
         "lines": {k: [None if not np.isfinite(v) else round(float(v), d + 1) for v in arr[-limit:]] for k, arr in res["lines"].items()},
         "metrics": m, "equity": eq,
-        "trades": [trade_out(x, d) for x in tr[-1500:]],          # whole history (markers when scrolling back)
+        "trades": [trade_out(x, d) for x in tr[-trades_cap:]],    # recent history (markers when scrolling back)
         "last_signal": res["last_signal"], "open_trade": None, "oos": None,
     }
     ot = res["open_trade"]

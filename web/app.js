@@ -102,7 +102,13 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
   if (p === "/api/picks") return staticGet("picks.json");
   if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
-  if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`);
+  if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`).catch(() => {
+    // not built yet (new symbol / strategy until the next full build): candles still show, without this system's overlay
+    const st = stratById(qp.strategy) || {};
+    return { symbol: qp.symbol, tf: qp.tf, strategy: qp.strategy, name: st.name || qp.strategy, family: st.family || "", params: {},
+      params_source: "none", is_live: false, live: {}, digits: specOf(qp.symbol)?.digits ?? 2, years: 0, t: [], lines: {},
+      metrics: {}, equity: [], trades: [], last_signal: 0, open_trade: null, oos: null, missing: true };
+  });
   if (p === "/api/size") return sizeLocal(qp.symbol, +qp.entry, +qp.sl, +qp.risk_pct, +(qp.balance || P.account_balance), qp.tp ? +qp.tp : null);
   if (p.startsWith("/api/signals/") && post) {  // taken / skipped is remembered on this device only
     const marks = store.get("sigMarks", {}); marks[decodeURIComponent(p.slice(13))] = body; store.set("sigMarks", marks); return body;
@@ -156,6 +162,7 @@ const specOf = (sym) => S.symbols.find((x) => x.symbol === sym) || { digits: 5, 
 const stratName = (id) => (S.strategies.find((s) => s.id === id) || {}).name || id;
 const paramText = (p) => (p ? Object.entries(p).filter(([k]) => k !== "max_hold_h").map(([k, v]) => `${k}=${v}`).join(" · ") : "–");
 const kpi = (k, v, s = "", c = "") => `<div class="kpi"><div class="k">${k}</div><div class="v ${c}">${v}</div>${s ? `<div class="s">${s}</div>` : ""}</div>`;
+const fusd = (v, sign = true) => (v < 0 ? "-" : sign ? "+" : "") + "$" + fnum(Math.abs(+v || 0), 2);
 const reasonTh = (r) => ({ Fri: "ปิดศุกร์", Time: "หมดเวลา", Rev: "กลับทิศ" }[r] || r);
 const statusBadge = (s) => `<span class="badge ${esc(s)}">${esc(s || "–")}</span>`;
 function qs() { const q = location.hash.split("?")[1] || ""; return Object.fromEntries(new URLSearchParams(q)); }
@@ -411,6 +418,7 @@ const ICONS = {
   systems: SVG('<path d="M12 3 3 7.5l9 4.5 9-4.5L12 3z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16.5 9 4.5 9-4.5"/>'),
   lab: SVG('<path d="M9 3h6M10 3v6L4.6 18.6A1.6 1.6 0 0 0 6 21h12a1.6 1.6 0 0 0 1.4-2.4L14 9V3"/><path d="M7.5 15h9"/>'),
   signals: SVG('<path d="M6 9a6 6 0 1 1 12 0c0 6.5 2.5 8.5 2.5 8.5h-17S6 15.5 6 9"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
+  port: SVG('<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7"/><path d="M3 12.5h18"/><path d="M12 11v3"/>'),
   calc: SVG('<rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01" stroke-width="2.6"/>'),
   settings: SVG('<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'),
   guide: SVG('<path d="M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2z"/><path d="M4 19.5A2 2 0 0 0 6 21.5h14"/><path d="M9 7.5h7M9 11h5"/>'),
@@ -422,19 +430,23 @@ const ROUTES = {
   chart: { title: "กราฟ", sub: "แท่งเทียน สัญญาณ และเทรดของระบบ", render: renderChart, ws: true },
   systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทุกระบบ (ตามเทรนด์ 100 ระบบ)", render: renderSystems, ws: true },
   lab: { title: "Strategy Lab", sub: "ผลทดสอบทีละขั้น: Backtest → Walk-Forward → สุ่ม → Robustness → Monte Carlo", render: renderLab, ws: true },
-  signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรด พร้อม Lot / SL / TP สำหรับ MT5", render: renderSignals },
+  signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรด พร้อม Lot / SL / TP · ติดตามผล · ประวัติ", render: renderSignals },
+  port: { title: "พอร์ต MT5", sub: "ออเดอร์ที่โปรแกรมเทรดให้ · ความเสี่ยงแยกกลุ่ม · ระบบของแต่ละสินทรัพย์", render: renderPort },
   calc: { title: "เครื่องคำนวณ", sub: "Lot size · R:R · SL / TP", render: renderCalc },
   settings: { title: "ตั้งค่า", sub: "บัญชี ความเสี่ยง ชื่อสัญลักษณ์ การแจ้งเตือน", render: renderSettings },
   guide: { title: "คู่มือ", sub: "วิธีใช้งานทีละขั้น", render: renderGuide },
 };
-const NAV_ORDER = ["chart", "systems", "lab", "signals", "calc", "settings", "guide"];
+// three groups (2 Nov 2026 reorganisation): analyse → trade → app
+const NAV_GROUPS = [["chart", "systems", "lab"], ["signals", "port", "calc"], ["settings", "guide"]];
+const NAV_ORDER = NAV_GROUPS.flat();
 function route() { const r = location.hash.replace(/^#\/?/, "").split("?")[0]; return ROUTES[r] ? r : (ROUTES[prefs.get().home] ? prefs.get().home : "chart"); }
 
 function renderNav(newCount = 0) {
   const cur = route();
   const item = (k) => `<a href="#/${k}" class="${cur === k ? "active" : ""}" data-tip="${ROUTES[k].title}" aria-label="${ROUTES[k].title}">${ICONS[k]}${k === "signals" && newCount ? `<span class="count">${newCount}</span>` : ""}</a>`;
-  $("#nav").innerHTML = NAV_ORDER.map(item).join("");
-  $("#mnav").innerHTML = NAV_ORDER.map(item).join("");
+  const html = NAV_GROUPS.map((g) => g.map(item).join("")).join('<i class="nav-sep"></i>');
+  $("#nav").innerHTML = html;
+  $("#mnav").innerHTML = html;
 }
 
 async function refreshStatus() {
@@ -474,6 +486,25 @@ const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: 
   GBPJPY: "GJ", AUDUSD: "AU", USDCAD: "UC", USOIL: "OIL", XAGUSD: "XAG", DE30: "DAX", JP225: "NKY",
   NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
+// asset classes (user, 2 Nov 2026: 20 Exness symbols) — every symbol list in the app is shown in this order, grouped
+const ASSET_GROUPS = [
+  { key: "fx", label: "ค่าเงิน (Forex)", short: "FX", icon: "💱", groups: ["Forex"] },
+  { key: "cmd", label: "ทองคำ · เงิน · น้ำมัน", short: "CMD", icon: "🥇", groups: ["Metals", "Energy"] },
+  { key: "idx", label: "ดัชนีหุ้น", short: "IDX", icon: "📊", groups: ["Indices"] },
+  { key: "stk", label: "หุ้นสหรัฐ", short: "STK", icon: "🏢", groups: ["Stocks"] },
+  { key: "cry", label: "คริปโต", short: "CRY", icon: "🪙", groups: ["Crypto"] },
+];
+const SYM_ORDER = ["EURUSD", "GBPUSD", "USDJPY", "GBPJPY", "AUDUSD", "USDCAD", "XAUUSD", "XAGUSD", "USOIL",
+  "NAS100", "US500", "DE30", "JP225", "NVDA", "MSFT", "AMZN", "META", "AAPL", "BTCUSD", "ETHUSD"];
+const groupIdx = (x) => { const i = ASSET_GROUPS.findIndex((g) => g.groups.includes(x.group)); return i < 0 ? ASSET_GROUPS.length : i; };
+const sortSyms = (a) => (a || []).slice().sort((x, y) => groupIdx(x) - groupIdx(y)
+  || ((SYM_ORDER.indexOf(x.symbol) + 1 || 99) - (SYM_ORDER.indexOf(y.symbol) + 1 || 99)));
+// [{ g: group, list: [symbols] }] in display order
+const symGroups = (list = S.symbols) => {
+  const out = ASSET_GROUPS.map((g) => ({ g, list: [] })), other = { g: { key: "oth", label: "อื่น ๆ", short: "…", icon: "•" }, list: [] };
+  for (const x of sortSyms(list)) (out[groupIdx(x)] || other).list.push(x);
+  return [...out, other].filter((o) => o.list.length);
+};
 // Android back button (user's rule): it closes the open popup first; pages never pile up in the history
 // (navigation replaces the current entry), so with nothing open, back leaves the app / closes the web page.
 const Back = {
@@ -539,7 +570,7 @@ function railHtml(sel) {
     <div class="rail-grp"><button class="rb qbtn" id="qBtn" data-tip="เลือกด่วน: ระบบ ACTIVE / WATCH เรียงตามความสำคัญ">⚡<small>ด่วน</small></button></div>
     <div class="rail-grp">${["H1", "H4", "D1"].map((t) => `<button class="rb ${t === sel.tf ? "on" : ""}" data-tf="${t}" data-tip="Timeframe ${t}">${t}</button>`).join("")}</div>
     <div class="rail-grp"><button class="rb sysbtn" id="sysBtn" data-tip="${esc(st.name || "")} — กดเพื่อเลือกระบบ"><small>ระบบ</small>${st.no ?? "?"}${isLiveSys(sel.symbol, sel.strategy, sel.tf) ? '<i class="star">★</i>' : ""}${heldOf(sel.symbol, sel.strategy, sel.tf).length ? '<i class="hd"></i>' : ""}</button></div>
-    <div class="rail-grp syms">${S.symbols.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i>${heldOf(x.symbol).length ? `<i class="hd" data-n="${heldOf(x.symbol).length}"></i>` : ""}</button>`).join("")}</div>
+    <div class="rail-grp syms">${symGroups().map(({ g, list }) => `<div class="rg-l" data-tip="${g.label}">${g.short}</div>` + list.map((x) => `<button class="rb ${x.symbol === sel.symbol ? "on" : ""}" data-sym="${x.symbol}" data-tip="${x.symbol} · ${x.status || "-"}">${ABBR[x.symbol] || x.symbol.slice(0, 3)}<i class="sd ${x.status || ""}"></i>${heldOf(x.symbol).length ? `<i class="hd" data-n="${heldOf(x.symbol).length}"></i>` : ""}</button>`).join("")).join("")}</div>
   </div>`;
 }
 function bindRail(root, sel, onChange) {
@@ -626,8 +657,8 @@ function robotLine(s) {
   const r = robotOf(s); if (!r) return "";
   const dg = specOf(s.symbol).digits;
   return r.open
-    ? `<div class="banner ok" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 (${esc(S.pc.account || "")}) ถืออยู่</b> ${r.side} ${fnum(r.lots, 2)} lot @ ${fpx(r.price_open, dg)} · SL ${r.sl ? fpx(r.sl, dg) : "–"}${r.tp ? " · TP " + fpx(r.tp, dg) : ""} · <span class="${cls(r.profit)}">${r.profit >= 0 ? "+" : ""}$${fnum(r.profit, 2)}</span></div></div>`
-    : `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 ปิดแล้ว</b> — ${esc(r.reason || "")} @ ${r.price != null ? fpx(r.price, dg) : "–"} · <span class="${cls(r.profit)}">${r.profit >= 0 ? "+" : ""}$${fnum(r.profit, 2)}</span></div></div>`;
+    ? `<div class="banner ok" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 (${esc(S.pc.account || "")}) ถืออยู่</b> ${r.side} ${fnum(r.lots, 2)} lot @ ${fpx(r.price_open, dg)} · SL ${r.sl ? fpx(r.sl, dg) : "–"}${r.tp ? " · TP " + fpx(r.tp, dg) : ""} · <span class="${cls(r.profit)}">${fusd(r.profit)}</span></div></div>`
+    : `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 ปิดแล้ว</b> — ${esc(r.reason || "")} @ ${r.price != null ? fpx(r.price, dg) : "–"} · <span class="${cls(r.profit)}">${fusd(r.profit)}</span></div></div>`;
 }
 function signalCard(s, compact = false) {
   const sp = specOf(s.symbol), d = sp.digits;
@@ -647,10 +678,10 @@ function signalCard(s, compact = false) {
       <div class="lv tp"><div class="k">TAKE PROFIT</div><div class="v" data-f="tp">${s.tp == null ? "ไม่ตั้ง" : fpx(s.tp, d)}</div><div class="s">${s.tp == null ? "ออกด้วย SL / กลับทิศ" : fnum(s.tp_pips, 1) + " pips"}</div></div>
     </div>
     <div class="lotbar">
-      <div><div class="lbl">LOT (MT5)</div><div class="lot" data-f="lots">${fnum(s.lots, 2)}</div></div>
+      <div><div class="lbl">LOT (MT5)</div><div class="lot" data-f="lots">${s.lots > 0 ? fnum(s.lots, 2) : "&lt;0.01"}</div></div>
       <div><div class="lbl">ความเสี่ยง</div><div class="mono" data-f="risk">$${fnum(s.risk_usd, 2)} <span class="muted">(${s.risk_pct}%)</span></div></div>
-      <div><div class="lbl">R:R</div><div class="mono">1 : ${fnum(s.rr, 2)}</div></div>
-      <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">$${fnum(s.reward_usd, 2)}</div></div>
+      <div><div class="lbl">R:R</div><div class="mono">${s.tp == null ? "ไม่ตั้ง TP" : "1 : " + fnum(s.rr, 2)}</div></div>
+      <div class="hide-sm"><div class="lbl">กำไรเป้า</div><div class="mono pos">${s.reward_usd == null ? "ปล่อยกำไรวิ่ง" : "$" + fnum(s.reward_usd, 2)}</div></div>
     </div>
     ${robotLine(s)}
     ${s.capped ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⛔</span><div>${esc(s.note || "ข้าม: เกินเพดานความเสี่ยงรวมของสินทรัพย์นี้")} — ไม่ได้ส่งแจ้งเตือน (ระบบยังติดตามผลไม้นี้เพื่อวัดผลของระบบ)</div></div>` : ""}
@@ -818,7 +849,7 @@ async function renderChart(view) {
   const overlay = store.get("chartOverlay", true);
   let tab = store.get("chartTab", "chart");
   view.innerHTML = wsHtml({
-    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="liveTag"></span><span id="chBadge"></span>${heldBadge(heldOf(sym, sid, tf))}`,
+    title: `<span class="sym" id="chTitle">${sym}</span><span class="muted" id="chSub">${tf}</span><span id="liveTag"></span><span id="chBadge"></span>${heldBadge(heldOf(sym, sid, tf), innerWidth < 760)}`,
     tabs: [["chart", "กราฟ"], ["trades", "เทรดล่าสุด"]], tab,
     actions: `<button class="ibtn ${overlay ? "on" : ""}" id="ovl" data-tip="แสดง/ซ่อน indicator และจุดเข้าออกของระบบ">${ICONS.ind}</button>`,
     main: `<div class="chart-box" id="chartBox"><div class="chart fill" id="mainChart"></div><div class="hist-note" id="chHist"></div></div><div class="ws-pane" id="trPane" hidden></div>`,
@@ -834,7 +865,7 @@ async function renderChart(view) {
   if (route() !== "chart" || S.chartToken !== token) return;
   const strat = stratById(sid) || {};
   const live = sp.is_live;
-  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} ${isPortfolioSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="ระบบพอร์ต: เทรดทุกสินทรัพย์ เสี่ยง 0.10%/ไม้">★<span class="hide-sm"> พอร์ต 0.10%</span></span>' : '<span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>'}` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
+  $("#chBadge").innerHTML = live ? `${statusBadge(sys.status)} ${isPortfolioSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="ระบบพอร์ต: เทรดทุกสินทรัพย์ เสี่ยง ${S.settings?.portfolio_risk_pct ?? 0.5}%/ไม้">★<span class="hide-sm"> พอร์ต ${S.settings?.portfolio_risk_pct ?? 0.5}%</span></span>' : '<span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>'}` : `<span class="badge ghost" data-tip="ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน">ดูอย่างเดียว</span>`;
 
   // ---- main chart (candles + the chosen strategy), older years load when scrolled left
   let ch = null, last = null, older = [], yearsLeft = null, loadingOld = false;
@@ -1043,7 +1074,7 @@ async function renderSystems(view) {
   const sys = sysOf(sym);
   $("#sysBadge").innerHTML = sp.is_live ? `${statusBadge(sys.status)} <span class="badge ghost" data-tip="ระบบที่เทรดจริง">★<span class="hide-sm"> ระบบจริง</span></span>` : "";
 
-  const bal = myBalance() || 5000, risk = effRisk(sys.risk_pct || 0.25) || 0.25;
+  const bal = myBalance() || 5000, risk = effRisk(sys.risk_pct || 0.5) || 0.5;
   const modes = { oos: sp.oos?.equity?.length ? sp.oos.equity : null, bt: sp.equity?.length ? sp.equity : null };
   if (!modes[mode]) mode = modes.oos ? "oos" : "bt";
   let eqCh = null;
@@ -1066,12 +1097,22 @@ async function renderSystems(view) {
       ${kpi("WF OOS เทรด", sp.oos.metrics.trades, `${fnum(sp.oos.years, 1)} ปี`)}${kpi("Expectancy", fr(sp.oos.metrics.expectancy, 3), "t = " + fnum(sp.oos.metrics.t_stat, 2), cls(sp.oos.metrics.expectancy))}
       ${kpi("Profit factor", fnum(sp.oos.metrics.pf, 2))}${kpi("Win rate", sp.oos.metrics.win_rate + "%")}${kpi("Backtest ทั้งช่วง", fr(sp.metrics.expectancy, 3), sp.metrics.trades + " ไม้")}</div>
       <div class="row" style="margin-top:12px"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}">🧪 ดูผลทดสอบทีละขั้นใน Strategy Lab</a><a class="btn sm ghost" href="#/chart?symbol=${sym}&tf=${tf}&strategy=${sid}">📈 ดูบนกราฟ</a></div></section></div>` : "");
+  const fams = [...S.strategies.reduce((m, s) => m.set(s.family, (m.get(s.family) || 0) + 1), new Map())].sort((a, b) => b[1] - a[1]);
+  const famTh = { "Trend following": "ตามเทรนด์", Momentum: "โมเมนตัม", "Volatility breakout": "เบรกเอาต์ความผันผวน", "Session / liquidity": "ช่วงเวลา / สภาพคล่อง", "Price action": "Price action", Pullback: "ย่อตัว (pullback)" };
+  const catF = store.get("catF", "all");
   $("#catPane").innerHTML = `<div class="cat-hd"><input class="inp" id="catQ" placeholder="ค้นหาเลข ชื่อ กลุ่ม หรือ indicator…"><span class="muted small">กดการ์ดเพื่อเลือกระบบนั้น</span></div>
-    <div class="cat">${S.strategies.map((s) => `<button class="cat-card ${s.id === sid ? "on" : ""}" data-sid="${s.id}" data-q="${esc((s.no + " " + s.name + " " + s.family + " " + s.indicators.join(" ")).toLowerCase())}">
+    <div class="pills cat-f" id="catF"><button class="pill ${catF === "all" ? "on" : ""}" data-f="all">ทั้งหมด <small>${S.strategies.length}</small></button><button class="pill ${catF === "live" ? "on" : ""}" data-f="live">★ ACTIVE บน ${sym}</button>${fams.map(([f, n]) => `<button class="pill ${catF === f ? "on" : ""}" data-f="${esc(f)}">${esc(famTh[f] || f)} <small>${n}</small></button>`).join("")}</div>
+    <div class="cat">${S.strategies.map((s) => `<button class="cat-card ${s.id === sid ? "on" : ""}" data-sid="${s.id}" data-fam="${esc(s.family)}" data-live="${isLiveSys(sym, s.id) ? 1 : ""}" data-q="${esc((s.no + " " + s.name + " " + s.family + " " + s.indicators.join(" ")).toLowerCase())}">
       <div class="cat-top"><span class="no">${s.no}</span><div><b>${esc(s.name)}</b><div class="tiny muted">${esc(s.family)}</div></div>${isLiveSys(sym, s.id) ? '<i class="star">★</i>' : ""}</div>
       <div class="tiny"><span class="muted">Indicator:</span> ${esc(s.indicators.join(", "))}</div>
       <div class="tiny"><span class="pos">LONG:</span> ${esc(s.long)}</div></button>`).join("")}</div>`;
-  $("#catQ").oninput = (e) => { const q = e.target.value.trim().toLowerCase(); $$(".cat-card").forEach((b) => b.hidden = q && !b.dataset.q.includes(q)); };
+  let curF = catF;
+  const filt = () => { const q = $("#catQ").value.trim().toLowerCase();
+    $$(".cat-card").forEach((b) => b.hidden = (q && !b.dataset.q.includes(q)) || (curF === "live" ? !b.dataset.live : curF !== "all" && b.dataset.fam !== curF)); };
+  $("#catQ").oninput = filt;
+  $("#catF").onclick = (e) => { const b = e.target.closest("[data-f]"); if (!b) return; curF = b.dataset.f; store.set("catF", curF);
+    $$("#catF .pill").forEach((x) => x.classList.toggle("on", x === b)); filt(); };
+  filt();
   $("#catPane").onclick = (e) => { const b = e.target.closest("[data-sid]"); if (b) { store.set("sysTab", "detail"); goSel("systems", { ...sel, strategy: b.dataset.sid }); } };
 
   const showTab = (t) => {
@@ -1126,7 +1167,7 @@ async function renderLab(view) {
   const tabs = [["steps", "ผลทดสอบทีละขั้น"], ["overview", "ภาพรวมทุกสินทรัพย์"], ["notes", "บันทึกจาก AI"]];
   if (!STATIC) tabs.push(["manual", "ทดลองเอง"]);
   view.innerHTML = wsHtml({
-    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isPortfolioSys(sym, sid, tf) ? `${statusBadge("ACTIVE")}<span class="badge ghost" data-tip="ผ่านเกณฑ์แบบพอร์ต (8 สินทรัพย์รวมกัน) — ผลรายสินทรัพย์ด้านล่างอาจยังไม่ผ่านเกณฑ์เดี่ยว">พอร์ต</span>` : statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="เทรดจริงไตรมาสนี้">★<span class="hide-sm"> เทรดจริงไตรมาสนี้</span></span>' : ""}`,
+    title: `<span class="sym">#${st.no}</span><span class="ttl">${esc(st.name)}</span><span class="muted">${sym} · ${tf}</span>${isPortfolioSys(sym, sid, tf) ? `${statusBadge("ACTIVE")}<span class="badge ghost" data-tip="ผ่านเกณฑ์แบบพอร์ต (ทุกสินทรัพย์รวมกัน) — ผลรายสินทรัพย์ด้านล่างอาจยังไม่ผ่านเกณฑ์เดี่ยว">พอร์ต</span>` : statusBadge((R.candidates || []).find((c) => c.strategy === sid && c.tf === tf)?.status || R.status || "–")}${isLiveSys(sym, sid, tf) ? '<span class="badge ghost" data-tip="เทรดจริงไตรมาสนี้">★<span class="hide-sm"> เทรดจริงไตรมาสนี้</span></span>' : ""}`,
     tabs, tab, actions: runBtn,
     main: `<div class="ws-pane" id="stepsPane"><div class="empty"><div class="spinner"></div></div></div><div class="ws-pane" id="ovPane" hidden></div><div class="ws-pane md" id="notesPane" hidden></div><div class="ws-pane" id="manPane" hidden></div>`,
     sel,
@@ -1168,7 +1209,7 @@ async function renderLab(view) {
   const rank = cand ? ranked.findIndex((c) => c === cand) + 1 : 0;
   const o = cand?.oos, m = sp?.metrics, G = res.settings?.gates || S.settings?.research?.gates || {};
   const rOos = (sp?.oos?.equity || []).map((p) => p[1]);
-  const risk = effRisk(sysOf(sym).risk_pct || 0.25) || 0.25;
+  const risk = effRisk(sysOf(sym).risk_pct || 0.5) || 0.5;
   const mc = mcJs(rOos, Math.max(10, o?.trades_per_year || 10), risk);
   const mcFull = mcJs(rOos, rOos.length, 1, 2000);
   const tNeed = R.t_needed;
@@ -1230,7 +1271,7 @@ async function renderLabManual(view) {   // local server only: free experiments 
       <button class="btn" id="bAuto">🤖 วิเคราะห์อัตโนมัติเฉพาะสินทรัพย์ที่เลือก</button>
       <div class="hint">ระบบเลือกกลยุทธ์ / TF / พารามิเตอร์ / หน้าต่าง WF / Robustness / Monte Carlo / ความเสี่ยงให้เองสำหรับสินทรัพย์ที่เลือก แล้วอัปเดตระบบเทรด · ด้านล่างสำหรับทดลองเอง</div>
       <div class="fgrid" style="grid-template-columns:1fr 1fr">
-        <label class="f">สินทรัพย์<select class="inp" id="lSym">${S.symbols.map((x) => `<option ${x.symbol === sym ? "selected" : ""}>${x.symbol}</option>`).join("")}</select></label>
+        <label class="f">สินทรัพย์<select class="inp" id="lSym">${symGroups().map(({ g, list }) => `<optgroup label="${g.label}">${list.map((x) => `<option ${x.symbol === sym ? "selected" : ""}>${x.symbol}</option>`).join("")}</optgroup>`).join("")}</select></label>
         <label class="f">Timeframe<select class="inp" id="lTf">${["H1", "H4", "D1"].map((t) => `<option ${t === tf ? "selected" : ""}>${t}</option>`).join("")}</select></label>
       </div>
       <label class="f">กลยุทธ์<select class="inp" id="lStrat">${S.strategies.map((s) => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${esc(s.name)} — ${esc(s.family)}</option>`).join("")}</select></label>
@@ -1305,7 +1346,7 @@ async function renderLabManual(view) {   // local server only: free experiments 
     const tick = async () => {
       const st = await api("/api/research/state");
       if (st.running) { btn.innerHTML = `<span class="spinner"></span> ${esc(st.progress || "กำลังวิเคราะห์…")}`; return setTimeout(tick, 2000); }
-      S.symbols = await api("/api/symbols"); toast(`วิเคราะห์ ${sym || "ทุกสินทรัพย์"} เสร็จแล้ว`); go("#/systems");
+      S.symbols = sortSyms(await api("/api/symbols")); toast(`วิเคราะห์ ${sym || "ทุกสินทรัพย์"} เสร็จแล้ว`); go("#/systems");
     };
     tick();
   };
@@ -1439,10 +1480,10 @@ function portfolioHtml(P) {
       <td>${st ? `<b>#${st.no}</b> ` : ""}${esc(c.name)}</td><td>${c.tf}</td><td class="num">${c.months}</td><td class="num">${c.trades}</td>
       <td class="num ${cls(c.exp)}">${fr(c.exp, 3)}</td><td class="num">${fnum(c.t_month, 2)} / ${fnum(P.t_needed, 2)}</td>
       <td class="num">${Math.round(c.breadth * 100)}%</td><td class="num neg">${fnum(c.max_dd_r, 1)}R</td></tr>`; }).join("");
-  return `<div class="pane-hd" style="margin-top:18px"><b>ทดสอบแบบพอร์ต (แบบกองทุน)</b><span class="muted small">หนึ่งระบบเทรดทั้ง 8 สินทรัพย์พร้อมกัน ตัดสินจากผลรวมรายเดือน · ผู้สมัคร ${P.n_candidates} · ต้องได้ t ≥ ${fnum(P.t_needed, 2)}</span></div>
+  return `<div class="pane-hd" style="margin-top:18px"><b>ทดสอบแบบพอร์ต (แบบกองทุน)</b><span class="muted small">หนึ่งระบบเทรดทุกสินทรัพย์พร้อมกัน ตัดสินจากผลรวมรายเดือน · ผู้สมัคร ${P.n_candidates} · ต้องได้ t ≥ ${fnum(P.t_needed, 2)}</span></div>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>สถานะ</th><th>ระบบ</th><th>TF</th><th class="num">เดือน</th><th class="num">ไม้</th><th class="num">Exp/ไม้</th><th class="num">t เดือน / ต้องการ</th><th class="num">สินทรัพย์บวก</th><th class="num">Max DD</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
-    <div class="hint pad-x">ระบบพอร์ตที่ ACTIVE จะเทรดทุกสินทรัพย์ (★ บนกราฟ) · เสี่ยง 0.10%/ไม้ และยังจำกัดรวมต่อสินทรัพย์ 0.75% · กดแถวเพื่อดูผลของระบบนั้นบนสินทรัพย์ที่เลือกอยู่</div>`;
+    <div class="hint pad-x">ระบบพอร์ตที่ ACTIVE จะเทรดทุกสินทรัพย์ (★ บนกราฟ) · เสี่ยง ${S.settings?.portfolio_risk_pct ?? 0.5}%/ไม้ และยังจำกัดรวมต่อสินทรัพย์ ${S.settings?.max_symbol_risk_pct ?? 1}% · กดแถวเพื่อดูผลของระบบนั้นบนสินทรัพย์ที่เลือกอยู่</div>`;
 }
 function renderSyncCard() {
   const box = $("#syncBody"); if (!box) return;
@@ -1624,7 +1665,7 @@ async function renderSettings(view) {
     patch.symbol_overrides = ovs;
     S.settings = await api("/api/settings", { method: "POST", body: patch });
     if (patch.access_pin !== undefined) store.set("pin", patch.access_pin);
-    S.symbols = await api("/api/symbols");
+    S.symbols = sortSyms(await api("/api/symbols"));
     toast("บันทึกแล้ว");
   };
   bindPersonalSettings(view);
@@ -1634,30 +1675,33 @@ async function renderSettings(view) {
 // ------------------------------------------------------------------ GUIDE
 // The user manual: one card per chapter, with a table of contents at the top.
 function manualChapters() {
-  const bal = myBalance() || 5000, risk = effRisk(0.25), riskUsd = bal * risk / 100;
+  const bal = myBalance() || 5000, risk = effRisk(0.5), riskUsd = bal * risk / 100;
   const lotsFor = (dist, vpu) => Math.floor(riskUsd / (dist * vpu) / 0.01 + 1e-9) * 0.01;
   const ex = (name, slText, dist, vpu) => { const l = lotsFor(dist, vpu);
     return `- **${name}** SL ${slText} → ${fnum(riskUsd, 2)} ÷ (${slText} × มูลค่าต่อ lot) = ${l >= 0.01 ? `**${l.toFixed(2)} lot**` : `ต่ำกว่า 0.01 → ถ้าเปิด 0.01 lot จะเสี่ยง $${fnum(0.01 * dist * vpu, 2)} (${fnum(100 * 0.01 * dist * vpu / bal, 2)}%)`}`; };
   return [
     ["overview", "1. ภาพรวม: อะไรทำเอง อะไรคุณต้องทำ", `
-TradingLab มี 3 ส่วนที่ทำงานแยกกัน และ **คอมของคุณไม่ต้องเปิดไว้**:
-### 🤖 ส่วนที่ทำงานเองทั้งหมด (บน GitHub ฟรี)
-- **ทุกชั่วโมง (นาทีที่ ~4–20):** ดึงราคาล่าสุด → ตรวจว่าระบบ ACTIVE มีสัญญาณใหม่ไหม → ถ้ามี ส่งแจ้งเตือนเข้ามือถือพร้อม **Lot / Entry / SL / TP** → อัปเดตเว็บนี้ (กราฟ เส้น Entry/SL/TP, ผล forward test)
-- **ทุกต้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค. 09:30 น.):** วิจัยใหม่ทั้งหมด — ทุกระบบทุกสินทรัพย์ **สอบพร้อมกันด้วยข้อมูลถึงวันตัดรอบเดียวกัน** (00:00 เวลาโบรกของวันที่ 1)
-  - **ทุกระบบที่ผ่านเกณฑ์เป็น ACTIVE และเทรดได้พร้อมกัน** (หลายระบบในสินทรัพย์ / TF เดียวกันได้) ใช้พารามิเตอร์เดิมตลอดไตรมาส
-  - **กดวิจัยใหม่กลางไตรมาส** (เช่นเพิ่มระบบใหม่) ยังตัดข้อมูลที่วันเดียวกัน → ระบบใหม่ที่ผ่านเกณฑ์ ACTIVE ได้ทันที ส่วนระบบที่ ACTIVE อยู่แล้ว **ใช้ต่อจนจบไตรมาส** แม้เกณฑ์สูงขึ้น
-  - หยุดระบบก่อนจบไตรมาสเฉพาะเมื่อผลจริง (forward test) แย่กว่าที่ทดสอบไว้ชัดเจน (ตรวจทุกวันจันทร์กับ Claude)
-  - วันเสาร์: ตรวจอย่างเดียวว่ารอบวิจัยของไตรมาสนี้ทำแล้วหรือยัง (กันพลาด)
-  - **เพดานความเสี่ยงรวมต่อสินทรัพย์ 0.75%** — ถ้าหลายระบบของสินทรัพย์เดียวกันเปิดอยู่จนเต็มเพดาน สัญญาณใหม่จะถูกข้าม (ไม่แจ้งเตือน แต่ยังบันทึกผล)
-- ทุกพารามิเตอร์ของการวิเคราะห์ (ช่วง IS/OOS, ชุดค่าที่ทดสอบ, เกณฑ์ผ่าน) **ตั้งไว้แล้ว ไม่ต้องปรับเอง**
+เปรียบเหมือน **ร้านอาหารที่มีพ่อครัว 2 คน**: พ่อครัวหลักอยู่ที่คอมของคุณ (เร็ว ทำอาหารจริง = เปิดออเดอร์) ส่วนพ่อครัวสำรองอยู่บนคลาวด์ (ช้ากว่า แต่คอยรับออเดอร์แทนเมื่อพ่อครัวหลักไม่อยู่)
+### 💻 1) คอมของคุณ — ตัวหลัก (โปรแกรม autotrade.bat เปิดเองเมื่อเปิดคอม)
+- **ทุกต้นชั่วโมง + 5 วินาที:** อ่านแท่งเทียนจาก MT5 (ราคา Exness จริง) → หาสัญญาณของทุกระบบ ACTIVE → **ส่งแจ้งเตือนเข้ามือถือ + เปิดออเดอร์ใน MT5 ทันที** → ส่งสัญญาณขึ้นเว็บ
+- วาง **SL / TP ราคาเดียวกับในแจ้งเตือนเป๊ะ** · Lot คำนวณจากยอดเงินจริงในบัญชี MT5 (ต่ำกว่า 0.01 → เปิด 0.01)
+- ทุก 2 นาที: ตรวจว่าคลาวด์มีสัญญาณที่คอมยังไม่ได้เปิดไหม (เช่น ตอนคอมเพิ่งเปิดเครื่อง) → ตามเปิดให้ภายใน 4 แท่ง แต่ **ไม่ไล่ราคา** ถ้าราคาวิ่งไปเกิน 0.5R แล้ว
+- เมื่อออเดอร์ชน SL / TP หรือถูกปิดเพราะสัญญาณกลับทิศ → แจ้งเตือนเข้ามือถือ และอัปเดตหน้า **พอร์ต MT5**
+- ป้องกันพอร์ตพัง: ขาดทุนรวม 25% หยุดเปิดใหม่ · 30% ปิดทุกออเดอร์ · ไม่ยอมเทรดบัญชีจริงจนกว่าคุณจะอนุญาต
+### ☁️ 2) คลาวด์ GitHub — ตัวสำรอง (ทำงานเองตลอด ไม่ต้องเปิดคอม)
+- **ทุก ~10–50 นาที:** ใช้ราคาฟรี (Yahoo / Binance / Twelve Data) หาสัญญาณแบบเดียวกัน → ถ้าคอมยังไม่ได้แจ้ง จะส่งแจ้งเตือนแทน (**แต่เปิดออเดอร์ใน MT5 ไม่ได้**) → สร้างเว็บนี้ใหม่
+- **ทุกต้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค.):** วิจัยใหม่ทั้งหมดด้วยวิธี **QWG** (บทที่ 6) — ${S.strategies.length || 109} ระบบ × ${S.symbols.length || 20} สินทรัพย์ × 3 TF ด้วยข้อมูลถึงวันตัดรอบเดียวกัน
+  - ทุกระบบที่ผ่านเกณฑ์เป็น **ACTIVE** และเทรดพร้อมกันได้ (หลายระบบต่อสินทรัพย์) ใช้พารามิเตอร์เดิมตลอดไตรมาส
+  - กดวิจัยใหม่กลางไตรมาส (เช่นเพิ่มระบบ) ยังตัดข้อมูลวันเดิม → ระบบใหม่ที่ผ่าน ACTIVE ได้ทันที ระบบเดิม **ใช้ต่อจนจบไตรมาส**
+  - หยุดระบบก่อนจบไตรมาสเฉพาะเมื่อผลจริงแย่กว่าที่ทดสอบไว้ชัดเจน (ตรวจวันจันทร์กับ Claude)
+### 💰 ความเสี่ยง (ตั้งเมื่อ 2 พ.ย. 2026)
+- **ทุกสัญญาณเสี่ยง ${S.settings?.risk_per_trade_pct ?? 0.5}% ของทุน** เท่ากันทุกสินทรัพย์ · **รวมไม่เกิน ${S.settings?.max_symbol_risk_pct ?? 1}% ต่อสินทรัพย์** — ถ้าเต็มเพดาน สัญญาณใหม่ของสินทรัพย์นั้นจะถูกข้าม (บันทึกผลแต่ไม่แจ้งเตือน)
 ### 🙋 ส่วนที่คุณทำ
-- **เมื่อมีแจ้งเตือน:** เปิด MT5 แล้วส่งคำสั่งซื้อขายตาม Lot / SL / TP ในข้อความ (ระบบ **ไม่ได้** ส่งออเดอร์ให้เอง)
-- **วันจันทร์ (ถ้าต้องการ):** เปิดคอม พิมพ์บอก Claude ว่า “อัปเดตระบบเทรด” → Claude ตรวจผลจริงเทียบผลวิจัย ปิดระบบที่เริ่มเสีย เขียนบันทึก และส่งขึ้นคลาวด์ให้
-### 🔘 ปุ่ม “สั่งวิเคราะห์ใหม่ทันที” คืออะไร (อยู่ในหน้า **Strategy Lab**)
-- เป็น **ทางลัดที่ไม่บังคับ** ใช้เมื่ออยากให้วิเคราะห์ใหม่ก่อนถึงวันเสาร์ เช่น หลังแก้ตั้งค่า
-- กดแล้วจะเปิดหน้า **GitHub Actions** ซึ่งเป็นรายการงานที่คลาวด์ทำไปแล้ว ✅ สีเขียว = สำเร็จ ❌ สีแดง = ล้มเหลว
-  - “Scheduled” คือรอบสแกนรายชั่วโมงที่รันเอง
-  - “Commit … pushed by …” คือรอบที่สร้างเว็บใหม่หลังมีการแก้โค้ด
+- **เปิดคอมทิ้งไว้ + เปิด MT5 ล็อกอินบัญชี** (โปรแกรมเทรดเปิดเองตอนเปิดเครื่อง) · ดูผลที่หน้า **พอร์ต MT5** หรือมือถือ
+- ถ้าคอมปิด: แจ้งเตือนจากคลาวด์ยังมา → เปิดออเดอร์เองตามการ์ดในหน้า **สัญญาณ** (บทที่ 3)
+- **วันจันทร์ (ถ้าต้องการ):** บอก Claude ว่า “อัปเดตระบบเทรด” → ตรวจผลจริงเทียบผลวิจัย ปิดระบบที่เริ่มเสีย เขียนบันทึก
+### 🔘 ปุ่ม “สั่งวิเคราะห์ใหม่ทันที” (หน้า **Strategy Lab**)
+- ทางลัดที่ไม่บังคับ — เปิดหน้า **GitHub Actions** ✅ เขียว = สำเร็จ ❌ แดง = ล้มเหลว · ใช้เวลา ~2–4 ชั่วโมง
 - ถ้าไม่กดเลย ระบบก็ยังทำงานครบตามตารางข้างบน`],
     ["setup", "2. ตั้งค่าครั้งแรก (ทำครั้งเดียวต่อเครื่อง)", `
 - **ติดตั้งเป็นแอปบนมือถือ/iPad:** Safari → ปุ่มแชร์ → **เพิ่มไปยังหน้าจอโฮม** · Android Chrome → ⋮ → **ติดตั้งแอป**
@@ -1672,6 +1716,7 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
   - ถ้าทุนเปลี่ยนมาก แก้ได้ที่ GitHub → Settings → Secrets and variables → Actions → Variables → \`ACCOUNT_BALANCE\`
   - หรือบอก Claude ในวันจันทร์`],
     ["signal", "3. เมื่อมีสัญญาณ: เปิดออเดอร์ทีละขั้น", `
+> ถ้าคอมเปิดอยู่ โปรแกรมเปิดออเดอร์ให้แล้ว (แจ้งเตือนจะบอก “💻 คอม”) — บทนี้ใช้ตอน **เทรดเอง** เช่น คอมปิด หรือเทรดอีกบัญชี
 - **1.** มือถือเด้งแจ้งเตือน เช่น “🟢 BUY USTEC H1 — เปิด 0.12 lot” ในข้อความมี Lot, Entry, SL และ TP, R:R, กำไรเป้า
 - **2.** เปิดเว็บ หน้า **สัญญาณ** → การ์ดสีเขียวคือ LONG/BUY สีแดงคือ SHORT/SELL
 - **3.** เปิด **MT5** → สินทรัพย์เดียวกัน → New Order แบบ **Market Execution**
@@ -1679,7 +1724,7 @@ TradingLab มี 3 ส่วนที่ทำงานแยกกัน แ�
   - กด **🎯 ปรับตามราคา MT5** → ใส่ราคาที่จะเข้าจริง → **คำนวณใหม่**
   - เว็บจะเลื่อน SL/TP ให้ระยะเท่าเดิม และคำนวณ Lot ใหม่
 - **5.** ใส่ **Volume = Lot**, **Stop Loss**, **Take Profit** ตามการ์ด → กด Buy/Sell
-- **6.** กลับมากด **✓ เปิดแล้ว** หรือ **ข้าม** เพื่อบันทึก
+- **6.** กลับมากด **✋ ฉันเปิดเอง** หรือ **ข้าม** เพื่อบันทึก (สำหรับบัญชีที่เทรดมือเท่านั้น)
 - **7.** ปล่อยให้ออเดอร์ชน **SL** หรือ **TP** เอง ระบบไม่มีกำหนดเวลาปิด
 - **8.** ถ้ามีแจ้งเตือน **🔁 สัญญาณกลับทิศ** ของสินทรัพย์เดียวกัน: **ปิดออเดอร์เดิมทันที** แล้วเปิดไม้ใหม่ตามการ์ด (ระบบทดสอบด้วยกติกานี้)
 ### กติกาเวลาเข้า
@@ -1695,34 +1740,27 @@ ${ex("NAS100", "100 จุด", 100, 1)}
 ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระบบทอง H4
 - **คำนวณให้อัตโนมัติทุกที่:** ข้อความแจ้งเตือน, การ์ดสัญญาณ, ป้าย **ENTRY … · x.xx lot** บนกราฟ และเครื่องคำนวณ
 - **ถ้า Lot ต่ำกว่า 0.01:** โบรกส่วนใหญ่เปิดได้ขั้นต่ำ 0.01 lot ระบบจะเตือนว่าถ้าเปิด 0.01 จะเสี่ยงกี่ % คุณเลือกเองได้ว่าจะข้ามหรือรับความเสี่ยงที่สูงกว่า
-  - ทองคำ (SL กว้าง) มักเจอกรณีนี้กับทุน 5,000 USD ที่ 0.25%
-- **ข้อควรตรวจ 1 ครั้ง:** ขนาดสัญญาของโบรกอาจต่างจากค่ามาตรฐาน เช่น USTEC บางโบรก 1 lot = $1 หรือ $10 ต่อจุด
+  - ทองคำ / เงิน / น้ำมัน (SL กว้าง) มักเจอกรณีนี้กับทุนน้อย · โปรแกรมเทรดบนคอมเปิด 0.01 lot ให้เสมอ (ยอมเสี่ยงเกินเล็กน้อย)
+- **ข้อควรตรวจ 1 ครั้ง:** ขนาดสัญญาตั้งตาม Exness แล้ว (หุ้น 1 lot = 100 หุ้น, น้ำมัน 1,000 บาร์เรล, เงิน 5,000 ออนซ์) แต่โบรกอื่นอาจต่าง
   - วิธีตรวจ: ใน MT5 ตั้ง SL ตามการ์ด แล้วดูว่าขาดทุนถ้าชน SL ≈ $${fnum(riskUsd, 2)} หรือไม่
   - ถ้าไม่ตรง บอก Claude ให้แก้ค่า contract ของสินทรัพย์นั้น`],
     ["pages", "5. หน้าต่าง ๆ ในเว็บ", `
-เมนูอยู่ทางซ้าย (มือถืออยู่ด้านบน) เป็นไอคอนเรียงตามนี้ — เปิดเว็บมาจะเข้าหน้า **กราฟ** ของสินทรัพย์ / TF / ระบบที่ดูล่าสุดเสมอ
-### 📈 กราฟ
-- ปุ่ม **⚡ ด่วน** บนสุดของแถบขวา: รายการระบบ ACTIVE / WATCH ของทุกสินทรัพย์ เรียงตามความสำคัญ กดครั้งเดียวเปลี่ยนสินทรัพย์ + TF + ระบบพร้อมกัน
-- ป้าย **LIVE** ข้างราคา = ราคาสดกำลังขยับทุก 1 วินาที (ตั้งค่าได้ในหน้าตั้งค่า)
-- กลางจอคือกราฟ ด้านขวาคือแถบเลือก: **H1 / H4 / D1** → **เลขระบบ** (กดเพื่อเลือก 1–${S.strategies.length || 50}, ★ = ระบบจริง) → **สินทรัพย์** (EU = EURUSD, GU = GBPUSD, UJ = USDJPY, XAU = ทอง, NAS = Nasdaq, SPX = S&P 500, BTC, ETH)
-- จุดสีบนปุ่มสินทรัพย์: 🟢 ACTIVE · 🟠 WATCH · ไม่มีจุด = OFF
-- แท่งล่าสุดอยู่กลางกราฟ · ซูมด้วยสองนิ้ว · **เลื่อนไปทางซ้ายเพื่อดูย้อนหลัง** ข้อมูลปีก่อนหน้าจะโหลดมาต่อเอง
-- ออเดอร์ที่ระบบถืออยู่มีเส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อม Lot
-- **ป้ายถือออเดอร์:** ระบบที่กำลังถือออเดอร์มีป้าย **▲ ถือ LONG / ▼ ถือ SHORT** (บนหัวกราฟ, รายการ ⚡ ด่วน, รายการเลือกระบบ) และจุดสี่เหลี่ยมฟ้าที่มุมซ้ายของปุ่มสินทรัพย์ทางขวา · หน้าสัญญาณแสดงรายการออเดอร์ที่ถือของแต่ละสินทรัพย์ พร้อมบอกว่าคุณกด “เปิดแล้ว” หรือยัง
-- แท็บ **เทรดล่าสุด** แสดงรายการเทรดของระบบที่เลือก · แถบล่างบอกพารามิเตอร์ สัญญาณล่าสุด และออเดอร์ที่เปิดอยู่
-- เลือกระบบอื่นที่ไม่ใช่ ★ = **ดูอย่างเดียว** ไม่เปลี่ยนระบบจริงและไม่ส่งแจ้งเตือน
-### 🧠 ระบบเทรด
-- แท็บ **Equity curve**: ผลของระบบที่เลือก สลับ **WF OOS** (ใช้ตัดสิน) / **Backtest** ทั้งช่วง · แถบล่างสรุปกำไร PF Max DD
-- แท็บ **รายละเอียดระบบ**: indicator ที่ใช้, เงื่อนไข LONG / SHORT / ออกออเดอร์ และตารางพารามิเตอร์
-- แท็บ **รายชื่อระบบ**: ทั้ง ${S.strategies.length || 50} ระบบพร้อมเลข ค้นหาได้ กดการ์ดเพื่อดูรายละเอียด
-### 🧪 Strategy Lab
-- เปิดมาจะแสดง **ระบบที่ดีที่สุด** ของสินทรัพย์ที่เลือก ผลทดสอบเรียงเป็นขั้น 1–8 (ข้อมูล → Backtest → Walk-Forward → หักค่าโชค → สุ่ม → Robustness → Monte Carlo → ผลตัดสิน)
-- เปลี่ยน TF / ระบบ / สินทรัพย์ ทางขวาเพื่อดูผลของระบบอื่น · แท็บ **ภาพรวมทุกสินทรัพย์** และ **บันทึกจาก AI**
-- ปุ่ม **▶ สั่งวิเคราะห์ใหม่ทันที** อยู่มุมขวาบนของหน้านี้
-### 🔔 สัญญาณ · 🧮 เครื่องคำนวณ · ⚙️ ตั้งค่า · 📘 คู่มือ
-- **สัญญาณ:** สัญญาณที่เข้าได้ตอนนี้ (Lot / SL / TP), สถานะระบบของทั้ง 8 สินทรัพย์, ออเดอร์ที่กำลังติดตาม และประวัติ
-- **เครื่องคำนวณ:** เลือกสินทรัพย์และฝั่ง ใส่ราคาเข้า + SL → ได้ Lot สำหรับ MT5 ทันที
-- **ตั้งค่า:** ทุน ความเสี่ยงต่อไม้ และชื่อสัญลักษณ์ใน MT5 ของโบรกเกอร์คุณ
+เมนูอยู่ทางซ้าย (มือถืออยู่ด้านบน) แบ่งเป็น **3 กลุ่ม** เหมือนห้องในบ้าน: 🔍 ห้องวิเคราะห์ → 💼 ห้องเทรด → ⚙️ ห้องเก็บของ — เปิดเว็บมาจะเข้าหน้า **กราฟ** ของสินทรัพย์ / TF / ระบบที่ดูล่าสุดเสมอ
+### สินทรัพย์ ${S.symbols.length || 20} ตัว แบ่ง 5 กลุ่ม (เรียงแบบนี้ทุกหน้า)
+${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${list.map((x) => `${ABBR[x.symbol] || x.symbol} = ${x.symbol}`).join(", ")}`).join("\n")}
+### 🔍 กลุ่มวิเคราะห์
+- **📈 กราฟ:** ปุ่ม **⚡ ด่วน** = ระบบ ACTIVE / WATCH ทุกสินทรัพย์ กดครั้งเดียวเปลี่ยนสินทรัพย์ + TF + ระบบ · แถบขวา: **H1 / H4 / D1** → **เลขระบบ** (★ = ระบบจริง) → **สินทรัพย์ตามกลุ่ม** (FX / CMD / IDX / STK / CRY)
+  - จุดบนปุ่มสินทรัพย์: 🟢 ACTIVE · 🟠 WATCH · ไม่มีจุด = OFF · สี่เหลี่ยมฟ้า = กำลังถือออเดอร์
+  - เส้น **ENTRY (ฟ้า) · SL (แดง) · TP (เขียว)** พร้อม Lot · เลื่อนซ้ายเพื่อดูย้อนหลัง · ป้าย **LIVE** = ราคาสดทุก 1 วินาที
+  - เลือกระบบที่ไม่มี ★ = **ดูอย่างเดียว** ไม่ส่งแจ้งเตือน
+- **🧠 ระบบเทรด:** Equity curve (WF OOS ใช้ตัดสิน / Backtest ทั้งช่วง) · รายละเอียด indicator และกติกา · รายชื่อทั้ง ${S.strategies.length || 109} ระบบ
+- **🧪 Strategy Lab:** ผลทดสอบทีละขั้นของระบบเดียว (ข้อมูล → Backtest → Walk-Forward → หักค่าโชค → สุ่ม → Robustness → Monte Carlo → ผลตัดสิน) · ปุ่ม **▶ สั่งวิเคราะห์ใหม่ทันที**
+### 💼 กลุ่มเทรด
+- **🔔 สัญญาณ:** สัญญาณที่ยังเข้าได้ (Lot / SL / TP) สำหรับเทรดมือ · สัญญาณที่กำลังติดตาม · ประวัติและผล forward test
+- **💼 พอร์ต MT5:** ยอดเงิน / equity ของบัญชีที่โปรแกรมเทรดให้ · ความเสี่ยงที่เปิดอยู่แยก 5 กลุ่มสินทรัพย์ · ออเดอร์ที่ถือ (กดแถวเพื่อไปกราฟ) · ออเดอร์ที่ปิด · ระบบของแต่ละสินทรัพย์
+- **🧮 เครื่องคำนวณ:** เลือกสินทรัพย์ (แยกกลุ่ม) และฝั่ง ใส่ราคาเข้า + SL → ได้ Lot ทันที
+### ⚙️ กลุ่มแอป
+- **ตั้งค่า:** ทุน ความเสี่ยงต่อไม้ ชื่อสัญลักษณ์ใน MT5 การแสดงผล และซิงค์ทุกเครื่อง · **คู่มือ:** หน้านี้
 - ปุ่ม 🔄 มุมขวาบนใช้โหลดข้อมูลใหม่ทั้งหมด`],
     ["method", "6. ระบบทดสอบกลยุทธ์อย่างไร — QWG (ทีละขั้น)", `
 ชื่อวิธีนี้: **QWG — Quarterly Walk-Forward Gauntlet** (ด่านคัดระบบ 5 ชั้น แบบเดินหน้ารายไตรมาส): ① Walk-Forward ทีละไตรมาส → ② เทียบกับการเข้าแบบสุ่ม → ③ ทดสอบความทนทาน 8 แบบ → ④ Monte Carlo → ⑤ ด่านหักโชค (Šidák) · ตั้งแต่ 2 พ.ย. 2026 ทดสอบ **ระบบตามเทรนด์ 100 ระบบ** บน **20 สินทรัพย์** ด้วย **ราคาย้อนหลังของ Exness** (โบรกเกอร์ที่คุณเทรดจริง)
@@ -1770,8 +1808,8 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF
 ### ขั้นที่ 9 — ทดสอบแบบพอร์ต (แบบกองทุน)
 - กองทุนตามแนวโน้ม (CTA) ไม่ได้ดูระบบทีละตลาด แต่ใช้ระบบเดียวกับหลายตลาดพร้อมกันแล้วดูผลรวม — แต่ละตลาดเดี่ยว ๆ กำไรน้อยและแกว่ง แต่รวมกันแล้วเรียบขึ้นมาก (Moskowitz, Ooi & Pedersen 2012; Hurst, Ooi & Pedersen 2017)
-- ระบบจึงนำผล Walk-Forward OOS ของ **ระบบเดียวกันบนทั้ง 8 สินทรัพย์** มารวมเป็นผลรายเดือน (ทุกไม้เสี่ยงเท่ากัน) แล้วตัดสินด้วยเกณฑ์: OOS ≥ 36 เดือน · t รายเดือน ≥ เกณฑ์หักค่าโชค (นับผู้สมัครทุกระบบ × ทุก TF รวมระบบที่เลิกใช้) · สินทรัพย์ที่เป็นบวก ≥ 60% · MC PF@95% ≥ 1 · ชนะการสุ่มจุดเข้า (มัธยฐาน) ≥ 75% · Robustness เฉลี่ย ≥ 50
-- ระบบพอร์ตที่ ACTIVE **เทรดทุกสินทรัพย์** (★ พอร์ต บนกราฟ) เสี่ยง **0.10%/ไม้** (ผู้ใช้เลือก เพราะไม้เยอะและ DD ของพอร์ตลึก) และรวมไม่เกิน 0.75% ต่อสินทรัพย์ · ดูตารางในหน้า Strategy Lab → ภาพรวมทุกสินทรัพย์
+- ระบบจึงนำผล Walk-Forward OOS ของ **ระบบเดียวกันบนทุกสินทรัพย์** มารวมเป็นผลรายเดือน (ทุกไม้เสี่ยงเท่ากัน) แล้วตัดสินด้วยเกณฑ์: OOS ≥ 36 เดือน · t รายเดือน ≥ เกณฑ์หักค่าโชค (นับผู้สมัครทุกระบบ × ทุก TF รวมระบบที่เลิกใช้) · สินทรัพย์ที่เป็นบวก ≥ 60% · MC PF@95% ≥ 1 · ชนะการสุ่มจุดเข้า (มัธยฐาน) ≥ 75% · Robustness เฉลี่ย ≥ 50
+- ระบบพอร์ตที่ ACTIVE **เทรดทุกสินทรัพย์** (★ พอร์ต บนกราฟ) เสี่ยง **${S.settings?.portfolio_risk_pct ?? 0.5}%/ไม้** เท่ากับระบบเดี่ยว (ผู้ใช้เลือก 2 พ.ย. 2026) และรวมไม่เกิน ${S.settings?.max_symbol_risk_pct ?? 1}% ต่อสินทรัพย์ · ดูตารางในหน้า Strategy Lab → ภาพรวมทุกสินทรัพย์
 ### คลังระบบ (ปรับ ต.ค. 2026)
 - เลิกใช้ 17 ระบบที่ขาดทุนแทบทุกสินทรัพย์ (ส่วนใหญ่เป็นระบบสวนเทรนด์ เช่น Z-score, Bollinger Fade, RSI 2) — **แต่ยังนับรวมในเกณฑ์หักค่าโชค** การตัดตัวแพ้ทิ้งจึงไม่ทำให้เกณฑ์ต่ำลง
 - เพิ่ม 7 ระบบจากงานวิจัย/กองทุน: EWMAC หลายความเร็ว (Carver), Time-Series Momentum 1/3/12 เดือน (AQR), Turtle, Faber 10-month SMA, Clenow Trend, Volatility Breakout (Crabel), 52-Week High (George & Hwang) — เลขระบบใหม่ #51–57 (เลขเดิมไม่เปลี่ยน)
@@ -1802,7 +1840,7 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - เว็บนี้เป็นเครื่องมือวิจัย ไม่ใช่คำแนะนำการลงทุน`],
     ["price", "9. ราคามาจากไหน, ราคาสด และ MT5", `
 ### ข้อมูลราคาแต่ละส่วนมาจากไหน
-- **ข้อมูลย้อนหลังหลายปี (FX, ทอง, ดัชนี):** จาก MT5 ของโบรกคุณ ผ่านไฟล์ \`export_mt5_history.bat\` (ส่งใหม่ปีละครั้งก็พอ)
+- **ข้อมูลย้อนหลังหลายปี (ทุกสินทรัพย์):** โปรแกรมบนคอมดึงจาก MT5 Exness แล้วส่งขึ้น GitHub ให้เอง (\`data/history_exness\`)
   - เวลาในไฟล์ MT5 เป็นเวลาเซิร์ฟเวอร์โบรก (GMT+2 / GMT+3) ระบบแปลงเป็นเวลาสากลให้อัตโนมัติ
 - **ราคาใหม่ (สแกนทุก 10 นาที):** ทอง + FX จาก **Twelve Data** (ราคา spot เดียวกับกราฟ เมื่อใส่ secret \`TWELVE_DATA_KEY\` ใน GitHub แล้ว ไม่งั้นใช้ Yahoo) · ดัชนีจาก Yahoo (futures ปรับระดับให้ต่อกับราคาโบรก) · BTC, ETH จาก Binance
 - **ราคาสดบนกราฟ (ขยับทุก 1 วินาที):** BTC/ETH จาก Binance ฟรี · FX/ทอง/ดัชนี ต้องใส่ Finnhub API key ฟรีในหน้า **ตั้งค่า**
@@ -1813,7 +1851,8 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 - ได้ — ระบบดูรูปแบบของแท่ง H1/H4/D1 ซึ่งราคาจากแต่ละแหล่งต่างกันน้อยมาก (FX ไม่ถึง 1 pip) ส่วนทอง/ดัชนี futures ต่างระดับนิดหน่อยแต่ปรับให้แล้ว
 - สิ่งที่ต้องใช้ให้ตรงคือ **ระยะ** SL/TP (pips/จุด) — ใช้ปุ่ม **ปรับตามราคา MT5** บนการ์ดสัญญาณก่อนส่งออเดอร์
 ### อื่น ๆ
-- **ไม่ต้องเปิด MT5 หรือคอมเพื่อให้ระบบทำงาน** — คลาวด์สแกนทุกชั่วโมงเอง (GitHub อาจช้า 5–20 นาที)
+- **แจ้งเตือนยังทำงานแม้คอมปิด** — คลาวด์สแกนแทน (GitHub อาจช้า 10–50 นาที) แต่ **การเปิดออเดอร์อัตโนมัติต้องเปิดคอม + MT5**
+- **ราคาย้อนหลังที่ใช้ทดสอบ:** ดึงจาก MT5 ของ **Exness** โดยตรง (FX ตั้งแต่ปี 2002, ทอง/เงิน/น้ำมัน 2017, ดัชนี 2019, หุ้น 2019, BTC 2014, ETH 2018)
 - ระบบตัดสินใจจากแท่งที่ **ปิดแล้ว** เท่านั้น ราคาสดมีไว้ดูเฉย ๆ
 - **ถ้าเปิด MT5 บนคอมพร้อม \`start_server.bat\`:** เวอร์ชันบนคอมจะใช้ราคาและสเปกของโบรกเกอร์คุณโดยตรง`],
     ["autotrade", "10. เทรดอัตโนมัติบนคอม + ทุกอย่างให้ตรงกัน", `
@@ -1871,26 +1910,9 @@ ${ex("XAUUSD", "$40", 40, 100)} ← ระยะ SL ปกติของระ�
 }
 
 // ------------------------------------------------------------------ SIGNALS
-async function renderSignals(view) {
-  const [sigs, syms, fwd, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null]);
-  S.pc = pc;
-  const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
-  const rpos = (pc && pc.positions) || [], rpnl = rpos.reduce((a, x) => a + (+x.profit || 0), 0);
-  const pcErr = pc && pc.scan && (pc.scan.errors || []).length && pcAge !== null && pcAge < 70
-    ? `<div class="banner" style="margin-top:10px"><span class="ic">⚠️</span><div><b>คอมสแกนบางระบบไม่สำเร็จ</b> (${pc.scan.errors.length}) — ${pc.scan.errors.slice(0, 3).map(esc).join(" · ")}</div></div>` : "";
-  const rclosed = ((pc && pc.closed) || []).slice(0, 8);
-  const pcLine = !STATIC ? "" : pcAge !== null && pcAge < 70
-    ? `<div class="hero-s"><span class="pos">💻 คอมออนไลน์</span> · สแกนราคา MT5 ทุกต้นชั่วโมง · ล่าสุด ${ago(pc.time)} — แจ้งเตือน + เปิดออเดอร์ภายในไม่กี่วินาที</div>`
-    : `<div class="hero-s"><span class="neg">☁️ คอมออฟไลน์</span> · ใช้คลาวด์แทน (แจ้งช้า 10–60 นาที, ไม่เปิดออเดอร์อัตโนมัติ)${pc && pc.time ? ` · คอมสแกนล่าสุด ${ago(pc.time)}` : ""}</div>`;
-  S.sigs = sigs;
-  S.symbols = syms;
+// one tile per symbol: what it trades this quarter, what it holds now (signals page + portfolio page)
+function symTiles(list, sigs) {
   const now = new Date();
-  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
-  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s));
-  const closed = sigs.filter((s) => s.outcome !== "open");
-  S.newCount = actionable.length; renderNav(S.newCount);
-  const active = syms.filter((x) => x.status === "ACTIVE");
-  const fa = fwd.all;
   const openOf = (sym) => sigs.find((s) => s.symbol === sym && s.outcome === "open");
   const tile = (x) => {
     // what this symbol really trades this quarter (single-symbol + portfolio systems); none -> best candidate, muted
@@ -1907,28 +1929,45 @@ async function renderSignals(view) {
       <div class="t-foot">${heldOf(x.symbol).length ? `<span class="pos">● ถืออยู่ ${heldOf(x.symbol).length} ออเดอร์</span>` : op ? `<span class="${op.dir > 0 ? "pos" : "neg"}">● ${op.side}</span> ${op.user_status === "new" && new Date(op.valid_until) > now ? "รอเข้า" : "กำลังติดตาม"}` : sy.length ? '<span class="muted">○ รอสัญญาณ</span>' : '<span class="muted">— ไม่เทรด</span>'}
         ${exp != null ? `<span class="mono muted">${fr(exp, 2)}/ไม้</span>` : ""}</div></a>`;
   };
+  return list.map(tile).join("");
+}
+function groupedTiles(list, sigs) {
+  return symGroups(list).map(({ g, list: l }) => `<div class="grp-h"><span>${g.icon} ${g.label}</span><span class="muted small">${l.filter((x) => x.status === "ACTIVE").length}/${l.length} มีระบบ ACTIVE</span></div>
+    <div class="tiles">${symTiles(l, sigs)}</div>`).join("");
+}
+async function renderSignals(view) {
+  const [sigs, syms, fwd, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null]);
+  S.pc = pc;
+  const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
+  const rpos = (pc && pc.positions) || [], rpnl = rpos.reduce((a, x) => a + (+x.profit || 0), 0);
+  const pcErr = pc && pc.scan && (pc.scan.errors || []).length && pcAge !== null && pcAge < 70
+    ? `<div class="banner" style="margin-top:10px"><span class="ic">⚠️</span><div><b>คอมสแกนบางระบบไม่สำเร็จ</b> (${pc.scan.errors.length}) — ${pc.scan.errors.slice(0, 3).map(esc).join(" · ")}</div></div>` : "";
+  const rclosed = ((pc && pc.closed) || []).slice(0, 8);
+  const pcLine = !STATIC ? "" : pcAge !== null && pcAge < 70
+    ? `<div class="hero-s"><span class="pos">💻 คอมออนไลน์</span> · สแกนราคา MT5 ทุกต้นชั่วโมง · ล่าสุด ${ago(pc.time)} — แจ้งเตือน + เปิดออเดอร์ภายในไม่กี่วินาที</div>`
+    : `<div class="hero-s"><span class="neg">☁️ คอมออฟไลน์</span> · ใช้คลาวด์แทน (แจ้งช้า 10–60 นาที, ไม่เปิดออเดอร์อัตโนมัติ)${pc && pc.time ? ` · คอมสแกนล่าสุด ${ago(pc.time)}` : ""}</div>`;
+  S.sigs = sigs;
+  S.symbols = sortSyms(syms);
+  const now = new Date();
+  const actionable = sigs.filter((s) => s.outcome === "open" && s.user_status === "new" && new Date(s.valid_until) > now);
+  const tracking = sigs.filter((s) => s.outcome === "open" && !actionable.includes(s));
+  const closed = sigs.filter((s) => s.outcome !== "open");
+  S.newCount = actionable.length; renderNav(S.newCount);
+  const active = syms.filter((x) => x.status === "ACTIVE");
+  const fa = fwd.all;
   view.innerHTML = `<div class="page">
     <div class="hero">
       <div class="hero-main"><div class="hero-k">สัญญาณที่ยังเข้าได้ตอนนี้ (สำหรับเทรดมือ)</div><div class="hero-v">${actionable.length}</div>${pcLine}
         <div class="hero-s">${STATIC ? `☁️ คลาวด์ (สำรอง) สแกนล่าสุด ${STATIC.last_scan ? ago(STATIC.last_scan) : "–"} · ทำงานแทนเมื่อคอมออฟไลน์` : `สแกนทุก ${S.settings?.scan_interval_sec || 120} วินาที`}</div>${pcErr}</div>
       <div class="hero-kpis">${kpi("ระบบ ACTIVE", active.reduce((n, x) => n + Math.max(1, (x.systems || []).length), 0), active.map((x) => x.symbol + ((x.systems || []).length > 1 ? ` ×${x.systems.length}` : "")).join(", ") || "ยังไม่มี", active.length ? "pos" : "")}
-        ${STATIC ? kpi("🤖 ถือใน MT5", rpos.length, pc && pc.time ? `กำไร/ขาดทุนตอนนี้ ${rpnl >= 0 ? "+" : ""}$${fnum(rpnl, 2)} · อัปเดต ${ago(pc.time)}` : "ยังไม่มีข้อมูลจากคอม", rpos.length ? cls(rpnl) : "") : ""}
+        ${STATIC ? kpi("🤖 ถือใน MT5", `<a href="#/port">${rpos.length}</a>`, pc && pc.time ? `กำไร/ขาดทุนตอนนี้ ${fusd(rpnl)} · อัปเดต ${ago(pc.time)}` : "ยังไม่มีข้อมูลจากคอม", rpos.length ? cls(rpnl) : "") : ""}
         ${kpi("กำลังติดตาม", tracking.length, "สัญญาณที่ยังไม่จบ")}
         ${kpi("Forward test", fa ? fr(fa.net_r, 1) : "–", fa ? `${fa.trades} ไม้ · ชนะ ${fa.win_rate}%` : "ยังไม่มีไม้ที่จบ", fa ? cls(fa.net_r) : "")}
         <div class="kpi act"><button class="btn sm" id="scanBtn">${ICONS.refresh} ${STATIC ? "โหลดใหม่" : "สแกนตอนนี้"}</button></div></div>
     </div>
     ${actionable.length ? `<div class="sec-h"><h2>🔔 เข้าได้ตอนนี้</h2></div><div class="sig-grid">${actionable.map((s) => signalCard(s)).join("")}</div>`
       : `<div class="calm"><div class="big">🔕</div><div><b>ยังไม่มีสัญญาณใหม่</b><div class="muted small">ระบบกำลังเฝ้าตลาดให้ — เมื่อมีสัญญาณ มือถือจะเด้งแจ้งเตือนพร้อม Lot / SL / TP</div></div></div>`}
-    ${rpos.length ? `<div class="sec-h"><h2>🤖 ออเดอร์ใน MT5 (โปรแกรมเทรดให้)</h2><span class="badge">${rpos.length}</span><span class="muted small" style="margin-left:auto">อัปเดตเมื่อเปิด/ปิดออเดอร์ และทุกต้นชั่วโมง · ${ago(pc.time)}</span></div>
-      <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th class="num">Lot</th><th class="num">ราคาเข้า</th><th class="num">SL</th><th class="num">TP</th><th class="num">กำไร</th></tr></thead><tbody>
-      ${rpos.map((x) => `<tr><td><b>${esc(x.symbol)}</b></td><td class="mono">${esc(x.system)}</td><td>${statusBadge(x.side === "BUY" ? "LONG" : "SHORT")}</td><td class="num">${fnum(x.lots, 2)}</td><td class="num">${x.price_open}</td><td class="num neg">${x.sl ?? "–"}</td><td class="num pos">${x.tp ?? "ไม่ตั้ง"}</td><td class="num ${cls(x.profit)}">${x.profit >= 0 ? "+" : ""}$${fnum(x.profit, 2)}</td></tr>`).join("")}
-      </tbody></table></div></div>` : ""}
-    ${rclosed.length ? `<div class="sec-h"><h2>🤖 MT5 ปิดล่าสุด</h2><span class="badge">${rclosed.length}</span></div>
-      <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th>ปิดด้วย</th><th class="num">ราคา</th><th class="num">กำไร</th></tr></thead><tbody>
-      ${rclosed.map((x) => `<tr><td>${fdt(x.time)}</td><td><b>${esc(x.symbol || "")}</b></td><td class="mono">${esc(robotTag(x))}</td><td>${x.side ? statusBadge(x.side === "BUY" ? "LONG" : "SHORT") : "–"}</td><td>${esc(x.reason || "")}</td><td class="num">${x.price ?? "–"}</td><td class="num ${cls(x.profit)}">${x.profit >= 0 ? "+" : ""}$${fnum(x.profit, 2)}</td></tr>`).join("")}
-      </tbody></table></div></div>` : ""}
-    <div class="sec-h"><h2>ระบบที่เฝ้าสัญญาณ</h2><a class="muted small" href="#/systems">รายละเอียดระบบ →</a></div>
-    <div class="tiles">${syms.map(tile).join("")}</div>
+    ${STATIC && (rpos.length || rclosed.length) ? `<a class="banner ok link" href="#/port" style="margin-top:14px"><span class="ic">🤖</span><div><b>MT5 ถือ ${rpos.length} ออเดอร์</b> · กำไร/ขาดทุนตอนนี้ <span class="${cls(rpnl)}">${fusd(rpnl)}</span> — ดูพอร์ต ความเสี่ยงแยกกลุ่ม และออเดอร์ที่ปิดแล้วในหน้า <b>พอร์ต MT5 →</b></div></a>` : ""}
     ${tracking.length ? `<div class="sec-h"><h2>กำลังติดตาม</h2><span class="badge">${tracking.length}</span></div><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div>` : ""}
     <div class="sec-h"><h2>ประวัติสัญญาณ</h2><span class="badge">${closed.length}</span>${fa ? `<span class="muted small" style="margin-left:auto">Expectancy ${fr(fa.expectancy, 3)} · PF ${fnum(fa.pf, 2)} · Max DD ${fnum(fa.max_dd_r, 1)}R</span>` : ""}</div>
     <div class="card"><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
@@ -1941,6 +1980,62 @@ async function renderSignals(view) {
   $("#scanBtn").onclick = async (e) => { if (STATIC) { hardRefresh(); return; } e.currentTarget.disabled = true; const r = await api("/api/scan", { method: "POST" }); toast(r.new.length ? `พบ ${r.new.length} สัญญาณใหม่` : "สแกนแล้ว ไม่มีสัญญาณใหม่"); navigate(); };
 }
 
+// ------------------------------------------------------------------ PORTFOLIO: what the PC robot holds in MT5, risk by asset class, systems per symbol
+async function renderPort(view) {
+  const [sigs, syms, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus()]);
+  S.pc = pc || S.pc; S.sigs = sigs; S.symbols = sortSyms(syms);
+  const age = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null, online = age !== null && age < 70;
+  const pos = (pc && pc.positions) || [], closed = (pc && pc.closed) || [];
+  const bal = +(pc && pc.balance) || 0, eq = +(pc && pc.equity) || bal, start = +(pc && pc.start_balance) || 0;
+  const pnl = pos.reduce((a, x) => a + (+x.profit || 0), 0), cpnl = closed.reduce((a, x) => a + (+x.profit || 0), 0);
+  const cap = +(S.settings?.max_symbol_risk_pct) || 1;
+  // money lost if SL is hit, from the real position (lots × distance × value per point); null = no SL
+  const riskOf = (x) => x.sl && bal ? Math.abs(x.price_open - x.sl) * x.lots * valuePerUnit(x.symbol, x.price_open) / bal * 100 : null;
+  const bySym = {}; pos.forEach((x) => { const r = riskOf(x); bySym[x.symbol] = (bySym[x.symbol] || 0) + (r || 0); });
+  const totalRisk = Object.values(bySym).reduce((a, b) => a + b, 0);
+  const groupCard = ({ g, list }) => {
+    const ps = pos.filter((x) => list.some((y) => y.symbol === x.symbol)), r = ps.reduce((a, x) => a + (riskOf(x) || 0), 0);
+    const act = list.filter((x) => x.status === "ACTIVE").length;
+    return `<div class="gcard"><div class="gc-t">${g.icon} ${g.label}</div>
+      <div class="gc-v">${ps.length} <small>ออเดอร์</small></div>
+      <div class="meter"><i style="width:${Math.min(100, r / (cap * list.length) * 100).toFixed(0)}%"></i></div>
+      <div class="gc-s"><span>เสี่ยงรวม <b class="${r > 0 ? "neg" : ""}">${fnum(r, 2)}%</b></span><span class="muted">${act}/${list.length} ACTIVE</span></div></div>`;
+  };
+  const dg = (sym) => specOf(sym).digits;
+  view.innerHTML = `<div class="page">
+    <div class="hero">
+      <div class="hero-main"><div class="hero-k">พอร์ตในMT5 ที่โปรแกรมเทรดให้ ${pc && pc.account ? `<span class="badge ${pc.account === "DEMO" ? "ghost" : "ACTIVE"}">${esc(pc.account)}</span>` : ""}</div>
+        <div class="hero-v">${bal ? "$" + fnum(eq, 2) : "–"}</div>
+        <div class="hero-s">${online ? `<span class="pos">💻 คอมออนไลน์</span> · อัปเดต ${ago(pc.time)}` : `<span class="neg">💻 คอมออฟไลน์</span>${pc && pc.time ? ` · ข้อมูลล่าสุด ${ago(pc.time)}` : ""} — ระหว่างนี้ไม่มีการเปิดออเดอร์อัตโนมัติ`}</div>
+        ${pc && pc.scan && (pc.scan.errors || []).length && online ? `<div class="banner" style="margin-top:10px"><span class="ic">⚠️</span><div><b>คอมสแกนบางระบบไม่สำเร็จ</b> — ${pc.scan.errors.slice(0, 3).map(esc).join(" · ")}</div></div>` : ""}</div>
+      <div class="hero-kpis">
+        ${kpi("Balance", bal ? "$" + fnum(bal, 2) : "–", start ? `เริ่ม $${fnum(start, 0)} · ${bal >= start ? "+" : ""}${fnum((bal / start - 1) * 100, 2)}%` : "ยอดหลังปิดออเดอร์")}
+        ${kpi("กำไร/ขาดทุนที่ถืออยู่", fusd(pnl), `${pos.length} ออเดอร์`, pos.length ? cls(pnl) : "")}
+        ${kpi("ความเสี่ยงที่เปิดอยู่", fnum(totalRisk, 2) + "%", `ถ้าชน SL ทุกตัว ≈ -$${fnum(bal * totalRisk / 100, 2)} · เพดาน ${cap}%/สินทรัพย์`, totalRisk ? "neg" : "")}
+        ${kpi("ปิดล่าสุด", fusd(cpnl), `${closed.length} ออเดอร์ล่าสุด`, closed.length ? cls(cpnl) : "")}</div>
+    </div>
+    ${!pc ? `<div class="banner" style="margin-top:14px"><span class="ic">ℹ️</span><div>ยังไม่มีข้อมูลจากคอม — หน้านี้แสดงผลเมื่อโปรแกรมเทรดอัตโนมัติ (autotrade.bat) ทำงานบนคอมและส่งสถานะขึ้น GitHub</div></div>` : ""}
+    <div class="sec-h"><h2>ความเสี่ยงแยกตามกลุ่มสินทรัพย์</h2><span class="muted small" style="margin-left:auto">ทุกไม้เสี่ยง ${S.settings?.risk_per_trade_pct ?? 0.5}% · รวมไม่เกิน ${cap}% ต่อสินทรัพย์</span></div>
+    <div class="gcards">${symGroups().map(groupCard).join("")}</div>
+    <div class="sec-h"><h2>🤖 ออเดอร์ที่ถืออยู่</h2><span class="badge">${pos.length}</span></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th class="num">Lot</th><th class="num">ราคาเข้า</th><th class="num">ตอนนี้</th><th class="num">SL</th><th class="num">TP</th><th class="num">เสี่ยง</th><th class="num">กำไร</th></tr></thead><tbody>
+      ${pos.length ? sortSyms(pos).map((x) => `<tr class="click" data-href="#/chart?symbol=${x.symbol}&tf=${(robotTag(x).split("-")[1]) || "H1"}"><td><b>${esc(x.symbol)}</b></td><td class="mono">${esc(robotTag(x))}</td><td>${statusBadge(x.side === "BUY" ? "LONG" : "SHORT")}</td><td class="num">${fnum(x.lots, 2)}</td>
+        <td class="num">${fpx(x.price_open, dg(x.symbol))}</td><td class="num">${x.price != null ? fpx(x.price, dg(x.symbol)) : "–"}</td><td class="num neg">${x.sl ? fpx(x.sl, dg(x.symbol)) : "–"}</td><td class="num pos">${x.tp ? fpx(x.tp, dg(x.symbol)) : "ไม่ตั้ง"}</td>
+        <td class="num">${riskOf(x) != null ? fnum(riskOf(x), 2) + "%" : "–"}</td><td class="num ${cls(x.profit)}">${fusd(x.profit)}</td></tr>`).join("")
+        : `<tr><td colspan="10" class="muted" style="text-align:center;padding:20px">ไม่มีออเดอร์เปิดอยู่</td></tr>`}
+    </tbody></table></div></div>
+    <div class="sec-h"><h2>ปิดล่าสุด</h2><span class="badge">${closed.length}</span></div>
+    <div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ระบบ</th><th>ฝั่ง</th><th>ปิดด้วย</th><th class="num">ราคาเข้า</th><th class="num">ราคาปิด</th><th class="num">กำไร</th></tr></thead><tbody>
+      ${closed.length ? closed.map((x) => `<tr><td>${fdt(x.time)}</td><td><b>${esc(x.symbol || "")}</b></td><td class="mono">${esc(robotTag(x))}</td><td>${x.side ? statusBadge(x.side === "BUY" ? "LONG" : "SHORT") : "–"}</td><td>${esc(reasonTh(x.reason) || x.reason || "")}</td>
+        <td class="num">${x.price_open != null ? fpx(x.price_open, dg(x.symbol)) : "–"}</td><td class="num">${x.price != null ? fpx(x.price, dg(x.symbol)) : "–"}</td><td class="num ${cls(x.profit)}">${fusd(x.profit)}</td></tr>`).join("")
+        : `<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">ยังไม่มีออเดอร์ที่ปิด</td></tr>`}
+    </tbody></table></div></div>
+    <div class="sec-h"><h2>ระบบของแต่ละสินทรัพย์</h2><a class="muted small" href="#/systems" style="margin-left:auto">รายละเอียดระบบ →</a></div>
+    ${groupedTiles(S.symbols, sigs)}
+  </div>`;
+  $$("[data-href]", view).forEach((r) => r.onclick = () => go(r.dataset.href));
+}
+
 // ------------------------------------------------------------------ CALCULATOR
 async function renderCalc(view) {
   const saved = store.get("calc", {});
@@ -1948,11 +2043,11 @@ async function renderCalc(view) {
   const side = +(saved.side || 1);
   view.innerHTML = `<div class="page narrow"><div class="calc">
     <div class="card"><div class="hd"><h3>ข้อมูลออเดอร์</h3></div><div class="bd stack" style="gap:16px">
-      <div><div class="lbl">สินทรัพย์</div><div class="pills" id="kSym">${S.symbols.map((x) => `<button class="pill ${x.symbol === sym ? "on" : ""}" data-v="${x.symbol}">${ABBR[x.symbol] || ""} <small>${x.symbol}</small></button>`).join("")}</div></div>
+      <div><div class="lbl">สินทรัพย์</div><div id="kSym" class="pgroups">${symGroups().map(({ g, list }) => `<div class="pg"><div class="pg-l">${g.icon} ${g.label}</div><div class="pills">${list.map((x) => `<button class="pill ${x.symbol === sym ? "on" : ""}" data-v="${x.symbol}">${ABBR[x.symbol] || ""} <small>${x.symbol}</small></button>`).join("")}</div></div>`).join("")}</div></div>
       <div><div class="lbl">ฝั่ง</div><div class="seg wide" id="kSide"><button data-v="1" class="${side > 0 ? "active long" : ""}">▲ BUY / LONG</button><button data-v="-1" class="${side < 0 ? "active short" : ""}">▼ SELL / SHORT</button></div></div>
       <div class="fgrid" style="grid-template-columns:1fr 1fr">
         <label class="f">ทุน (USD)<input class="inp num" type="number" id="kBal" value="${saved.balance ?? myBalance()}"></label>
-        <label class="f">ความเสี่ยงต่อไม้ (%)<input class="inp num" type="number" step="0.05" id="kRisk" value="${saved.risk ?? effRisk(0.25)}"></label>
+        <label class="f">ความเสี่ยงต่อไม้ (%)<input class="inp num" type="number" step="0.05" id="kRisk" value="${saved.risk ?? effRisk(0.5)}"></label>
         <label class="f full">ราคาเข้า (Entry)<input class="inp num big" type="number" step="any" id="kEntry" value="${saved.entry ?? ""}" placeholder="เช่น 4008.50"></label>
         <label class="f">Stop Loss <select class="inp mini" id="kSlMode"><option value="price">ราคา</option><option value="pips" ${saved.slMode === "pips" ? "selected" : ""}>pips</option></select><input class="inp num" type="number" step="any" id="kSl" value="${saved.sl ?? ""}"></label>
         <label class="f">Take Profit <select class="inp mini" id="kTpMode"><option value="rr">R:R</option><option value="price" ${saved.tpMode === "price" ? "selected" : ""}>ราคา</option></select><input class="inp num" type="number" step="any" id="kTp" value="${saved.tp ?? 2}"></label>
@@ -2050,6 +2145,7 @@ async function boot() {
   $("#themeBtn").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; store.set("theme", t); navigate(); };
   try {
     [S.symbols, S.strategies, S.settings] = await Promise.all([api("/api/symbols"), api("/api/strategies"), api("/api/settings")]);
+    S.symbols = sortSyms(S.symbols);
     await loadHeld();
   } catch (e) { $("#view").innerHTML = `<div class="banner"><span class="ic">⚠️</span><div>${STATIC ? "โหลดข้อมูลไม่ได้" : "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้"}: ${esc(e.message)}</div></div>`; return; }
   await refreshStatus();

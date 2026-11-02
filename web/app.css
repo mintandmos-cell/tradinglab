@@ -384,7 +384,7 @@ label.f.full { grid-column: 1 / -1; }
   .sidebar { display: none; }
   .topbar { padding: calc(8px + env(safe-area-inset-top)) 14px 6px; border-bottom: 0; }
   .topbar h1 { font-size: 15px; } .topbar .sub { display: none; }
-  .mnav { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; padding: 2px 8px 8px; border-bottom: 1px solid var(--line); background: var(--bg); }
+  .mnav { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 2px 8px 8px; border-bottom: 1px solid var(--line); background: var(--bg); }
   .mnav a { width: auto; height: 36px; border-radius: 10px; }
   .mnav a svg { width: 20px; height: 20px; }
   .content.fill { padding: 6px; }
@@ -493,3 +493,24 @@ details summary { cursor: pointer; }
 .t-held { display: grid; gap: 4px; margin: 6px 0 2px; padding: 6px 8px; border-radius: 8px; background: var(--panel2); font-size: 12px; }
 .t-held .hrow { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .banner.ok { border-color: rgba(22,199,132,.35); background: rgba(22,199,132,.08); }
+
+/* 2 Nov 2026 reorganisation: nav groups (analyse · trade · app), symbols grouped by asset class, portfolio page */
+.nav-sep { display: block; height: 1px; margin: 5px 9px; background: var(--line); }
+.mnav .nav-sep { display: none; }
+.rg-l { position: relative; font-size: 8.5px; font-weight: 800; letter-spacing: .6px; color: var(--faint, var(--muted)); text-align: center; padding: 6px 0 1px; opacity: .8; }
+.rg-l:first-child { padding-top: 0; }
+.pgroups { display: grid; gap: 10px; }
+.pg-l, .grp-h span:first-child { font-size: 12px; font-weight: 700; color: var(--muted); }
+.pg-l { margin-bottom: 6px; }
+.grp-h { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; margin: 4px 2px -4px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.gcards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.gcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.gc-t { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.gc-v { font-size: 22px; font-weight: 800; font-family: var(--mono); } .gc-v small { font-size: 11px; font-family: var(--font); color: var(--muted); font-weight: 600; }
+.gc-s { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; font-size: 12px; } .gc-s span { white-space: nowrap; }
+.meter { height: 6px; border-radius: 3px; background: var(--panel2, var(--line)); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--warn), var(--short)); border-radius: 3px; }
+a.banner.link { color: inherit; text-decoration: none; } a.banner.link:hover { filter: brightness(1.12); }
+tr.click { cursor: pointer; }
+@media (max-width: 760px) { .rg-l { font-size: 7.5px; padding-top: 4px; } .gcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cat-f { padding: 4px 16px 0; }
