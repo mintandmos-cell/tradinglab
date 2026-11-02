@@ -1,14 +1,18 @@
 {
- "last_scan_hour": "2026-11-02 20:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-02 21:00:00+00:00",
+ "new_signals": [
+  "XAUUSD-H4-efficiency_trend-1793599200",
+  "NAS100-H4-mr_stochf_adx-1793599200",
+  "JP225-H4-mr_pin_don-1793628000"
+ ],
  "scan": {
-  "checked": 14,
+  "checked": 17,
   "errors": []
  },
- "time": "2026-11-02T20:00:12.365846+00:00",
+ "time": "2026-11-02T21:00:14.276267+00:00",
  "account": "DEMO",
  "balance": 9923.59,
- "equity": 9933.49,
+ "equity": 9950.22,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +25,8 @@
    "price_open": 1.1235,
    "sl": 1.11885,
    "tp": 1.12871,
-   "price": 1.11951,
-   "profit": -7.98,
+   "price": 1.11921,
+   "profit": -8.58,
    "time": "2026-11-02T09:14:05+00:00"
   },
   {
@@ -35,8 +39,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 157.896,
-   "profit": -1.49,
+   "price": 157.911,
+   "profit": -1.01,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -49,8 +53,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.694,
-   "profit": 19.28,
+   "price": 94.938,
+   "profit": 34.4,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -63,8 +67,8 @@
    "price_open": 26034.6,
    "sl": 25806.0,
    "tp": 26495.9,
-   "price": 25920.1,
-   "profit": -8.98,
+   "price": 25910.3,
+   "profit": -9.74,
    "time": "2026-11-02T17:00:20+00:00"
   }
  ],
