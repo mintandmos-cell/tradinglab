@@ -1,14 +1,17 @@
 {
- "last_scan_hour": "2026-11-02 13:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-02 14:00:00+00:00",
+ "new_signals": [
+  "USOIL-H1-vol_breakout-1793624400"
+ ],
  "scan": {
-  "checked": 10,
+  "checked": 19,
   "errors": []
  },
- "time": "2026-11-02T13:00:17.410799+00:00",
+ "time": "2026-11-02T14:00:29.403185+00:00",
  "account": "DEMO",
  "balance": 9923.59,
- "equity": 9918.4,
+ "equity": 9915.87,
+ "start_balance": 10000.0,
  "positions": [
   {
    "ticket": 2782356317,
@@ -20,8 +23,8 @@
    "price_open": 1.1235,
    "sl": 1.11885,
    "tp": 1.12871,
-   "price": 1.12131,
-   "profit": -4.38,
+   "price": 1.12137,
+   "profit": -4.26,
    "time": "2026-11-02T09:14:05+00:00"
   },
   {
@@ -34,8 +37,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 157.884,
-   "profit": -1.87,
+   "price": 157.82,
+   "profit": -3.9,
    "time": "2026-11-02T10:00:20+00:00"
   }
  ],
