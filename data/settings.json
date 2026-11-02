@@ -63,7 +63,7 @@
    "H4",
    "D1"
   ],
-  "is_months": 12,
+  "is_months": 24,
   "oos_months": 3,
   "min_is_trades": 20,
   "max_hold_hours": 120,
@@ -80,7 +80,10 @@
    "min_random_pct": 90,
    "min_plateau": 0.4,
    "multiple_testing": true
-  }
+  },
+  "is_mode": "expanding",
+  "plateau_weight": 0.5,
+  "switch_margin": 0.5
  },
  "alerts": {
   "active": true,

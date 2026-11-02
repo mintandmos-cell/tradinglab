@@ -90,6 +90,15 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - TRAILING: param `trail_atr` (0 = off); trend families also try every no-TP combo with `TRAIL_ATR` 3.0 (grids up to 32).
   The stop follows the best price of COMPLETED bars only (backtest `simulate(trail=)`, tracking `scanner._track` -> `stop_now`,
   robot `trail_positions` moves the MT5 SL after each hourly scan; only tightens). Exit reason "Trail".
+- 500 SYSTEMS (user, 3 Nov 2026): `app/strategies_mr.py` = 391 pullback / mean-reversion systems #127-#517 (24 triggers x 17
+  market filters minus 5 pairs that failed tests/check_strategies, `DROPPED`; ids `mr_{trigger}_{filter}`, families Pullback /
+  Mean reversion, grid 8 = 1 signal param x SL 1.5/2.5 x TP 1.0/1.5). `python -m tests.check_strategies mr_` checks one family.
+  Research matrix: 20 symbols x 3 TF x 4 chunks = 240 jobs. latest.json keeps SLIM candidates (`research.slim`); full records in
+  `data/research/cands/{SYM}.json.gz` (`research.candidates`, Lab page via /api/research/candidates = site data/research/{SYM}.json).
+  Full site payload build covers the 109 core systems + MR systems that are not OFF.
+- WFA (user, 3 Nov 2026, fixed before results): in-sample = all history before each quarter (`is_mode` expanding, >= 24 m);
+  pick on a plateau (`plateau_weight` 0.5: own IS t + mean t of grid neighbours, `walkforward.neighbours`); keep last quarter's
+  set unless another scores >= `switch_margin` 0.5 better. Robustness WF variants: expanding 36/3, 24/6, rolling 12/3, 24/3.
 - TEST LEDGER (user, 2 Nov 2026): `data/research/trial_ledger.json` = every SYM|strategy|TF ever tested (>= 10 OOS trades),
   never delete entries; `research.ghost_tests` adds ledger tests missing from today's candidates (deleted / retired systems) to
   the luck-gate count, `record_tests` runs at every merge. Portfolio count = every strategy x TF ever tested.

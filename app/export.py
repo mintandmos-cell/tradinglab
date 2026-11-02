@@ -30,7 +30,7 @@ def _light(lat: dict) -> dict:
     """research.json for the Systems page without the per-candidate OOS trade lists (those go to sys/*.json)."""
     out = {**lat, "symbols": {}}
     for k, v in (lat.get("symbols") or {}).items():
-        out["symbols"][k] = {**v, "candidates": [{kk: vv for kk, vv in c.items() if kk != "oos_eq"} for c in v.get("candidates", [])]}
+        out["symbols"][k] = {**v, "candidates": [research.slim(c) for c in v.get("candidates", [])]}
     return out
 
 
@@ -73,7 +73,13 @@ def build_systems(out_dir, lat: dict, limit: int, full: bool) -> None:
     if not full and SYS_CACHE.exists():
         shutil.copytree(SYS_CACHE, out_dir, dirs_exist_ok=True)
     live = live_set(lat)
-    jobs = [(sym, tf, sid) for sym in SYMBOLS for tf in ("H1", "H4", "D1") for sid in STRATEGIES] if full else sorted(live)
+    if full:   # every chart x the 109 core systems, + the pullback / mean-reversion systems that are not OFF (500 systems)
+        keep_mr = {(sym, c.get("tf"), c.get("strategy")) for sym, e in (lat.get("symbols") or {}).items()
+                   for c in e.get("candidates", []) if c.get("status") != "OFF"}
+        jobs = sorted({(sym, tf, sid) for sym in SYMBOLS for tf in ("H1", "H4", "D1") for sid in STRATEGIES
+                       if not sid.startswith("mr_") or (sym, tf, sid) in keep_mr} | live)
+    else:
+        jobs = sorted(live)
     for sym in {j[0] for j in jobs}:                 # load prices once in the parent (forked workers share them)
         for tf in ("H1", "H4", "D1"):
             try:
@@ -134,6 +140,8 @@ def build(repo: str = "", chart_limit: int = 1200, full_sys: bool | None = None)
     _dump(d / "symbols.json", research.symbol_table(settings))
     _dump(d / "strategies.json", public_list())
     _dump(d / "research.json", _light(lat))
+    for sym in (lat.get("symbols") or {}):            # full candidate records per symbol: only the Lab page loads them
+        _dump(d / "research" / f"{sym}.json", research.candidates(sym))
     _dump(d / "picks.json", research.picks(lat))
     _dump(d / "history.json", research.history())
     _dump(d / "signals.json", scanner.load_signals()[:200])

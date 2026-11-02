@@ -16,7 +16,7 @@ def main() -> int:
     settings = load_settings()
     by_sym = {}
     for sym, r in list(lat.get("symbols", {}).items()):
-        cands = r.get("candidates") or []
+        cands = research.candidates(sym) or r.get("candidates") or []
         if not cands:
             continue
         parts = []
@@ -32,6 +32,8 @@ def main() -> int:
         by_sym[sym] = parts
         new = research.merge_symbol(sym, parts, settings, prev_sym)
         new["previous"] = r.get("previous")
+        research.save_candidates(sym, new["candidates"])
+        new["candidates"] = [research.slim(c) for c in new["candidates"]]
         lat["symbols"][sym] = new
         print(sym, r.get("status"), "->", new["status"], [(x["strategy"], x["tf"]) for x in new["systems"]])
     # portfolio: judged again from the same parts (nothing carried over: the price histories changed)

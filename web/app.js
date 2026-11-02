@@ -10,7 +10,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("tl." + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem("tl." + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
-const S = { symbols: [], strategies: [], settings: null, status: null, lab: { bt: null, wf: null, mc: null }, charts: [] };
+const S = { symbols: [], strategies: [], settings: null, status: null, lab: { bt: null, wf: null, mc: null }, charts: [], candCache: {} };
 
 function toast(msg, ms = 2600) {
   const t = document.createElement("div");
@@ -94,6 +94,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/settings" && !post) return { ...(await staticGet("settings.json")), account_balance: P.account_balance, my_risk_pct: P.risk_pct, notify: {}, static: true };
   if (p === "/api/settings" && post) { local.set(body); return staticApi("/api/settings"); }
   if (p === "/api/research") return staticGet("research.json");
+  if (p === "/api/research/candidates") return staticGet(`research/${qp.symbol}.json`).catch(() => []);
   if (p === "/api/research/notes") return staticGet("notes.md", true);
   if (p === "/api/research/history") return staticGet("history.json");
   if (p === "/api/research/state") return { running: false };
@@ -428,7 +429,7 @@ const ICONS = {
 };
 const ROUTES = {
   chart: { title: "กราฟ", sub: "แท่งเทียน สัญญาณ และเทรดของระบบ", render: renderChart, ws: true },
-  systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทุกระบบ (ตามเทรนด์ 100 ระบบ)", render: renderSystems, ws: true },
+  systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทุกระบบ (500 ระบบ: ตามเทรนด์ 100 · ย่อตัว / สวนสั้น 391 · อื่น ๆ 9)", render: renderSystems, ws: true },
   lab: { title: "Strategy Lab", sub: "ผลทดสอบทีละขั้น: Backtest → Walk-Forward → สุ่ม → Robustness → Monte Carlo", render: renderLab, ws: true },
   signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรด พร้อม Lot / SL / TP · ติดตามผล · ประวัติ", render: renderSignals },
   port: { title: "พอร์ต MT5", sub: "ออเดอร์ที่โปรแกรมเทรดให้ · ความเสี่ยงแยกกลุ่ม · ระบบของแต่ละสินทรัพย์", render: renderPort },
@@ -1204,9 +1205,10 @@ async function renderLab(view) {
   $("#notesPane").innerHTML = notes ? md(notes) : '<div class="hint">ยังไม่มีบันทึก</div>';
 
   // ---- step by step
-  const sp = await api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`).catch(() => null);
+  const [sp, full] = await Promise.all([api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`).catch(() => null),
+    (S.candCache[sym] ||= api(`/api/research/candidates?symbol=${sym}`).catch(() => []))]);
   if (route() !== "lab" || S.labToken !== token) return;
-  const cand = (R.candidates || []).find((c) => c.strategy === sid && c.tf === tf);
+  const cand = (full || []).find((c) => c.strategy === sid && c.tf === tf) || (R.candidates || []).find((c) => c.strategy === sid && c.tf === tf);
   const ranked = (R.candidates || []).filter((c) => c.oos?.trades >= 10).sort((a, b) => b.oos.t_stat - a.oos.t_stat);
   const rank = cand ? ranked.findIndex((c) => c === cand) + 1 : 0;
   const o = cand?.oos, m = sp?.metrics, G = res.settings?.gates || S.settings?.research?.gates || {};
@@ -1233,7 +1235,7 @@ async function renderLab(view) {
     ${step(2, "Backtest ทั้งช่วง (พารามิเตอร์ปัจจุบัน)", m ? `<div class="kpis">${kpi("เทรด", m.trades, fnum(m.trades_per_year, 0) + "/ปี")}${kpi("Expectancy", fr(m.expectancy, 3), "", cls(m.expectancy))}${kpi("t-stat", fnum(m.t_stat, 2))}${kpi("PF", fnum(m.pf, 2))}${kpi("Win rate", m.win_rate + "%")}${kpi("Max DD", fnum(m.max_dd_r, 1) + "R", "", "neg")}</div>
       <div class="hint">⚠️ เป็นผล in-sample — พารามิเตอร์ถูกเลือกจากข้อมูลบางส่วนในช่วงนี้เอง จึงมักดูดีเกินจริง ใช้ดูภาพรวมเท่านั้น</div>` : '<div class="hint">ไม่มีข้อมูล</div>')}
     ${step(3, "Walk-Forward (ข้อสอบที่ระบบไม่เคยเห็น)", o ? `<div class="kpis">${kpi("OOS เทรด", o.trades, `${fnum(cand.oos_years, 1)} ปี`)}${kpi("Expectancy", fr(o.expectancy, 3), "", cls(o.expectancy))}${kpi("t-stat", fnum(o.t_stat, 2), o.t_stat >= 2 ? "มีนัยสำคัญ" : "ยังไม่มีนัยสำคัญ", o.t_stat >= 2 ? "pos" : "")}${kpi("PF", fnum(o.pf, 2))}${kpi("WF Efficiency", cand.wfe ?? "–", "OOS ÷ IS")}${kpi("Plateau", fnum(cand.plateau * 100, 0) + "%", "พารามิเตอร์ข้างเคียงที่กำไร")}</div>
-      ${oosChart}<div class="hint">ทุก ${res.settings?.oos_months || 3} เดือน เลือกพารามิเตอร์จาก ${res.settings?.is_months || 12} เดือนก่อนหน้า แล้วเทรดช่วงถัดไปโดยห้ามแก้ · เปลี่ยนพารามิเตอร์ ${cand.param_switches} ครั้ง</div>` : `<div class="hint">ระบบนี้บน ${tf} ไม่ได้อยู่ในการวิจัย หรือมีเทรดไม่พอ</div>`, o ? (o.expectancy > 0 ? "ok" : "no") : "na")}
+      ${oosChart}<div class="hint">ทุก ${res.settings?.oos_months || 3} เดือน เลือกพารามิเตอร์จาก${(res.settings?.is_mode || "expanding") === "expanding" ? `ข้อมูลทั้งหมดก่อนหน้า (อย่างน้อย ${res.settings?.is_months || 24} เดือน)` : ` ${res.settings?.is_months || 12} เดือนก่อนหน้า`} โดยเลือกชุดที่อยู่บน “ที่ราบ” (ชุดข้างเคียงก็ดี) และเปลี่ยนชุดเฉพาะเมื่อดีกว่าเดิมชัดเจน แล้วเทรดช่วงถัดไปโดยห้ามแก้ · เปลี่ยนพารามิเตอร์ ${cand.param_switches} ครั้ง</div>` : `<div class="hint">ระบบนี้บน ${tf} ไม่ได้อยู่ในการวิจัย หรือมีเทรดไม่พอ</div>`, o ? (o.expectancy > 0 ? "ok" : "no") : "na")}
     ${step(4, "คัดเลือก + หักค่าโชค", o ? `<p>ระบบนี้อยู่อันดับ <b>${rank || "–"}</b> จาก <b>${ranked.length}</b> ผู้สมัครที่มีเทรดพอของ ${sym} (เรียงตาม OOS t-stat) · ตัวที่ดีที่สุดคือ <b>${stratLabel(best.strategy)}</b> ${best.tf || ""}</p>
       ${verdict(tNeed != null ? o.t_stat >= tNeed : null, `t-stat ${fnum(o.t_stat, 2)} ${tNeed != null ? (o.t_stat >= tNeed ? "≥" : "<") + " เกณฑ์ " + fnum(tNeed, 2) : ""} (ยิ่งเทียบหลายระบบ เกณฑ์ยิ่งสูง เพื่อตัดตัวที่ดีเพราะโชค)`)}` : '<div class="hint">–</div>')}
     ${step(5, "เทียบกับการสุ่มจุดเข้า", rb ? `${verdict(rb.percentile >= G.min_random_pct, `ชนะการสุ่ม ${rb.percentile}% ของ ${rb.sims} รอบ (ต้อง ≥ ${G.min_random_pct}%) · สุ่มเฉลี่ย ${fr(rb.random_mean, 3)} vs ระบบ ${fr(rb.actual_exp, 3)}`)}`
@@ -1792,22 +1794,25 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 - **หักค่า swap ทุกคืนที่ถือ** ตามอัตราจริงของบัญชีคุณ (วันพุธหรือวันศุกร์คิด 3 เท่าแทนเสาร์-อาทิตย์ · คริปโตคิดทุกคืน) — นับเฉพาะส่วนที่ต้องจ่าย ส่วนที่ได้รับคืนไม่นับ (คิดแบบร้ายไว้ก่อน)
 - วัดผลเป็น **R** (1R = เงินที่เสี่ยงต่อไม้) จึงเทียบข้ามสินทรัพย์ได้
 ### ขั้นที่ 2 — Backtest ทุกชุดพารามิเตอร์ (ชุดเล็ก ๆ)
-- ${S.strategies.length || 50} กลยุทธ์ × ${(S.settings?.research?.timeframes || ["H1", "H4", "D1"]).join(" / ")} แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือกไม่เกิน 16 ชุด
+- ${S.strategies.length || 50} กลยุทธ์ × ${(S.settings?.research?.timeframes || ["H1", "H4", "D1"]).join(" / ")} แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือก 8–32 ชุด (ตัวแปรสัญญาณ 1–2 ตัว × ระยะ SL × TP)
+- **500 ระบบ (3 พ.ย. 2026):** ตามเทรนด์ / เบรกเอาต์ / โมเมนตัม 100 · อื่น ๆ 9 · **ย่อตัว / สวนสั้น 391** = ตัวจับการยืดตัว 24 แบบ (RSI 2, Connors RSI, Bollinger, IBS, ปิดลงติดกัน, Hammer ฯลฯ) × ตัวกรองสภาพตลาด 17 แบบ (เหนือ SMA200, ADX ต่ำ, ตลาดเงียบ ฯลฯ) — มีตัวกรองแนวโน้ม = ซื้อตอนย่อในขาขึ้น · ตัวกรองกรอบ = สวนเมื่อตลาดไม่มีเทรนด์
+- ⚠️ ทุกระบบที่เพิ่มถูกนับในด่านหักโชค (บัญชีการทดสอบถาวร) — ยิ่งเพิ่ม เกณฑ์ t ยิ่งสูง
 - ทุกกลยุทธ์ผ่านการตรวจโค้ดอัตโนมัติ (\`tests/check_strategies.py\`): เปลี่ยนราคาในอนาคตแล้วสัญญาณในอดีตต้องไม่เปลี่ยน และบนกราฟสุ่มต้องได้ผลใกล้ 0R
 - ตั้งใจให้ชุดเล็ก เพราะยิ่งลองมากชุด ยิ่งมีโอกาสเจอ “ชุดที่ดีเพราะโชค”
 ### ขั้นที่ 3 — Walk-Forward แบบเลื่อนหน้าต่าง (หัวใจของการทดสอบ)
 - ช่วงสอบเป็น **ไตรมาสตามปฏิทิน** (ม.ค.–มี.ค., เม.ย.–มิ.ย., …) และข้อมูลของทุกระบบถูกตัดที่ **ต้นไตรมาสปัจจุบัน** เหมือนกันหมด
-- **1.** ดูข้อมูล 12 เดือนก่อนต้นไตรมาส (In-Sample) แล้วเลือกพารามิเตอร์ที่ t-stat ดีที่สุด
+- **1.** ดูข้อมูล **ทั้งหมดก่อนต้นไตรมาส** (In-Sample อย่างน้อย 24 เดือน · ปรับ 3 พ.ย. 2026 จาก 12 เดือน ที่ทำให้ระบบ D1 แทบไม่ได้เทรด) แล้วเลือกพารามิเตอร์ที่อยู่บน **“ที่ราบสูง”** = คะแนนครึ่งหนึ่งจาก t-stat ของชุดนั้น อีกครึ่งจากค่าเฉลี่ยของชุดข้างเคียง (ไม่หยิบยอดแหลมที่ขยับนิดเดียวก็พัง) · ต้องมี ≥ 20 ไม้และเป็นบวก
+  - **เปลี่ยนชุดเฉพาะเมื่อดีกว่าเดิมชัดเจน** (คะแนนดีกว่า ≥ 0.5) ไม่ไล่ตามชุดที่เพิ่งโชคดี — แบบเดียวกับที่กองทุนใช้พารามิเตอร์คงที่
 - **2.** เอาพารามิเตอร์นั้นไปเทรด **ไตรมาสนั้น** ที่ระบบไม่เคยเห็น (Out-of-Sample) โดยห้ามแก้
 - **3.** เลื่อนไป 1 ไตรมาส แล้วทำซ้ำจนถึงวันตัดรอบ
-- **ไตรมาสปัจจุบัน = ช่วงสอบรอบใหม่ที่กำลังเกิดขึ้นจริง:** พารามิเตอร์ที่ใช้เทรด คือชุดที่เลือกจาก 12 เดือนก่อนวันตัดรอบ ใช้เหมือนเดิมจนจบไตรมาส
+- **ไตรมาสปัจจุบัน = ช่วงสอบรอบใหม่ที่กำลังเกิดขึ้นจริง:** พารามิเตอร์ที่ใช้เทรด คือชุดที่เลือกจากข้อมูลทั้งหมดก่อนวันตัดรอบ (กติกาเดียวกัน) ใช้เหมือนเดิมจนจบไตรมาส
 - **4.** เอาผล OOS ทุกช่วงมาต่อกัน **ใช้ผลนี้เท่านั้นในการตัดสิน** (เหมือนข้อสอบที่ไม่เคยเห็น)
 - ช่วงไหน In-Sample ไม่มีชุดที่เป็นบวก ระบบจะไม่เทรดช่วงนั้น
 ### ขั้นที่ 4 — เทียบกับการสุ่มจุดเข้า
 - สุ่มจุดเข้า 300 รอบ โดยใช้ SL/TP/จำนวนไม้/สัดส่วน Long-Short เท่ากัน
 - ต้องชนะการสุ่มอย่างน้อย 90% — ถ้าไม่ชนะ แปลว่ากำไรมาจากตลาดวิ่งทางเดียว ไม่ใช่จากสัญญาณ
 ### ขั้นที่ 5 — Robustness 8 แบบ (พยายามทำให้ระบบพัง)
-- หน้าต่าง Walk-Forward ขนาดอื่น 5 แบบ, ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 10 รอบ
+- ตัดข้อมูล Walk-Forward แบบอื่นอีก 4 แบบ (ขยาย ≥36 เดือน · ขยาย/OOS 6 เดือน · เลื่อน 12 เดือน · เลื่อน 24 เดือน), ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 10 รอบ
 - ฝั่ง Long/Short ไม่มีฝั่งที่ขาดทุนชัด, กำไรสม่ำเสมอรายครึ่งปี, ตัด 5% ไม้ที่ดีที่สุดออกแล้วยังบวก, พารามิเตอร์ข้างเคียงก็กำไร
 ### ขั้นที่ 6 — Monte Carlo
 - สุ่มลำดับและเลือกไม้ OOS ซ้ำ 5,000 รอบ เพื่อดูว่า **ถ้าโชคไม่ดี** drawdown จะลึกแค่ไหน

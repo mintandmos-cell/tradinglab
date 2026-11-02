@@ -214,7 +214,8 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
     tfs = settings["research"].get("timeframes", ["H1", "H4", "D1"])
     n_port = (len(STRATEGIES) + len(RETIRED)) * len(tfs)
     seen = {tuple(k.split("|")[1:]) for k in ledger().get("tests", {})}          # every strategy x TF ever tested
-    n_port = max(n_port, len(seen | {(sid, tf) for sid in STRATEGIES for tf in tfs}))
+    tested = {(c["strategy"], p["tf"]) for parts in by_sym.values() for p in parts for c in p["candidates"]}
+    n_port = max(len(seen | tested), (len({x[0] for x in tested}) + len(RETIRED)) * len(tfs))
     t_need = adjusted_t(n_port)          # replaced below by the effective number of independent portfolio candidates
     cands = []
     for sid in STRATEGIES:
@@ -230,10 +231,12 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                 if folds:
                     f0 = pd.Timestamp(folds[0]["oos_start"])
                     first = f0 if first is None else min(first, f0)
-                for t_, r in eq:
-                    m = pd.Timestamp(int(t_), unit="s", tz="UTC").strftime("%Y-%m")
-                    monthly[m] += r
-                    pooled.append(r)
+                if eq:      # vectorised: 500 systems x 20 symbols x 3 TF (a per-trade Timestamp loop took ~40 min)
+                    arr = np.asarray(eq, float)
+                    ms = pd.to_datetime(arr[:, 0].astype("int64"), unit="s", utc=True).strftime("%Y-%m")
+                    for m, r in pd.Series(arr[:, 1]).groupby(np.asarray(ms)).sum().items():
+                        monthly[m] += float(r)
+                    pooled.extend(arr[:, 1].tolist())
                 legs.append({"symbol": sym, "trades": c["oos"]["trades"], "exp": c["oos"]["expectancy"], "t": c["oos"]["t_stat"],
                              "params": c["current_params"], "pct": (c.get("random_benchmark") or {}).get("percentile"),
                              "robust": (c.get("robustness") or {}).get("score")})
@@ -480,6 +483,10 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
             if r.get("status") != "ACTIVE":
                 r["status"] = "ACTIVE"
                 r["risk_pct"] = risk
+    for sym, r in out["symbols"].items():           # full records to cands/{SYM}.json.gz, a slim copy stays in latest.json
+        if r.get("candidates"):
+            save_candidates(sym, r["candidates"])
+            r["candidates"] = [slim(c) for c in r["candidates"]]
     out["generated"] = datetime.now(timezone.utc).isoformat()
     write_json(LATEST_RESEARCH, out)
     write_json(RESEARCH_DIR / "history" / f"{datetime.now(timezone.utc):%Y%m%d_%H%M}.json",
@@ -524,6 +531,39 @@ def latest() -> dict:
     return read_json(LATEST_RESEARCH, {"generated": None, "symbols": {}})
 
 
+CANDS_DIR = RESEARCH_DIR / "cands"       # full candidate records per symbol (gates, robustness, MC …) — latest.json keeps a slim copy
+SLIM_OOS = ("trades", "net_r", "expectancy", "gross_expectancy", "win_rate", "pf", "t_stat", "max_dd_r", "trades_per_year",
+            "avg_win", "avg_loss", "max_consec_loss", "avg_bars")
+
+
+def slim(c: dict) -> dict:
+    """What the scanner, the quick-pick list and the overview need (500 systems x 3 TF x 20 symbols must stay small)."""
+    out = {k: c.get(k) for k in ("strategy", "tf", "status", "kept", "forced_off", "current_params", "n_combos", "oos_years",
+                                 "wfe", "plateau", "param_switches", "mc_pf_p5") if c.get(k) is not None}
+    out["oos"] = {k: (c.get("oos") or {}).get(k) for k in SLIM_OOS}
+    out["robustness"] = {"score": (c.get("robustness") or {}).get("score")}
+    if c.get("random_benchmark"):
+        out["random_benchmark"] = {"percentile": c["random_benchmark"].get("percentile")}
+    return out
+
+
+def save_candidates(sym: str, cands: list[dict]) -> None:
+    CANDS_DIR.mkdir(parents=True, exist_ok=True)
+    with gzip.open(CANDS_DIR / f"{sym}.json.gz", "wt", encoding="utf-8") as f:
+        json.dump([{k: v for k, v in c.items() if k != "oos_eq"} for c in cands], f, separators=(",", ":"), default=str)
+
+
+def candidates(sym: str, tf: str | None = None) -> list[dict]:
+    """Full candidate records of a symbol (Lab page, re-judging); falls back to latest.json's copy."""
+    f = CANDS_DIR / f"{sym}.json.gz"
+    if f.exists():
+        with gzip.open(f, "rt", encoding="utf-8") as fh:
+            out = json.load(fh)
+    else:
+        out = (latest().get("symbols", {}).get(sym) or {}).get("candidates", [])
+    return [c for c in out if tf is None or c.get("tf") == tf]
+
+
 def is_live(sym_entry: dict, strategy: str, tf: str) -> bool:
     """Is this strategy x TF one of the symbol's traded (ACTIVE) systems this quarter?"""
     if "systems" in (sym_entry or {}):
@@ -561,7 +601,8 @@ def picks(lat: dict | None = None) -> list[dict]:
                             "robust": (c.get("robustness") or {}).get("score")})
     rank = {"ACTIVE": 0, "WATCH": 1}
     out.sort(key=lambda x: (rank.get(x["status"], 2), not x["live"], -(x["t"] or -99)))
-    return out
+    keep = [x for x in out if x["status"] == "ACTIVE" or x["live"]]
+    return keep + [x for x in out if x not in keep][:max(0, 300 - len(keep))]     # 500 systems: the best 300 WATCH
 
 
 def symbol_table(settings: dict | None = None) -> list[dict]:

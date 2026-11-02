@@ -213,6 +213,11 @@ def picks():
     return ok(research.picks())
 
 
+@app.get("/api/research/candidates")
+def research_candidates(symbol: str):
+    return ok(research.candidates(symbol))
+
+
 @app.get("/api/research/state")
 def research_state():
     return ok(research.STATE)

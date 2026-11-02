@@ -90,7 +90,8 @@ DEFAULT_SETTINGS = {
     "symbol_overrides": {},             # per-symbol contract/spread/commission edits from the UI
     "research": {
         "timeframes": ["H1", "H4", "D1"],
-        "is_months": 12, "oos_months": 3,
+        "is_mode": "expanding", "is_months": 24, "oos_months": 3,   # 3 Nov 2026: all history before each fold (>= 24 m)
+        "plateau_weight": 0.5, "switch_margin": 0.5,                # pick on a plateau; switch sets only when clearly better
         "min_is_trades": 20,
         "max_hold_hours": 120,           # only used when exit_max_hold is on
         "exit_opposite_signal": True,    # user's rule (Oct 2026): exits = TP / SL / opposite signal only

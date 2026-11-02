@@ -22,7 +22,8 @@ from . import indicators as ta
 from .engine import run
 from .walkforward import walk_forward
 
-WF_WINDOWS = [(6, 2), (9, 3), (12, 3), (18, 3), (24, 6)]
+# (in-sample mode, months, OOS months): the default plus 4 other ways to cut the history (3 Nov 2026: expanding default)
+WF_WINDOWS = [("expanding", 24, 3), ("expanding", 36, 3), ("expanding", 24, 6), ("rolling", 12, 3), ("rolling", 24, 3)]
 
 
 def _stitched(df: pd.DataFrame, wf: dict, spec: dict, tf: str, **kw) -> list[dict]:
@@ -67,13 +68,15 @@ def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise
 
     # 1. walk-forward window lengths
     rows = []
-    for is_m, oos_m in WF_WINDOWS:
-        if (is_m, oos_m) == (cfg.get("is_months", 12), cfg.get("oos_months", 3)):
+    for mode, is_m, oos_m in WF_WINDOWS:
+        if (mode, is_m, oos_m) == (cfg.get("is_mode", "expanding"), cfg.get("is_months", 24), cfg.get("oos_months", 3)):
             o = wf["oos"]
         else:
-            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_months": is_m, "oos_months": oos_m}, runs=wf.get("_runs"))["oos"]
+            o = walk_forward(df, wf["strategy"], spec, tf, {**cfg, "is_mode": mode, "is_months": is_m, "oos_months": oos_m},
+                             runs=wf.get("_runs"))["oos"]
         if o["trades"] >= 10:
-            rows.append({"is": is_m, "oos": oos_m, "trades": o["trades"], "expectancy": o["expectancy"], "t": o["t_stat"]})
+            rows.append({"is": f"{'≥' if mode == 'expanding' else ''}{is_m}", "oos": oos_m, "trades": o["trades"],
+                         "expectancy": o["expectancy"], "t": o["t_stat"]})
     pos = sum(r["expectancy"] > 0 for r in rows)
     tests.append(_test("wf_windows", "WF หลายขนาดหน้าต่าง (IS/OOS)", f"{pos}/{len(rows)}", "≥ 75% เป็นบวก",
                        pos / len(rows) >= 0.75 if len(rows) >= 2 else None,

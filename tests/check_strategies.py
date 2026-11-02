@@ -34,7 +34,9 @@ def main() -> int:
     base = walk(1, 12000)
     rng = np.random.default_rng(99)
     rows = []
-    for sid in STRATEGIES:
+    only = sys.argv[1:]          # optional id prefixes, e.g. "mr_" to check one family
+    ids = [s for s in STRATEGIES if not only or any(s.startswith(a) for a in only)]
+    for sid in ids:
         t0 = time.time()
         p = defaults(sid)
         problems = [] if sid in DOCS else ["no documentation in app/strategy_docs.py"]
@@ -78,7 +80,7 @@ def main() -> int:
     print(f"{'strategy':22s} {'H1 tr':>6s} {'H4 tr':>6s} {'RW mean R':>10s} {'sec':>5s}  result")
     for sid, a, b, m, sec, pr in rows:
         print(f"{sid:22s} {a:6d} {b:6d} {m:+10.3f} {sec:5.1f}  {'OK' if not pr else '; '.join(pr)}")
-    print(f"\n{len(STRATEGIES) - len(bad)}/{len(STRATEGIES)} passed")
+    print(f"\n{len(ids) - len(bad)}/{len(ids)} passed")
     return 1 if bad else 0
 
 

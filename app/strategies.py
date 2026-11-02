@@ -1110,6 +1110,9 @@ STRATEGIES: dict[str, dict] = {
 # 69 trend-following additions (#58-#126, user's request 2 Nov 2026: 100 trend systems through the QWG)
 from .strategies_trend import TREND_STRATEGIES  # noqa: E402
 STRATEGIES.update(TREND_STRATEGIES)
+# 391 pullback / short-term mean-reversion systems (#127-#517, user's request 3 Nov 2026: 500 systems in total)
+from .strategies_mr import MR_STRATEGIES  # noqa: E402
+STRATEGIES.update(MR_STRATEGIES)
 
 # Stable system numbers: shown to the user and written into MT5 comments (TL{no}-{TF}) — never renumber.
 for _i, _k in enumerate(list(STRATEGIES)):

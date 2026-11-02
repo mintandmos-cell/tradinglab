@@ -26,6 +26,24 @@ def _tstat(r: np.ndarray) -> float:
     return float(r.mean() / sd * np.sqrt(len(r))) if sd > 0 else -np.inf
 
 
+def neighbours(combos: list[dict]) -> list[list[int]]:
+    """For each parameter set: the sets that differ in ONE parameter by one step of that parameter's grid (its neighbours
+    on the parameter map). Used to pick a set on a plateau, not on a lone peak (Pardo 2008)."""
+    keys = sorted({k for p in combos for k in p if k != "max_hold_h"})
+    vals = {k: sorted({p.get(k, 0) for p in combos}) for k in keys}
+    pos = [{k: vals[k].index(p.get(k, 0)) for k in keys} for p in combos]
+    out = []
+    for i, a in enumerate(pos):
+        nb = []
+        for j, b in enumerate(pos):
+            if i != j:
+                diff = [k for k in keys if a[k] != b[k]]
+                if len(diff) == 1 and abs(a[diff[0]] - b[diff[0]]) == 1:
+                    nb.append(j)
+        out.append(nb)
+    return out
+
+
 def backtest_combos(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, combos: list[dict]) -> list[dict]:
     runs = []
     for p in combos:
@@ -42,8 +60,17 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
                  runs: list[dict] | None = None) -> dict:
     """runs = the full-history backtest of every combo, reusable across window lengths (robustness test)."""
     combos = combos or grid(strategy_id, cfg.get("max_hold_hours", 120))
-    is_m, oos_m, min_tr = cfg.get("is_months", 12), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
+    is_m, oos_m, min_tr = cfg.get("is_months", 24), cfg.get("oos_months", 3), cfg.get("min_is_trades", 20)
+    # WFA rules (user, 3 Nov 2026 — fixed before seeing any result):
+    #  * in-sample = ALL history before the fold ("expanding", at least is_months) — 12 rolling months gave H4/D1 systems
+    #    too few trades to choose from, so they rarely traded; "rolling" keeps the old behaviour (robustness variants)
+    #  * the set is chosen on a PLATEAU: half its own in-sample t, half the mean t of its neighbours on the parameter map
+    #  * hysteresis: the set traded last quarter is kept unless another one scores clearly better (switch_margin in t)
+    mode = cfg.get("is_mode", "expanding")
+    plateau_w = float(cfg.get("plateau_weight", 0.5))
+    margin = float(cfg.get("switch_margin", 0.5))
     runs = runs if runs is not None else backtest_combos(df, strategy_id, spec, tf, combos)
+    nbs = neighbours([rr["params"] for rr in runs])
     # Calendar-aligned folds (user's rule, 27 Oct 2026): OOS windows are calendar periods (quarters for 3 months) on the
     # broker clock and every candidate is cut at the SAME research cut-off (start of the current quarter), so all systems
     # sit the same exam; the live parameters are what the in-sample window just before the cut-off picks, traded unchanged
@@ -55,19 +82,30 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
     while add_months(q, -is_m) < first:
         q = add_months(q, oos_m)
     folds, oos_trades, is_rates = [], [], []
+    last_pick = None
 
-    def pick(a, b):
-        best, best_t = None, -np.inf
-        for j, rr in enumerate(runs):
+    def pick(a, b, prev=None):
+        raw, valid = [], []
+        for rr in runs:
             x = rr["r"][(rr["t"] >= a) & (rr["t"] < b)]
-            t = _tstat(x) if len(x) >= min_tr and x.mean() > 0 else -np.inf
-            if t > best_t:
-                best, best_t = j, t
-        return best, best_t
+            t = _tstat(x) if len(x) >= 3 else -np.inf
+            raw.append(t if np.isfinite(t) else 0.0)
+            valid.append(len(x) >= min_tr and x.mean() > 0 and np.isfinite(t))
+        score = [(1 - plateau_w) * raw[j] + plateau_w * (np.mean([raw[k] for k in nbs[j]]) if nbs[j] else raw[j])
+                 for j in range(len(runs))]
+        best, best_s = None, -np.inf
+        for j in range(len(runs)):
+            if valid[j] and score[j] > best_s:
+                best, best_s = j, score[j]
+        if prev is not None and best is not None and prev != best and valid[prev] and score[prev] >= best_s - margin:
+            best, best_s = prev, score[prev]
+        return best, (raw[best] if best is not None else -np.inf)
 
     while q < end:
-        is_start, is_end, oos_end = add_months(q, -is_m), q, min(add_months(q, oos_m), end)
-        best, best_t = pick(is_start, is_end)
+        is_start = first if mode == "expanding" else add_months(q, -is_m)
+        is_end, oos_end = q, min(add_months(q, oos_m), end)
+        best, best_t = pick(is_start, is_end, last_pick)
+        last_pick = best if best is not None else last_pick
         fold = {"is_start": is_start.isoformat(), "is_end": is_end.isoformat(), "oos_start": is_end.isoformat(),
                 "oos_end": oos_end.isoformat(), "partial": False}
         if best is None:
@@ -77,7 +115,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
             mi = (rr["t"] >= is_start) & (rr["t"] < is_end)
             mo = (rr["t"] >= is_end) & (rr["t"] < oos_end)
             x_is, x_oos = rr["r"][mi], rr["r"][mo]
-            is_rates.append(x_is.sum() / is_m)
+            is_rates.append(x_is.sum() / max(1.0, (is_end - is_start).days / 30.44))
             for t_idx in np.flatnonzero(mo):
                 oos_trades.append({**rr["trades"][t_idx], "combo": best, "fold": len(folds)})
             fold.update(params=rr["params"], combo=best, is_trades=int(len(x_is)), is_exp=round(float(x_is.mean()), 4),
@@ -87,7 +125,7 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
         q = add_months(q, oos_m)
 
     # live parameters: in-sample = the is_m months before the cut-off, traded from the cut-off for one period
-    cur, cur_t = pick(add_months(end, -is_m), end)
+    cur, cur_t = pick(first if mode == "expanding" else add_months(end, -is_m), end, last_pick)
     lock = {"start": end.isoformat(), "end": add_months(end, oos_m).isoformat()}
     end_eff = end
     oos_trades.sort(key=lambda x: x["entry_time"])
