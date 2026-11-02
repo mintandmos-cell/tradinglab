@@ -1240,7 +1240,7 @@ async function renderLab(view) {
       : '<div class="hint">ยังไม่มีผล หรือมีเทรด OOS ไม่พอ (ต้อง ≥ 10 ไม้)</div>', rob ? (rob.score >= (G.min_robust_score ?? 60) ? "ok" : "no") : "na")}
     ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
       <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
-    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง" : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
+    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? (cand?.kept && passed < judged ? `<b class="neg">ไม่ผ่านเกณฑ์รอบล่าสุด (${passed}/${judged})</b> แต่ยังเทรดอยู่เพราะกติกา “คงไว้จนจบไตรมาส” (ตกแค่ด่านหักโชค)` : "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง") : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
   </div>`;
   if (rOos.length) {
     let cum = 0; const pts = (sp.oos.equity || []).map(([t, r]) => ({ time: shiftT(t), value: +(cum += r).toFixed(2) }));
@@ -1249,7 +1249,7 @@ async function renderLab(view) {
   $("#wsFoot").innerHTML = `<span class="fi strat"><b>#${st.no}</b> ${esc(st.name)} <span class="muted">· ${esc(paramText(cand?.current_params || sp?.params))}</span></span>
     ${footItem("สถานะ", statusBadge(cand?.status || R.status))}${footItem("เกณฑ์", `${passed}/${judged}`)}
     ${R.quarter ? `<span class="fi" data-tip="ทุกระบบสอบด้วยข้อมูลถึงวันตัดรอบเดียวกัน ระบบที่ผ่านเทรดด้วยพารามิเตอร์เดิมจนจบไตรมาส">ตัดข้อมูล <b>${fdt(Date.parse(R.quarter.cutoff) / 1000, true).split(",")[0]}</b> · ใช้ถึง <b>${fdt(Date.parse(R.quarter.until) / 1000, true).split(",")[0]}</b></span>` : ""}
-    ${cand?.kept ? '<span class="fi warn" data-tip="ACTIVE ตั้งแต่ต้นไตรมาส จึงใช้ต่อจนจบไตรมาส แม้เกณฑ์ใหม่สูงขึ้น">คงไว้ถึงสิ้นไตรมาส</span>' : ""}
+    ${cand?.kept ? '<span class="fi warn" data-tip="ACTIVE ตั้งแต่ต้นไตรมาส และตกแค่ด่านหักโชคที่สูงขึ้นเพราะเพิ่มระบบ จึงใช้ต่อจนจบไตรมาส">คงไว้ถึงสิ้นไตรมาส</span>' : ""}
     ${footItem("วิเคราะห์ล่าสุด", res.generated ? ago(res.generated) : "–")}<span class="fi faint">เส้น OOS equity ในข้อ 3 เป็นหน่วย R สะสม</span>`;
 }
 
@@ -1692,7 +1692,7 @@ function manualChapters() {
 - **ทุก ~10–50 นาที:** ใช้ราคาฟรี (Yahoo / Binance / Twelve Data) หาสัญญาณแบบเดียวกัน → ถ้าคอมยังไม่ได้แจ้ง จะส่งแจ้งเตือนแทน (**แต่เปิดออเดอร์ใน MT5 ไม่ได้**) → สร้างเว็บนี้ใหม่
 - **ทุกต้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค.):** วิจัยใหม่ทั้งหมดด้วยวิธี **QWG** (บทที่ 6) — ${S.strategies.length || 109} ระบบ × ${S.symbols.length || 20} สินทรัพย์ × 3 TF ด้วยข้อมูลถึงวันตัดรอบเดียวกัน
   - ทุกระบบที่ผ่านเกณฑ์เป็น **ACTIVE** และเทรดพร้อมกันได้ (หลายระบบต่อสินทรัพย์) ใช้พารามิเตอร์เดิมตลอดไตรมาส
-  - กดวิจัยใหม่กลางไตรมาส (เช่นเพิ่มระบบ) ยังตัดข้อมูลวันเดิม → ระบบใหม่ที่ผ่าน ACTIVE ได้ทันที ระบบเดิม **ใช้ต่อจนจบไตรมาส**
+  - กดวิจัยใหม่กลางไตรมาส (เช่นเพิ่มระบบ) ยังตัดข้อมูลวันเดิม → ระบบใหม่ที่ผ่าน ACTIVE ได้ทันที ระบบเดิม **ใช้ต่อจนจบไตรมาสเฉพาะเมื่อตกแค่ด่านหักโชค** (เกณฑ์นี้สูงขึ้นทุกครั้งที่เพิ่มระบบ) และราคาที่ใช้ทดสอบยังเป็นชุดเดิม — ถ้าตกด่านอื่น หรือเปลี่ยนแหล่งราคา (เช่น เปลี่ยนมาใช้ราคา Exness) จะตัดสินใหม่ทั้งหมด
   - หยุดระบบก่อนจบไตรมาสเฉพาะเมื่อผลจริงแย่กว่าที่ทดสอบไว้ชัดเจน (ตรวจวันจันทร์กับ Claude)
 ### 💰 ความเสี่ยง (ตั้งเมื่อ 2 พ.ย. 2026)
 - **ทุกสัญญาณเสี่ยง ${S.settings?.risk_per_trade_pct ?? 0.5}% ของทุน** เท่ากันทุกสินทรัพย์ · **รวมไม่เกิน ${S.settings?.max_symbol_risk_pct ?? 1}% ต่อสินทรัพย์** — ถ้าเต็มเพดาน สัญญาณใหม่ของสินทรัพย์นั้นจะถูกข้าม (บันทึกผลแต่ไม่แจ้งเตือน)

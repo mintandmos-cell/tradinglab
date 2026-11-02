@@ -103,7 +103,10 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   current quarter on the broker clock (`research_cutoff`, `data.period_start`); WF OOS folds are calendar quarters; live params = best
   in the 12 months before the cut-off, traded unchanged for the quarter. EVERY ACTIVE candidate is traded (`systems` list per symbol,
   several per symbol/TF allowed, MT5 account is Hedging). A mid-quarter re-run (new strategies, button) uses the same cut-off; systems
-  already ACTIVE this quarter are kept (`kept`) even if the stricter multiple-testing gate now fails them; new ones must pass.
+  already ACTIVE this quarter are kept (`kept`) ONLY when the multiple-testing gate is the one gate they now fail AND the price
+  history is the same (`history_source` exness|mt5|free; user, 2 Nov 2026 — the old rule kept systems failing 6/8 gates after the
+  switch to Exness prices). Same rule for portfolio systems (`portfolio.history`). `tools/rejudge.py` re-judges latest.json
+  from its stored candidates without re-running tests; new ones must pass.
   Early stop only via `force_off` ("SYM" or "SYM:strategy:TF", Monday forward check). Open risk of all systems of one symbol is capped at
   `max_symbol_risk_pct` (0.75%): extra signals are recorded with `capped` (no push). Push title/comment carry the system tag `TL{no}-{TF}`. Summaries →
   `data/research/latest.json` (+ `history/`); heavy per-candidate data (`oos_eq`, folds) → `data/research/oos/{SYM}_{TF}.json.gz` (`research.heavy`). Status ACTIVE / WATCH / OFF via gates in `data/settings.json → research.gates` (incl. `min_robust_score`, and `multiple_testing`: OOS t must also beat the Šidák-adjusted threshold for the number of candidates compared — the best of ~20 OOS results is picked, so luck must be priced in). Robustness noise test = 10 sims.

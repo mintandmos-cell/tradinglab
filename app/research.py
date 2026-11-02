@@ -46,6 +46,12 @@ def adjusted_t(n_candidates: int, alpha: float = 0.05) -> float:
     return round(NormalDist().inv_cdf(1 - p), 2)
 
 
+def only_mt_failed(gates: list[dict]) -> bool:
+    """True when the multiple-testing gate (the 4th, "t ปรับตาม…") is the only failed gate."""
+    failed = [i for i, x in enumerate(gates) if not x["pass"]]
+    return failed == [3]
+
+
 def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: int = 1) -> list[dict]:
     o = best["oos"]
     t_need = adjusted_t(n_cand) if g.get("multiple_testing", True) else g["min_t"]
@@ -107,7 +113,7 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     df = df[df.index < cutoff]          # every candidate sits the same exam: data up to the start of the current quarter
     cfg = {**cfg, "cutoff": cutoff.isoformat()}
     h1 = data.load_h1(sym)
-    out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.source_for(sym, settings),
+    out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.source_for(sym, settings), "history_source": data.history_source(sym),
            "data_from": h1.index[0].isoformat() if len(h1) else None, "data_to": h1.index[-1].isoformat() if len(h1) else None,
            "bars_h1": int(len(h1)), "bars": int(len(df)), "cutoff": cutoff.isoformat(), "candidates": [], "heavy": {}}
     if len(df) < 500:
@@ -198,13 +204,16 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                           "r_month": round(float(mr.mean()), 3), "breadth": round(breadth, 2), "gates": gates, "legs": legs,
                           "max_dd_r": round(float(np.max(np.maximum.accumulate(np.cumsum(mr)) - np.cumsum(mr))), 1) if len(mr) else None})
     # same quarter: portfolio systems already ACTIVE stay until the quarter ends
-    if prev and (prev.get("cutoff") == (next(iter(by_sym.values()))[0].get("cutoff"))):
+    # same rule as single systems: same quarter + same price histories + only the multiple-testing gate (index 1) failed
+    hist = {s: p[0].get("history_source") for s, p in by_sym.items()}
+    if prev and prev.get("cutoff") == (next(iter(by_sym.values()))[0].get("cutoff")) and prev.get("history") == hist:
         was = {(x["strategy"], x["tf"]) for x in prev.get("candidates", []) if x.get("status") == "ACTIVE"}
         for c in cands:
-            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE":
+            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and [i for i, x in enumerate(c["gates"]) if not x["pass"]] == [1]:
                 c["status"], c["kept"] = "ACTIVE", True
     cands.sort(key=lambda c: ({"ACTIVE": 2, "WATCH": 1, "OFF": 0}[c["status"]], c["t_month"]), reverse=True)
-    return {"cutoff": next(iter(by_sym.values()))[0].get("cutoff"), "n_candidates": n_port, "t_needed": t_need, "candidates": cands}
+    return {"cutoff": next(iter(by_sym.values()))[0].get("cutoff"), "history": hist, "n_candidates": n_port, "t_needed": t_need,
+            "candidates": cands}
 
 
 def research_cutoff(settings: dict | None = None, now: datetime | None = None) -> pd.Timestamp:
@@ -239,12 +248,16 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
         c.pop("kept", None)
-    # carry-over: same quarter -> systems that were ACTIVE stay ACTIVE until the quarter ends
+    # carry-over (user, 27 Oct 2026; narrowed 2 Nov 2026): in the SAME quarter, on the SAME price history, a system that was
+    # ACTIVE stays ACTIVE when the ONLY gate it now fails is the multiple-testing one (that bar rises whenever strategies are
+    # added). Different prices (e.g. the switch to the broker's own history) or any other failed gate = judged afresh.
+    first_hist = hist = parts[0].get("history_source")
     same_q = bool(prev) and (prev.get("quarter") or {}).get("cutoff") == cutoff.isoformat()
-    if same_q:
+    same_data = bool(prev) and bool(first_hist) and prev.get("history_source") == hist
+    if same_q and same_data:
         was = {(x["strategy"], x["tf"]) for x in prev.get("systems", []) if x.get("source", "single") == "single"}
         for c in cands:
-            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and c["current_params"]:
+            if (c["strategy"], c["tf"]) in was and c["status"] != "ACTIVE" and c["current_params"] and only_mt_failed(c["gates"]):
                 c["status"], c["kept"] = "ACTIVE", True
     for c in cands:
         if c["status"] == "ACTIVE" and _forced_off(settings, sym, c):
@@ -267,7 +280,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     r = [x[1] for x in eq]
     first = parts[0]
     return {
-        "symbol": sym, "status": status, "data_source": first["data_source"],
+        "symbol": sym, "status": status, "data_source": first["data_source"], "history_source": first.get("history_source"),
         "data_from": first["data_from"], "data_to": first["data_to"], "bars_h1": first["bars_h1"],
         "quarter": {"cutoff": cutoff.isoformat(), "until": until.isoformat()}, "systems": systems,
         "max_symbol_risk_pct": settings.get("max_symbol_risk_pct", 0.75),

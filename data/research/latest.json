@@ -31,6 +31,7 @@
    "symbol": "EURUSD",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 149660,
@@ -83148,6 +83149,7 @@
    "symbol": "GBPUSD",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 149622,
@@ -165948,6 +165950,7 @@
    "symbol": "USDJPY",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2002-08-23T10:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 149737,
@@ -268941,8 +268944,9 @@
   },
   "XAUUSD": {
    "symbol": "XAUUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2017-03-01T00:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 56995,
@@ -268950,73 +268954,14 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "weekly_breakout",
-     "strategy_name": "Previous-Week High/Low Breakout",
-     "tf": "H4",
-     "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 2.5,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "single",
-     "t": 2.59,
-     "exp": 0.2138,
-     "trades": 272,
-     "robust": 100
-    },
-    {
-     "strategy": "cci_trend",
-     "strategy_name": "CCI Breakout",
-     "tf": "H4",
-     "params": {
-      "cci_level": 150.0,
-      "sl_atr": 2.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "single",
-     "t": 1.24,
-     "exp": 0.0888,
-     "trades": 480,
-     "robust": 62
-    },
-    {
-     "strategy": "ichimoku_tk",
-     "strategy_name": "Ichimoku TK Cross + Cloud",
-     "tf": "H1",
-     "params": {
-      "tenkan": 9,
-      "kijun": 26,
-      "sl_atr": 2.5,
-      "rr": 2.5,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "single",
-     "t": -0.62,
-     "exp": -0.0387,
-     "trades": 635,
-     "robust": 12
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
-   "strategy": "weekly_breakout",
-   "strategy_name": "Previous-Week High/Low Breakout",
+   "strategy": "atr_expansion",
+   "strategy_name": "ATR Expansion",
    "tf": "H4",
    "params": {
-    "trend_len": 200,
-    "sl_atr": 1.5,
+    "k": 1.2,
+    "sl_atr": 2.0,
     "rr": 2.5,
     "max_hold_h": 120
    },
@@ -269024,28 +268969,28 @@
    "locked_from": "2026-09-30T21:00:00+00:00",
    "locked_until": "2026-12-31T22:00:00+00:00",
    "oos": {
-    "trades": 272,
-    "net_r": 58.14,
-    "expectancy": 0.2138,
-    "gross_expectancy": 0.2345,
-    "win_rate": 44.9,
-    "pf": 1.394,
-    "avg_win": 1.685,
-    "avg_loss": -0.983,
-    "max_dd_r": 11.0,
-    "t_stat": 2.59,
-    "trades_per_year": 32.1,
+    "trades": 190,
+    "net_r": 74.47,
+    "expectancy": 0.392,
+    "gross_expectancy": 0.4034,
+    "win_rate": 42.6,
+    "pf": 1.764,
+    "avg_win": 2.123,
+    "avg_loss": -0.895,
+    "max_dd_r": 7.0,
+    "t_stat": 3.38,
+    "trades_per_year": 22.4,
     "risk_pct": 1.0,
-    "cagr_pct": 6.77,
-    "max_dd_pct": 10.5,
-    "mar": 0.65,
-    "max_consec_loss": 8,
-    "avg_bars": 13.4
+    "cagr_pct": 8.86,
+    "max_dd_pct": 6.79,
+    "mar": 1.3,
+    "max_consec_loss": 7,
+    "avg_bars": 35.6
    },
    "oos_years": 8.48,
-   "wfe": 0.57,
+   "wfe": 0.79,
    "plateau": 1.0,
-   "param_switches": 14,
+   "param_switches": 7,
    "folds": [
     {
      "is_start": "2017-03-31T21:00:00+00:00",
@@ -269054,18 +268999,18 @@
      "oos_end": "2018-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 0,
-     "is_trades": 41,
-     "is_exp": 0.2805,
-     "is_t": 1.42,
-     "oos_trades": 8,
-     "oos_r": 4.5,
-     "oos_exp": 0.5625
+     "combo": 2,
+     "is_trades": 31,
+     "is_exp": 0.0743,
+     "is_t": 0.27,
+     "oos_trades": 6,
+     "oos_r": -1.43,
+     "oos_exp": -0.2379
     },
     {
      "is_start": "2017-06-30T21:00:00+00:00",
@@ -269073,19 +269018,12 @@
      "oos_start": "2018-06-30T21:00:00+00:00",
      "oos_end": "2018-09-30T21:00:00+00:00",
      "partial": false,
-     "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "combo": 0,
-     "is_trades": 39,
-     "is_exp": 0.3462,
-     "is_t": 1.71,
-     "oos_trades": 8,
-     "oos_r": -0.5,
-     "oos_exp": -0.0625
+     "params": null,
+     "is_trades": 0,
+     "is_exp": null,
+     "oos_trades": 0,
+     "oos_r": 0.0,
+     "oos_exp": null
     },
     {
      "is_start": "2017-09-30T21:00:00+00:00",
@@ -269093,19 +269031,12 @@
      "oos_start": "2018-09-30T21:00:00+00:00",
      "oos_end": "2018-12-31T22:00:00+00:00",
      "partial": false,
-     "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "combo": 0,
-     "is_trades": 36,
-     "is_exp": 0.1111,
-     "is_t": 0.53,
-     "oos_trades": 12,
-     "oos_r": 0.5,
-     "oos_exp": 0.0417
+     "params": null,
+     "is_trades": 0,
+     "is_exp": null,
+     "oos_trades": 0,
+     "oos_r": 0.0,
+     "oos_exp": null
     },
     {
      "is_start": "2017-12-31T22:00:00+00:00",
@@ -269113,19 +269044,12 @@
      "oos_start": "2018-12-31T22:00:00+00:00",
      "oos_end": "2019-03-31T21:00:00+00:00",
      "partial": false,
-     "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.2143,
-     "is_t": 1.0,
-     "oos_trades": 6,
-     "oos_r": 1.5,
-     "oos_exp": 0.25
+     "params": null,
+     "is_trades": 0,
+     "is_exp": null,
+     "oos_trades": 0,
+     "oos_r": 0.0,
+     "oos_exp": null
     },
     {
      "is_start": "2018-03-31T21:00:00+00:00",
@@ -269134,18 +269058,18 @@
      "oos_end": "2019-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 32,
-     "is_exp": 0.25,
-     "is_t": 1.11,
-     "oos_trades": 11,
+     "combo": 2,
+     "is_trades": 23,
+     "is_exp": 0.1049,
+     "is_t": 0.34,
+     "oos_trades": 6,
      "oos_r": 4.0,
-     "oos_exp": 0.3636
+     "oos_exp": 0.6667
     },
     {
      "is_start": "2018-06-30T21:00:00+00:00",
@@ -269154,18 +269078,18 @@
      "oos_end": "2019-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.2143,
-     "is_t": 1.0,
-     "oos_trades": 8,
-     "oos_r": -0.5,
-     "oos_exp": -0.0625
+     "combo": 2,
+     "is_trades": 23,
+     "is_exp": 0.3409,
+     "is_t": 1.07,
+     "oos_trades": 6,
+     "oos_r": -1.8,
+     "oos_exp": -0.2992
     },
     {
      "is_start": "2018-09-30T21:00:00+00:00",
@@ -269174,18 +269098,18 @@
      "oos_end": "2019-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 36,
-     "is_exp": 0.1806,
-     "is_t": 0.86,
-     "oos_trades": 6,
-     "oos_r": 4.0,
-     "oos_exp": 0.6667
+     "combo": 2,
+     "is_trades": 22,
+     "is_exp": 0.383,
+     "is_t": 1.21,
+     "oos_trades": 3,
+     "oos_r": -3.0,
+     "oos_exp": -1.0
     },
     {
      "is_start": "2018-12-31T22:00:00+00:00",
@@ -269194,18 +269118,18 @@
      "oos_end": "2020-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 31,
-     "is_exp": 0.2903,
-     "is_t": 1.27,
-     "oos_trades": 8,
-     "oos_r": -3.0,
-     "oos_exp": -0.375
+     "combo": 2,
+     "is_trades": 20,
+     "is_exp": 0.1713,
+     "is_t": 0.55,
+     "oos_trades": 7,
+     "oos_r": 6.18,
+     "oos_exp": 0.8832
     },
     {
      "is_start": "2019-03-31T21:00:00+00:00",
@@ -269214,18 +269138,18 @@
      "oos_end": "2020-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 33,
-     "is_exp": 0.1364,
-     "is_t": 0.62,
-     "oos_trades": 7,
-     "oos_r": 3.0,
-     "oos_exp": 0.4286
+     "combo": 0,
+     "is_trades": 31,
+     "is_exp": 0.2405,
+     "is_t": 0.82,
+     "oos_trades": 3,
+     "oos_r": -3.0,
+     "oos_exp": -1.0
     },
     {
      "is_start": "2019-06-30T21:00:00+00:00",
@@ -269233,19 +269157,12 @@
      "oos_start": "2020-06-30T21:00:00+00:00",
      "oos_end": "2020-09-30T21:00:00+00:00",
      "partial": false,
-     "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "combo": 4,
-     "is_trades": 29,
-     "is_exp": 0.1207,
-     "is_t": 0.51,
-     "oos_trades": 8,
-     "oos_r": 4.5,
-     "oos_exp": 0.5625
+     "params": null,
+     "is_trades": 0,
+     "is_exp": null,
+     "oos_trades": 0,
+     "oos_r": 0.0,
+     "oos_exp": null
     },
     {
      "is_start": "2019-09-30T21:00:00+00:00",
@@ -269254,18 +269171,18 @@
      "oos_end": "2020-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
      "combo": 0,
-     "is_trades": 33,
-     "is_exp": 0.2879,
-     "is_t": 1.3,
-     "oos_trades": 9,
-     "oos_r": 1.0,
-     "oos_exp": 0.1111
+     "is_trades": 24,
+     "is_exp": 0.2495,
+     "is_t": 0.73,
+     "oos_trades": 7,
+     "oos_r": -1.93,
+     "oos_exp": -0.2752
     },
     {
      "is_start": "2019-12-31T22:00:00+00:00",
@@ -269274,18 +269191,18 @@
      "oos_end": "2021-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 0,
-     "is_trades": 36,
-     "is_exp": 0.1806,
-     "is_t": 0.86,
-     "oos_trades": 9,
-     "oos_r": 1.0,
-     "oos_exp": 0.1111
+     "combo": 2,
+     "is_trades": 21,
+     "is_exp": 0.5671,
+     "is_t": 1.72,
+     "oos_trades": 4,
+     "oos_r": 3.0,
+     "oos_exp": 0.75
     },
     {
      "is_start": "2020-03-31T21:00:00+00:00",
@@ -269294,18 +269211,18 @@
      "oos_end": "2021-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 32,
-     "is_exp": 0.3281,
-     "is_t": 1.46,
-     "oos_trades": 6,
-     "oos_r": -1.0,
-     "oos_exp": -0.1667
+     "combo": 0,
+     "is_trades": 25,
+     "is_exp": 0.043,
+     "is_t": 0.13,
+     "oos_trades": 9,
+     "oos_r": 2.55,
+     "oos_exp": 0.2835
     },
     {
      "is_start": "2020-06-30T21:00:00+00:00",
@@ -269314,18 +269231,18 @@
      "oos_end": "2021-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 1,
-     "is_trades": 32,
-     "is_exp": 0.5313,
-     "is_t": 1.7,
-     "oos_trades": 10,
-     "oos_r": -3.0,
-     "oos_exp": -0.3
+     "combo": 2,
+     "is_trades": 22,
+     "is_exp": 0.5801,
+     "is_t": 1.72,
+     "oos_trades": 8,
+     "oos_r": -0.53,
+     "oos_exp": -0.0663
     },
     {
      "is_start": "2020-09-30T21:00:00+00:00",
@@ -269334,18 +269251,18 @@
      "oos_end": "2021-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 2.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
      "combo": 2,
-     "is_trades": 31,
-     "is_exp": 0.2903,
-     "is_t": 1.27,
-     "oos_trades": 7,
-     "oos_r": -2.0,
-     "oos_exp": -0.2857
+     "is_trades": 24,
+     "is_exp": 0.1271,
+     "is_t": 0.45,
+     "oos_trades": 4,
+     "oos_r": 3.53,
+     "oos_exp": 0.8825
     },
     {
      "is_start": "2020-12-31T22:00:00+00:00",
@@ -269354,18 +269271,18 @@
      "oos_end": "2022-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 2.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
      "combo": 2,
-     "is_trades": 30,
-     "is_exp": 0.25,
-     "is_t": 1.08,
-     "oos_trades": 7,
-     "oos_r": 0.5,
-     "oos_exp": 0.0714
+     "is_trades": 23,
+     "is_exp": 0.3058,
+     "is_t": 0.94,
+     "oos_trades": 8,
+     "oos_r": 3.66,
+     "oos_exp": 0.4573
     },
     {
      "is_start": "2021-03-31T21:00:00+00:00",
@@ -269374,18 +269291,18 @@
      "oos_end": "2022-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 3,
-     "is_trades": 24,
-     "is_exp": 0.2558,
-     "is_t": 0.76,
-     "oos_trades": 7,
-     "oos_r": 0.91,
-     "oos_exp": 0.1297
+     "combo": 2,
+     "is_trades": 27,
+     "is_exp": 0.2849,
+     "is_t": 0.97,
+     "oos_trades": 4,
+     "oos_r": 3.0,
+     "oos_exp": 0.75
     },
     {
      "is_start": "2021-06-30T21:00:00+00:00",
@@ -269394,18 +269311,18 @@
      "oos_end": "2022-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 3,
+     "combo": 2,
      "is_trades": 24,
-     "is_exp": 0.1478,
-     "is_t": 0.46,
-     "oos_trades": 6,
-     "oos_r": 4.5,
-     "oos_exp": 0.75
+     "is_exp": 0.4024,
+     "is_t": 1.25,
+     "oos_trades": 5,
+     "oos_r": 5.23,
+     "oos_exp": 1.0455
     },
     {
      "is_start": "2021-09-30T21:00:00+00:00",
@@ -269414,18 +269331,18 @@
      "oos_end": "2022-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 3,
-     "is_trades": 25,
-     "is_exp": 0.1848,
-     "is_t": 0.57,
-     "oos_trades": 8,
-     "oos_r": 2.82,
-     "oos_exp": 0.3531
+     "combo": 2,
+     "is_trades": 21,
+     "is_exp": 0.7341,
+     "is_t": 2.09,
+     "oos_trades": 10,
+     "oos_r": -0.42,
+     "oos_exp": -0.0418
     },
     {
      "is_start": "2021-12-31T22:00:00+00:00",
@@ -269434,18 +269351,18 @@
      "oos_end": "2023-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 7,
-     "is_trades": 23,
-     "is_exp": 0.5512,
-     "is_t": 1.51,
-     "oos_trades": 6,
-     "oos_r": 1.84,
-     "oos_exp": 0.3059
+     "combo": 2,
+     "is_trades": 27,
+     "is_exp": 0.4247,
+     "is_t": 1.43,
+     "oos_trades": 5,
+     "oos_r": 6.92,
+     "oos_exp": 1.3845
     },
     {
      "is_start": "2022-03-31T21:00:00+00:00",
@@ -269454,18 +269371,18 @@
      "oos_end": "2023-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 7,
-     "is_trades": 22,
-     "is_exp": 0.6597,
-     "is_t": 1.79,
-     "oos_trades": 5,
-     "oos_r": -1.45,
-     "oos_exp": -0.2901
+     "combo": 0,
+     "is_trades": 33,
+     "is_exp": 0.6825,
+     "is_t": 2.29,
+     "oos_trades": 10,
+     "oos_r": -2.36,
+     "oos_exp": -0.2363
     },
     {
      "is_start": "2022-06-30T21:00:00+00:00",
@@ -269474,18 +269391,18 @@
      "oos_end": "2023-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 7,
-     "is_trades": 22,
-     "is_exp": 0.5029,
-     "is_t": 1.38,
+     "combo": 0,
+     "is_trades": 36,
+     "is_exp": 0.5599,
+     "is_t": 1.99,
      "oos_trades": 7,
-     "oos_r": -1.5,
-     "oos_exp": -0.2141
+     "oos_r": 3.5,
+     "oos_exp": 0.5
     },
     {
      "is_start": "2022-09-30T21:00:00+00:00",
@@ -269494,18 +269411,18 @@
      "oos_end": "2023-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 2.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 7,
-     "is_trades": 23,
-     "is_exp": 0.1907,
-     "is_t": 0.57,
-     "oos_trades": 6,
-     "oos_r": 1.0,
-     "oos_exp": 0.1667
+     "combo": 0,
+     "is_trades": 36,
+     "is_exp": 0.4157,
+     "is_t": 1.47,
+     "oos_trades": 7,
+     "oos_r": 10.5,
+     "oos_exp": 1.5
     },
     {
      "is_start": "2022-12-31T22:00:00+00:00",
@@ -269514,18 +269431,18 @@
      "oos_end": "2024-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 5,
+     "combo": 0,
      "is_trades": 32,
-     "is_exp": 0.4219,
-     "is_t": 1.37,
-     "oos_trades": 10,
-     "oos_r": 0.5,
-     "oos_exp": 0.05
+     "is_exp": 0.7699,
+     "is_t": 2.48,
+     "oos_trades": 11,
+     "oos_r": 5.13,
+     "oos_exp": 0.4662
     },
     {
      "is_start": "2023-03-31T21:00:00+00:00",
@@ -269534,18 +269451,18 @@
      "oos_end": "2024-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
+     "combo": 0,
      "is_trades": 35,
-     "is_exp": 0.3571,
+     "is_exp": 0.479,
      "is_t": 1.67,
-     "oos_trades": 8,
-     "oos_r": -0.5,
-     "oos_exp": -0.0625
+     "oos_trades": 7,
+     "oos_r": 0.79,
+     "oos_exp": 0.1133
     },
     {
      "is_start": "2023-06-30T21:00:00+00:00",
@@ -269554,18 +269471,18 @@
      "oos_end": "2024-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.4286,
-     "is_t": 2.02,
-     "oos_trades": 9,
-     "oos_r": 3.5,
-     "oos_exp": 0.3889
+     "combo": 0,
+     "is_trades": 32,
+     "is_exp": 0.6225,
+     "is_t": 2.06,
+     "oos_trades": 8,
+     "oos_r": -0.55,
+     "oos_exp": -0.0683
     },
     {
      "is_start": "2023-09-30T21:00:00+00:00",
@@ -269574,18 +269491,18 @@
      "oos_end": "2024-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 5,
-     "is_trades": 31,
-     "is_exp": 0.4677,
-     "is_t": 1.48,
-     "oos_trades": 8,
-     "oos_r": 2.5,
-     "oos_exp": 0.3125
+     "combo": 0,
+     "is_trades": 33,
+     "is_exp": 0.4811,
+     "is_t": 1.64,
+     "oos_trades": 5,
+     "oos_r": 2.0,
+     "oos_exp": 0.4
     },
     {
      "is_start": "2023-12-31T22:00:00+00:00",
@@ -269594,18 +269511,18 @@
      "oos_end": "2025-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.2857,
-     "is_t": 1.33,
-     "oos_trades": 10,
-     "oos_r": 10.0,
-     "oos_exp": 1.0
+     "combo": 2,
+     "is_trades": 23,
+     "is_exp": 0.2903,
+     "is_t": 0.9,
+     "oos_trades": 6,
+     "oos_r": 1.0,
+     "oos_exp": 0.1667
     },
     {
      "is_start": "2024-03-31T21:00:00+00:00",
@@ -269614,18 +269531,18 @@
      "oos_end": "2025-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 3.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.5,
-     "is_t": 2.38,
-     "oos_trades": 8,
-     "oos_r": 4.5,
-     "oos_exp": 0.5625
+     "combo": 2,
+     "is_trades": 20,
+     "is_exp": 0.1581,
+     "is_t": 0.44,
+     "oos_trades": 2,
+     "oos_r": -2.0,
+     "oos_exp": -1.0
     },
     {
      "is_start": "2024-06-30T21:00:00+00:00",
@@ -269634,18 +269551,18 @@
      "oos_end": "2025-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 35,
-     "is_exp": 0.6429,
-     "is_t": 3.16,
-     "oos_trades": 12,
-     "oos_r": 8.0,
-     "oos_exp": 0.6667
+     "combo": 0,
+     "is_trades": 23,
+     "is_exp": 0.0849,
+     "is_t": 0.25,
+     "oos_trades": 8,
+     "oos_r": 8.3,
+     "oos_exp": 1.037
     },
     {
      "is_start": "2024-09-30T21:00:00+00:00",
@@ -269654,18 +269571,18 @@
      "oos_end": "2025-12-31T22:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 100,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
      "combo": 0,
-     "is_trades": 43,
-     "is_exp": 0.686,
-     "is_t": 3.8,
-     "oos_trades": 10,
-     "oos_r": 5.15,
-     "oos_exp": 0.5146
+     "is_trades": 23,
+     "is_exp": 0.4694,
+     "is_t": 1.32,
+     "oos_trades": 6,
+     "oos_r": 4.5,
+     "oos_exp": 0.75
     },
     {
      "is_start": "2024-12-31T22:00:00+00:00",
@@ -269674,18 +269591,18 @@
      "oos_end": "2026-03-31T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 36,
-     "is_exp": 0.875,
-     "is_t": 4.78,
+     "combo": 0,
+     "is_trades": 24,
+     "is_exp": 0.554,
+     "is_t": 1.58,
      "oos_trades": 8,
-     "oos_r": 2.0,
-     "oos_exp": 0.25
+     "oos_r": 6.0,
+     "oos_exp": 0.75
     },
     {
      "is_start": "2025-03-31T21:00:00+00:00",
@@ -269694,18 +269611,18 @@
      "oos_end": "2026-06-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
+      "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 4,
-     "is_trades": 34,
-     "is_exp": 0.6912,
-     "is_t": 3.39,
-     "oos_trades": 8,
-     "oos_r": -1.12,
-     "oos_exp": -0.1405
+     "combo": 0,
+     "is_trades": 25,
+     "is_exp": 0.7718,
+     "is_t": 2.24,
+     "oos_trades": 5,
+     "oos_r": 6.19,
+     "oos_exp": 1.2381
     },
     {
      "is_start": "2025-06-30T21:00:00+00:00",
@@ -269714,113 +269631,113 @@
      "oos_end": "2026-09-30T21:00:00+00:00",
      "partial": false,
      "params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
+      "k": 1.2,
+      "sl_atr": 2.0,
       "rr": 2.5,
       "max_hold_h": 120
      },
-     "combo": 5,
-     "is_trades": 33,
-     "is_exp": 0.8902,
-     "is_t": 2.85,
-     "oos_trades": 6,
-     "oos_r": 1.0,
-     "oos_exp": 0.1667
+     "combo": 0,
+     "is_trades": 27,
+     "is_exp": 0.9254,
+     "is_t": 2.83,
+     "oos_trades": 5,
+     "oos_r": 5.5,
+     "oos_exp": 1.1
     }
    ],
    "random_benchmark": {
     "sims": 300,
-    "actual_exp": 0.2138,
-    "random_mean": 0.0211,
-    "random_p95": 0.145,
-    "percentile": 99.3
+    "actual_exp": 0.392,
+    "random_mean": 0.0278,
+    "random_p95": 0.1931,
+    "percentile": 100.0
    },
    "mc_1y": {
     "method": "bootstrap",
     "sims": 5000,
-    "n_trades": 32,
+    "n_trades": 22,
     "risk_pct": 1.0,
     "return_pct": {
-     "5": -6.01,
-     "25": 1.29,
-     "50": 6.49,
-     "75": 12.22,
-     "95": 20.73
+     "5": -3.63,
+     "25": 3.52,
+     "50": 8.63,
+     "75": 14.67,
+     "95": 23.19
     },
     "max_dd_pct": {
-     "5": 2.97,
-     "25": 3.94,
-     "50": 5.25,
-     "75": 6.95,
-     "95": 10.53
+     "5": 1.99,
+     "25": 2.97,
+     "50": 4.05,
+     "75": 5.69,
+     "95": 8.56
     },
-    "pf_p5": 0.727,
-    "expectancy_p5": -0.1862,
-    "prob_profit": 80.1,
-    "prob_dd_over_limit": 6.66,
+    "pf_p5": 0.765,
+    "expectancy_p5": -0.1588,
+    "prob_profit": 87.1,
+    "prob_dd_over_limit": 1.84,
     "risk_of_ruin": 0.0,
     "dd_limit_pct": 10,
     "confidence": [
      {
       "confidence": 50,
-      "return_pct": 6.49,
-      "max_dd_pct": 5.25,
-      "pf": 1.385,
-      "expectancy": 0.2059
+      "return_pct": 8.63,
+      "max_dd_pct": 4.05,
+      "pf": 1.761,
+      "expectancy": 0.39
      },
      {
       "confidence": 60,
-      "return_pct": 4.58,
-      "max_dd_pct": 5.85,
-      "pf": 1.263,
-      "expectancy": 0.1497
+      "return_pct": 6.64,
+      "max_dd_pct": 4.69,
+      "pf": 1.568,
+      "expectancy": 0.3046
      },
      {
       "confidence": 70,
-      "return_pct": 2.34,
-      "max_dd_pct": 6.66,
-      "pf": 1.14,
-      "expectancy": 0.0809
+      "return_pct": 4.49,
+      "max_dd_pct": 5.29,
+      "pf": 1.377,
+      "expectancy": 0.2115
      },
      {
       "confidence": 80,
-      "return_pct": 0.05,
-      "max_dd_pct": 7.73,
-      "pf": 1.017,
-      "expectancy": 0.0102
+      "return_pct": 2.21,
+      "max_dd_pct": 5.99,
+      "pf": 1.187,
+      "expectancy": 0.1102
      },
      {
       "confidence": 90,
-      "return_pct": -3.25,
-      "max_dd_pct": 9.16,
-      "pf": 0.853,
-      "expectancy": -0.0951
+      "return_pct": -1.11,
+      "max_dd_pct": 7.31,
+      "pf": 0.938,
+      "expectancy": -0.0405
      },
      {
       "confidence": 95,
-      "return_pct": -6.01,
-      "max_dd_pct": 10.53,
-      "pf": 0.727,
-      "expectancy": -0.1862
+      "return_pct": -3.63,
+      "max_dd_pct": 8.56,
+      "pf": 0.765,
+      "expectancy": -0.1588
      },
      {
       "confidence": 97,
-      "return_pct": -7.46,
-      "max_dd_pct": 11.53,
-      "pf": 0.668,
-      "expectancy": -0.2344
+      "return_pct": -4.97,
+      "max_dd_pct": 9.36,
+      "pf": 0.671,
+      "expectancy": -0.2228
      },
      {
       "confidence": 99,
-      "return_pct": -10.35,
-      "max_dd_pct": 13.58,
-      "pf": 0.543,
-      "expectancy": -0.3333
+      "return_pct": -7.28,
+      "max_dd_pct": 10.79,
+      "pf": 0.521,
+      "expectancy": -0.3358
      }
     ],
-    "suggested_risk_pct": 0.95
+    "suggested_risk_pct": 1.17
    },
-   "mc_pf_p5": 1.126,
+   "mc_pf_p5": 1.365,
    "robustness": {
     "score": 100,
     "grade": "แข็งแรง",
@@ -269830,23 +269747,23 @@
      {
       "key": "wf_windows",
       "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
-      "value": "5/5",
+      "value": "4/4",
       "need": "≥ 75% เป็นบวก",
       "pass": true,
-      "note": "6/2m: +0.361R · 9/3m: +0.207R · 12/3m: +0.214R · 18/3m: +0.201R · 24/6m: +0.197R"
+      "note": "9/3m: +0.326R · 12/3m: +0.392R · 18/3m: +0.559R · 24/6m: +0.388R"
      },
      {
       "key": "cost_x2",
       "name": "ต้นทุน ×2 (spread+slippage+comm.)",
-      "value": 0.193,
+      "value": 0.381,
       "need": "> 0R",
       "pass": true,
-      "note": "ต้นทุนเฉลี่ย 0.021R/ไม้"
+      "note": "ต้นทุนเฉลี่ย 0.011R/ไม้"
      },
      {
       "key": "delay_1",
       "name": "เข้าช้าไป 1 แท่ง",
-      "value": 0.15,
+      "value": 0.338,
       "need": "> 0R",
       "pass": true,
       "note": ""
@@ -269857,12 +269774,12 @@
       "value": 100.0,
       "need": "≥ 70% ของรอบยังกำไร",
       "pass": true,
-      "note": "expectancy เฉลี่ย +0.229R"
+      "note": "expectancy เฉลี่ย +0.325R"
      },
      {
       "key": "long_short",
       "name": "ทั้งฝั่ง Long และ Short",
-      "value": "L +0.34R (178) / S -0.03R (94)",
+      "value": "L +0.73R (98) / S +0.03R (92)",
       "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
       "pass": true,
       "note": ""
@@ -269870,15 +269787,15 @@
      {
       "key": "time",
       "name": "กำไรสม่ำเสมอรายครึ่งปี",
-      "value": "13/18",
+      "value": "13/17",
       "need": "≥ 60% ของครึ่งปี",
       "pass": true,
       "note": ""
      },
      {
       "key": "top_trades",
-      "name": "ตัด 14 ไม้ที่ดีที่สุด (5%) ออก",
-      "value": 0.09,
+      "name": "ตัด 10 ไม้ที่ดีที่สุด (5%) ออก",
+      "value": 0.275,
       "need": "> 0R",
       "pass": true,
       "note": ""
@@ -269894,76 +269811,69 @@
     ],
     "wf_windows": [
      {
-      "is": 6,
-      "oos": 2,
-      "trades": 104,
-      "expectancy": 0.3608,
-      "t": 2.87
-     },
-     {
       "is": 9,
       "oos": 3,
-      "trades": 277,
-      "expectancy": 0.2067,
-      "t": 2.67
+      "trades": 178,
+      "expectancy": 0.3259,
+      "t": 2.66
      },
      {
       "is": 12,
       "oos": 3,
-      "trades": 272,
-      "expectancy": 0.2138,
-      "t": 2.59
+      "trades": 190,
+      "expectancy": 0.392,
+      "t": 3.38
      },
      {
       "is": 18,
       "oos": 3,
-      "trades": 256,
-      "expectancy": 0.2005,
-      "t": 2.45
+      "trades": 173,
+      "expectancy": 0.5595,
+      "t": 3.08
      },
      {
       "is": 24,
       "oos": 6,
-      "trades": 224,
-      "expectancy": 0.1968,
-      "t": 2.29
+      "trades": 153,
+      "expectancy": 0.3875,
+      "t": 3.08
      }
     ]
    },
    "gates": [
     {
      "name": "OOS trades",
-     "value": 272,
+     "value": 190,
      "need": 30,
      "pass": true
     },
     {
      "name": "OOS expectancy (R)",
-     "value": 0.2138,
+     "value": 0.392,
      "need": 0.05,
      "pass": true
     },
     {
      "name": "OOS t-stat",
-     "value": 2.59,
+     "value": 3.38,
      "need": 2,
      "pass": true
     },
     {
      "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
-     "value": 2.59,
+     "value": 3.38,
      "need": 3.57,
      "pass": false
     },
     {
      "name": "MC PF @95%",
-     "value": 1.126,
+     "value": 1.365,
      "need": 1,
      "pass": true
     },
     {
      "name": "ชนะการสุ่มจุดเข้า (percentile)",
-     "value": 99.3,
+     "value": 100.0,
      "need": 90,
      "pass": true
     },
@@ -269986,895 +269896,9 @@
    "trials": 3624,
    "n_candidates": 289,
    "t_needed": 3.57,
-   "n_active": 3,
-   "n_watch": 89,
+   "n_active": 0,
+   "n_watch": 91,
    "candidates": [
-    {
-     "strategy": "weekly_breakout",
-     "tf": "H4",
-     "n_combos": 8,
-     "oos": {
-      "trades": 272,
-      "net_r": 58.14,
-      "expectancy": 0.2138,
-      "gross_expectancy": 0.2345,
-      "win_rate": 44.9,
-      "pf": 1.394,
-      "avg_win": 1.685,
-      "avg_loss": -0.983,
-      "max_dd_r": 11.0,
-      "t_stat": 2.59,
-      "trades_per_year": 32.1,
-      "risk_pct": 1.0,
-      "cagr_pct": 6.77,
-      "max_dd_pct": 10.5,
-      "mar": 0.65,
-      "max_consec_loss": 8,
-      "avg_bars": 13.4
-     },
-     "oos_years": 8.48,
-     "wfe": 0.57,
-     "plateau": 1.0,
-     "param_switches": 14,
-     "distinct_params": 7,
-     "current_params": {
-      "trend_len": 200,
-      "sl_atr": 1.5,
-      "rr": 2.5,
-      "max_hold_h": 120
-     },
-     "current_is_t": 2.5,
-     "current_lock": {
-      "start": "2026-09-30T21:00:00+00:00",
-      "end": "2026-12-31T22:00:00+00:00"
-     },
-     "name": "Previous-Week High/Low Breakout",
-     "random_benchmark": {
-      "sims": 300,
-      "actual_exp": 0.2138,
-      "random_mean": 0.0211,
-      "random_p95": 0.145,
-      "percentile": 99.3
-     },
-     "mc_1y": {
-      "method": "bootstrap",
-      "sims": 5000,
-      "n_trades": 32,
-      "risk_pct": 1.0,
-      "return_pct": {
-       "5": -6.01,
-       "25": 1.29,
-       "50": 6.49,
-       "75": 12.22,
-       "95": 20.73
-      },
-      "max_dd_pct": {
-       "5": 2.97,
-       "25": 3.94,
-       "50": 5.25,
-       "75": 6.95,
-       "95": 10.53
-      },
-      "pf_p5": 0.727,
-      "expectancy_p5": -0.1862,
-      "prob_profit": 80.1,
-      "prob_dd_over_limit": 6.66,
-      "risk_of_ruin": 0.0,
-      "dd_limit_pct": 10,
-      "confidence": [
-       {
-        "confidence": 50,
-        "return_pct": 6.49,
-        "max_dd_pct": 5.25,
-        "pf": 1.385,
-        "expectancy": 0.2059
-       },
-       {
-        "confidence": 60,
-        "return_pct": 4.58,
-        "max_dd_pct": 5.85,
-        "pf": 1.263,
-        "expectancy": 0.1497
-       },
-       {
-        "confidence": 70,
-        "return_pct": 2.34,
-        "max_dd_pct": 6.66,
-        "pf": 1.14,
-        "expectancy": 0.0809
-       },
-       {
-        "confidence": 80,
-        "return_pct": 0.05,
-        "max_dd_pct": 7.73,
-        "pf": 1.017,
-        "expectancy": 0.0102
-       },
-       {
-        "confidence": 90,
-        "return_pct": -3.25,
-        "max_dd_pct": 9.16,
-        "pf": 0.853,
-        "expectancy": -0.0951
-       },
-       {
-        "confidence": 95,
-        "return_pct": -6.01,
-        "max_dd_pct": 10.53,
-        "pf": 0.727,
-        "expectancy": -0.1862
-       },
-       {
-        "confidence": 97,
-        "return_pct": -7.46,
-        "max_dd_pct": 11.53,
-        "pf": 0.668,
-        "expectancy": -0.2344
-       },
-       {
-        "confidence": 99,
-        "return_pct": -10.35,
-        "max_dd_pct": 13.58,
-        "pf": 0.543,
-        "expectancy": -0.3333
-       }
-      ],
-      "suggested_risk_pct": 0.95
-     },
-     "mc_pf_p5": 1.126,
-     "robustness": {
-      "score": 100,
-      "grade": "แข็งแรง",
-      "passed": 8,
-      "applicable": 8,
-      "tests": [
-       {
-        "key": "wf_windows",
-        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
-        "value": "5/5",
-        "need": "≥ 75% เป็นบวก",
-        "pass": true,
-        "note": "6/2m: +0.361R · 9/3m: +0.207R · 12/3m: +0.214R · 18/3m: +0.201R · 24/6m: +0.197R"
-       },
-       {
-        "key": "cost_x2",
-        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
-        "value": 0.193,
-        "need": "> 0R",
-        "pass": true,
-        "note": "ต้นทุนเฉลี่ย 0.021R/ไม้"
-       },
-       {
-        "key": "delay_1",
-        "name": "เข้าช้าไป 1 แท่ง",
-        "value": 0.15,
-        "need": "> 0R",
-        "pass": true,
-        "note": ""
-       },
-       {
-        "key": "noise",
-        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
-        "value": 100.0,
-        "need": "≥ 70% ของรอบยังกำไร",
-        "pass": true,
-        "note": "expectancy เฉลี่ย +0.229R"
-       },
-       {
-        "key": "long_short",
-        "name": "ทั้งฝั่ง Long และ Short",
-        "value": "L +0.34R (178) / S -0.03R (94)",
-        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
-        "pass": true,
-        "note": ""
-       },
-       {
-        "key": "time",
-        "name": "กำไรสม่ำเสมอรายครึ่งปี",
-        "value": "13/18",
-        "need": "≥ 60% ของครึ่งปี",
-        "pass": true,
-        "note": ""
-       },
-       {
-        "key": "top_trades",
-        "name": "ตัด 14 ไม้ที่ดีที่สุด (5%) ออก",
-        "value": 0.09,
-        "need": "> 0R",
-        "pass": true,
-        "note": ""
-       },
-       {
-        "key": "plateau",
-        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
-        "value": 1.0,
-        "need": "≥ 0.5",
-        "pass": true,
-        "note": ""
-       }
-      ],
-      "wf_windows": [
-       {
-        "is": 6,
-        "oos": 2,
-        "trades": 104,
-        "expectancy": 0.3608,
-        "t": 2.87
-       },
-       {
-        "is": 9,
-        "oos": 3,
-        "trades": 277,
-        "expectancy": 0.2067,
-        "t": 2.67
-       },
-       {
-        "is": 12,
-        "oos": 3,
-        "trades": 272,
-        "expectancy": 0.2138,
-        "t": 2.59
-       },
-       {
-        "is": 18,
-        "oos": 3,
-        "trades": 256,
-        "expectancy": 0.2005,
-        "t": 2.45
-       },
-       {
-        "is": 24,
-        "oos": 6,
-        "trades": 224,
-        "expectancy": 0.1968,
-        "t": 2.29
-       }
-      ]
-     },
-     "gates": [
-      {
-       "name": "OOS trades",
-       "value": 272,
-       "need": 30,
-       "pass": true
-      },
-      {
-       "name": "OOS expectancy (R)",
-       "value": 0.2138,
-       "need": 0.05,
-       "pass": true
-      },
-      {
-       "name": "OOS t-stat",
-       "value": 2.59,
-       "need": 2,
-       "pass": true
-      },
-      {
-       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
-       "value": 2.59,
-       "need": 3.57,
-       "pass": false
-      },
-      {
-       "name": "MC PF @95%",
-       "value": 1.126,
-       "need": 1,
-       "pass": true
-      },
-      {
-       "name": "ชนะการสุ่มจุดเข้า (percentile)",
-       "value": 99.3,
-       "need": 90,
-       "pass": true
-      },
-      {
-       "name": "Parameter plateau",
-       "value": 1.0,
-       "need": 0.4,
-       "pass": true
-      },
-      {
-       "name": "Robustness score",
-       "value": 100,
-       "need": 60.0,
-       "pass": true
-      }
-     ],
-     "status": "ACTIVE",
-     "kept": true
-    },
-    {
-     "strategy": "cci_trend",
-     "tf": "H4",
-     "n_combos": 12,
-     "oos": {
-      "trades": 480,
-      "net_r": 42.64,
-      "expectancy": 0.0888,
-      "gross_expectancy": 0.1067,
-      "win_rate": 33.8,
-      "pf": 1.154,
-      "avg_win": 1.976,
-      "avg_loss": -0.872,
-      "max_dd_r": 17.9,
-      "t_stat": 1.24,
-      "trades_per_year": 56.6,
-      "risk_pct": 1.0,
-      "cagr_pct": 4.45,
-      "max_dd_pct": 16.5,
-      "mar": 0.27,
-      "max_consec_loss": 13,
-      "avg_bars": 17.1
-     },
-     "oos_years": 8.48,
-     "wfe": 0.28,
-     "plateau": 1.0,
-     "param_switches": 18,
-     "distinct_params": 11,
-     "current_params": {
-      "cci_level": 150.0,
-      "sl_atr": 2.5,
-      "rr": 1.5,
-      "max_hold_h": 120
-     },
-     "current_is_t": 3.03,
-     "current_lock": {
-      "start": "2026-09-30T21:00:00+00:00",
-      "end": "2026-12-31T22:00:00+00:00"
-     },
-     "name": "CCI Breakout",
-     "random_benchmark": {
-      "sims": 300,
-      "actual_exp": 0.0888,
-      "random_mean": 0.0017,
-      "random_p95": 0.1231,
-      "percentile": 89.3
-     },
-     "mc_1y": {
-      "method": "bootstrap",
-      "sims": 5000,
-      "n_trades": 57,
-      "risk_pct": 1.0,
-      "return_pct": {
-       "5": -12.99,
-       "25": -3.96,
-       "50": 3.88,
-       "75": 12.43,
-       "95": 27.39
-      },
-      "max_dd_pct": {
-       "5": 4.9,
-       "25": 7.01,
-       "50": 9.18,
-       "75": 12.25,
-       "95": 17.74
-      },
-      "pf_p5": 0.641,
-      "expectancy_p5": -0.236,
-      "prob_profit": 62.7,
-      "prob_dd_over_limit": 41.36,
-      "risk_of_ruin": 0.02,
-      "dd_limit_pct": 10,
-      "confidence": [
-       {
-        "confidence": 50,
-        "return_pct": 3.88,
-        "max_dd_pct": 9.18,
-        "pf": 1.137,
-        "expectancy": 0.078
-       },
-       {
-        "confidence": 60,
-        "return_pct": 0.84,
-        "max_dd_pct": 10.16,
-        "pf": 1.043,
-        "expectancy": 0.0252
-       },
-       {
-        "confidence": 70,
-        "return_pct": -2.27,
-        "max_dd_pct": 11.42,
-        "pf": 0.951,
-        "expectancy": -0.0304
-       },
-       {
-        "confidence": 80,
-        "return_pct": -5.69,
-        "max_dd_pct": 13.06,
-        "pf": 0.851,
-        "expectancy": -0.0939
-       },
-       {
-        "confidence": 90,
-        "return_pct": -9.69,
-        "max_dd_pct": 15.42,
-        "pf": 0.735,
-        "expectancy": -0.1703
-       },
-       {
-        "confidence": 95,
-        "return_pct": -12.99,
-        "max_dd_pct": 17.74,
-        "pf": 0.641,
-        "expectancy": -0.236
-       },
-       {
-        "confidence": 97,
-        "return_pct": -15.26,
-        "max_dd_pct": 19.04,
-        "pf": 0.581,
-        "expectancy": -0.2832
-       },
-       {
-        "confidence": 99,
-        "return_pct": -18.82,
-        "max_dd_pct": 21.84,
-        "pf": 0.484,
-        "expectancy": -0.3596
-       }
-      ],
-      "suggested_risk_pct": 0.56
-     },
-     "mc_pf_p5": 0.956,
-     "robustness": {
-      "score": 62,
-      "grade": "พอใช้",
-      "passed": 5,
-      "applicable": 8,
-      "tests": [
-       {
-        "key": "wf_windows",
-        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
-        "value": "5/5",
-        "need": "≥ 75% เป็นบวก",
-        "pass": true,
-        "note": "6/2m: +0.074R · 9/3m: +0.093R · 12/3m: +0.089R · 18/3m: +0.132R · 24/6m: +0.062R"
-       },
-       {
-        "key": "cost_x2",
-        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
-        "value": 0.071,
-        "need": "> 0R",
-        "pass": true,
-        "note": "ต้นทุนเฉลี่ย 0.018R/ไม้"
-       },
-       {
-        "key": "delay_1",
-        "name": "เข้าช้าไป 1 แท่ง",
-        "value": 0.096,
-        "need": "> 0R",
-        "pass": true,
-        "note": ""
-       },
-       {
-        "key": "noise",
-        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
-        "value": 100.0,
-        "need": "≥ 70% ของรอบยังกำไร",
-        "pass": true,
-        "note": "expectancy เฉลี่ย +0.082R"
-       },
-       {
-        "key": "long_short",
-        "name": "ทั้งฝั่ง Long และ Short",
-        "value": "L +0.25R (252) / S -0.09R (228)",
-        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "time",
-        "name": "กำไรสม่ำเสมอรายครึ่งปี",
-        "value": "10/17",
-        "need": "≥ 60% ของครึ่งปี",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "top_trades",
-        "name": "ตัด 24 ไม้ที่ดีที่สุด (5%) ออก",
-        "value": -0.111,
-        "need": "> 0R",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "plateau",
-        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
-        "value": 1.0,
-        "need": "≥ 0.5",
-        "pass": true,
-        "note": ""
-       }
-      ],
-      "wf_windows": [
-       {
-        "is": 6,
-        "oos": 2,
-        "trades": 530,
-        "expectancy": 0.0741,
-        "t": 1.09
-       },
-       {
-        "is": 9,
-        "oos": 3,
-        "trades": 506,
-        "expectancy": 0.0932,
-        "t": 1.34
-       },
-       {
-        "is": 12,
-        "oos": 3,
-        "trades": 480,
-        "expectancy": 0.0888,
-        "t": 1.24
-       },
-       {
-        "is": 18,
-        "oos": 3,
-        "trades": 489,
-        "expectancy": 0.1324,
-        "t": 1.76
-       },
-       {
-        "is": 24,
-        "oos": 6,
-        "trades": 429,
-        "expectancy": 0.0622,
-        "t": 0.76
-       }
-      ]
-     },
-     "gates": [
-      {
-       "name": "OOS trades",
-       "value": 480,
-       "need": 30,
-       "pass": true
-      },
-      {
-       "name": "OOS expectancy (R)",
-       "value": 0.0888,
-       "need": 0.05,
-       "pass": true
-      },
-      {
-       "name": "OOS t-stat",
-       "value": 1.24,
-       "need": 2,
-       "pass": false
-      },
-      {
-       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
-       "value": 1.24,
-       "need": 3.57,
-       "pass": false
-      },
-      {
-       "name": "MC PF @95%",
-       "value": 0.956,
-       "need": 1,
-       "pass": false
-      },
-      {
-       "name": "ชนะการสุ่มจุดเข้า (percentile)",
-       "value": 89.3,
-       "need": 90,
-       "pass": false
-      },
-      {
-       "name": "Parameter plateau",
-       "value": 1.0,
-       "need": 0.4,
-       "pass": true
-      },
-      {
-       "name": "Robustness score",
-       "value": 62,
-       "need": 60.0,
-       "pass": true
-      }
-     ],
-     "status": "ACTIVE",
-     "kept": true
-    },
-    {
-     "strategy": "ichimoku_tk",
-     "tf": "H1",
-     "n_combos": 6,
-     "oos": {
-      "trades": 635,
-      "net_r": -24.55,
-      "expectancy": -0.0387,
-      "gross_expectancy": -0.0004,
-      "win_rate": 29.3,
-      "pf": 0.945,
-      "avg_win": 2.249,
-      "avg_loss": -0.986,
-      "max_dd_r": 77.18,
-      "t_stat": -0.62,
-      "trades_per_year": 74.9,
-      "risk_pct": 1.0,
-      "cagr_pct": -3.73,
-      "max_dd_pct": 54.75,
-      "mar": -0.07,
-      "max_consec_loss": 29,
-      "avg_bars": 21.5
-     },
-     "oos_years": 8.48,
-     "wfe": -0.16,
-     "plateau": 0.67,
-     "param_switches": 12,
-     "distinct_params": 6,
-     "current_params": {
-      "tenkan": 9,
-      "kijun": 26,
-      "sl_atr": 2.5,
-      "rr": 2.5,
-      "max_hold_h": 120
-     },
-     "current_is_t": 2.92,
-     "current_lock": {
-      "start": "2026-09-30T21:00:00+00:00",
-      "end": "2026-12-31T22:00:00+00:00"
-     },
-     "name": "Ichimoku TK Cross + Cloud",
-     "random_benchmark": {
-      "sims": 300,
-      "actual_exp": -0.0387,
-      "random_mean": -0.0541,
-      "random_p95": 0.0396,
-      "percentile": 60.7
-     },
-     "mc_1y": {
-      "method": "bootstrap",
-      "sims": 5000,
-      "n_trades": 75,
-      "risk_pct": 1.0,
-      "return_pct": {
-       "5": -22.46,
-       "25": -12.49,
-       "50": -4.03,
-       "75": 5.16,
-       "95": 20.39
-      },
-      "max_dd_pct": {
-       "5": 7.42,
-       "25": 10.77,
-       "50": 14.51,
-       "75": 19.28,
-       "95": 26.24
-      },
-      "pf_p5": 0.575,
-      "expectancy_p5": -0.33,
-      "prob_profit": 37.8,
-      "prob_dd_over_limit": 80.48,
-      "risk_of_ruin": 1.38,
-      "dd_limit_pct": 10,
-      "confidence": [
-       {
-        "confidence": 50,
-        "return_pct": -4.03,
-        "max_dd_pct": 14.51,
-        "pf": 0.939,
-        "expectancy": -0.0429
-       },
-       {
-        "confidence": 60,
-        "return_pct": -7.3,
-        "max_dd_pct": 16.21,
-        "pf": 0.874,
-        "expectancy": -0.0899
-       },
-       {
-        "confidence": 70,
-        "return_pct": -10.67,
-        "max_dd_pct": 18.16,
-        "pf": 0.806,
-        "expectancy": -0.1398
-       },
-       {
-        "confidence": 80,
-        "return_pct": -14.37,
-        "max_dd_pct": 20.47,
-        "pf": 0.735,
-        "expectancy": -0.1964
-       },
-       {
-        "confidence": 90,
-        "return_pct": -19.07,
-        "max_dd_pct": 23.81,
-        "pf": 0.643,
-        "expectancy": -0.2724
-       },
-       {
-        "confidence": 95,
-        "return_pct": -22.46,
-        "max_dd_pct": 26.24,
-        "pf": 0.575,
-        "expectancy": -0.33
-       },
-       {
-        "confidence": 97,
-        "return_pct": -24.55,
-        "max_dd_pct": 27.81,
-        "pf": 0.539,
-        "expectancy": -0.3657
-       },
-       {
-        "confidence": 99,
-        "return_pct": -27.66,
-        "max_dd_pct": 30.52,
-        "pf": 0.481,
-        "expectancy": -0.424
-       }
-      ],
-      "suggested_risk_pct": 0.38
-     },
-     "mc_pf_p5": 0.805,
-     "robustness": {
-      "score": 12,
-      "grade": "เปราะบาง",
-      "passed": 1,
-      "applicable": 8,
-      "tests": [
-       {
-        "key": "wf_windows",
-        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
-        "value": "3/5",
-        "need": "≥ 75% เป็นบวก",
-        "pass": false,
-        "note": "6/2m: +0.013R · 9/3m: +0.008R · 12/3m: -0.039R · 18/3m: -0.017R · 24/6m: +0.117R"
-       },
-       {
-        "key": "cost_x2",
-        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
-        "value": -0.077,
-        "need": "> 0R",
-        "pass": false,
-        "note": "ต้นทุนเฉลี่ย 0.038R/ไม้"
-       },
-       {
-        "key": "delay_1",
-        "name": "เข้าช้าไป 1 แท่ง",
-        "value": -0.085,
-        "need": "> 0R",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "noise",
-        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
-        "value": 40.0,
-        "need": "≥ 70% ของรอบยังกำไร",
-        "pass": false,
-        "note": "expectancy เฉลี่ย +0.005R"
-       },
-       {
-        "key": "long_short",
-        "name": "ทั้งฝั่ง Long และ Short",
-        "value": "L -0.07R (337) / S -0.01R (298)",
-        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "time",
-        "name": "กำไรสม่ำเสมอรายครึ่งปี",
-        "value": "7/15",
-        "need": "≥ 60% ของครึ่งปี",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "top_trades",
-        "name": "ตัด 32 ไม้ที่ดีที่สุด (5%) ออก",
-        "value": -0.224,
-        "need": "> 0R",
-        "pass": false,
-        "note": ""
-       },
-       {
-        "key": "plateau",
-        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
-        "value": 0.67,
-        "need": "≥ 0.5",
-        "pass": true,
-        "note": ""
-       }
-      ],
-      "wf_windows": [
-       {
-        "is": 6,
-        "oos": 2,
-        "trades": 721,
-        "expectancy": 0.0133,
-        "t": 0.21
-       },
-       {
-        "is": 9,
-        "oos": 3,
-        "trades": 693,
-        "expectancy": 0.0079,
-        "t": 0.11
-       },
-       {
-        "is": 12,
-        "oos": 3,
-        "trades": 635,
-        "expectancy": -0.0387,
-        "t": -0.62
-       },
-       {
-        "is": 18,
-        "oos": 3,
-        "trades": 586,
-        "expectancy": -0.0171,
-        "t": -0.27
-       },
-       {
-        "is": 24,
-        "oos": 6,
-        "trades": 449,
-        "expectancy": 0.1165,
-        "t": 1.65
-       }
-      ]
-     },
-     "gates": [
-      {
-       "name": "OOS trades",
-       "value": 635,
-       "need": 30,
-       "pass": true
-      },
-      {
-       "name": "OOS expectancy (R)",
-       "value": -0.0387,
-       "need": 0.05,
-       "pass": false
-      },
-      {
-       "name": "OOS t-stat",
-       "value": -0.62,
-       "need": 2,
-       "pass": false
-      },
-      {
-       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
-       "value": -0.62,
-       "need": 3.57,
-       "pass": false
-      },
-      {
-       "name": "MC PF @95%",
-       "value": 0.805,
-       "need": 1,
-       "pass": false
-      },
-      {
-       "name": "ชนะการสุ่มจุดเข้า (percentile)",
-       "value": 60.7,
-       "need": 90,
-       "pass": false
-      },
-      {
-       "name": "Parameter plateau",
-       "value": 0.67,
-       "need": 0.4,
-       "pass": true
-      },
-      {
-       "name": "Robustness score",
-       "value": 12,
-       "need": 60.0,
-       "pass": false
-      }
-     ],
-     "status": "ACTIVE",
-     "kept": true
-    },
     {
      "strategy": "atr_expansion",
      "tf": "H4",
@@ -271431,6 +270455,300 @@
       {
        "name": "ชนะการสุ่มจุดเข้า (percentile)",
        "value": 96.7,
+       "need": 90,
+       "pass": true
+      },
+      {
+       "name": "Parameter plateau",
+       "value": 1.0,
+       "need": 0.4,
+       "pass": true
+      },
+      {
+       "name": "Robustness score",
+       "value": 100,
+       "need": 60.0,
+       "pass": true
+      }
+     ],
+     "status": "WATCH"
+    },
+    {
+     "strategy": "weekly_breakout",
+     "tf": "H4",
+     "n_combos": 8,
+     "oos": {
+      "trades": 272,
+      "net_r": 58.14,
+      "expectancy": 0.2138,
+      "gross_expectancy": 0.2345,
+      "win_rate": 44.9,
+      "pf": 1.394,
+      "avg_win": 1.685,
+      "avg_loss": -0.983,
+      "max_dd_r": 11.0,
+      "t_stat": 2.59,
+      "trades_per_year": 32.1,
+      "risk_pct": 1.0,
+      "cagr_pct": 6.77,
+      "max_dd_pct": 10.5,
+      "mar": 0.65,
+      "max_consec_loss": 8,
+      "avg_bars": 13.4
+     },
+     "oos_years": 8.48,
+     "wfe": 0.57,
+     "plateau": 1.0,
+     "param_switches": 14,
+     "distinct_params": 7,
+     "current_params": {
+      "trend_len": 200,
+      "sl_atr": 1.5,
+      "rr": 2.5,
+      "max_hold_h": 120
+     },
+     "current_is_t": 2.5,
+     "current_lock": {
+      "start": "2026-09-30T21:00:00+00:00",
+      "end": "2026-12-31T22:00:00+00:00"
+     },
+     "name": "Previous-Week High/Low Breakout",
+     "random_benchmark": {
+      "sims": 300,
+      "actual_exp": 0.2138,
+      "random_mean": 0.0211,
+      "random_p95": 0.145,
+      "percentile": 99.3
+     },
+     "mc_1y": {
+      "method": "bootstrap",
+      "sims": 5000,
+      "n_trades": 32,
+      "risk_pct": 1.0,
+      "return_pct": {
+       "5": -6.01,
+       "25": 1.29,
+       "50": 6.49,
+       "75": 12.22,
+       "95": 20.73
+      },
+      "max_dd_pct": {
+       "5": 2.97,
+       "25": 3.94,
+       "50": 5.25,
+       "75": 6.95,
+       "95": 10.53
+      },
+      "pf_p5": 0.727,
+      "expectancy_p5": -0.1862,
+      "prob_profit": 80.1,
+      "prob_dd_over_limit": 6.66,
+      "risk_of_ruin": 0.0,
+      "dd_limit_pct": 10,
+      "confidence": [
+       {
+        "confidence": 50,
+        "return_pct": 6.49,
+        "max_dd_pct": 5.25,
+        "pf": 1.385,
+        "expectancy": 0.2059
+       },
+       {
+        "confidence": 60,
+        "return_pct": 4.58,
+        "max_dd_pct": 5.85,
+        "pf": 1.263,
+        "expectancy": 0.1497
+       },
+       {
+        "confidence": 70,
+        "return_pct": 2.34,
+        "max_dd_pct": 6.66,
+        "pf": 1.14,
+        "expectancy": 0.0809
+       },
+       {
+        "confidence": 80,
+        "return_pct": 0.05,
+        "max_dd_pct": 7.73,
+        "pf": 1.017,
+        "expectancy": 0.0102
+       },
+       {
+        "confidence": 90,
+        "return_pct": -3.25,
+        "max_dd_pct": 9.16,
+        "pf": 0.853,
+        "expectancy": -0.0951
+       },
+       {
+        "confidence": 95,
+        "return_pct": -6.01,
+        "max_dd_pct": 10.53,
+        "pf": 0.727,
+        "expectancy": -0.1862
+       },
+       {
+        "confidence": 97,
+        "return_pct": -7.46,
+        "max_dd_pct": 11.53,
+        "pf": 0.668,
+        "expectancy": -0.2344
+       },
+       {
+        "confidence": 99,
+        "return_pct": -10.35,
+        "max_dd_pct": 13.58,
+        "pf": 0.543,
+        "expectancy": -0.3333
+       }
+      ],
+      "suggested_risk_pct": 0.95
+     },
+     "mc_pf_p5": 1.126,
+     "robustness": {
+      "score": 100,
+      "grade": "แข็งแรง",
+      "passed": 8,
+      "applicable": 8,
+      "tests": [
+       {
+        "key": "wf_windows",
+        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
+        "value": "5/5",
+        "need": "≥ 75% เป็นบวก",
+        "pass": true,
+        "note": "6/2m: +0.361R · 9/3m: +0.207R · 12/3m: +0.214R · 18/3m: +0.201R · 24/6m: +0.197R"
+       },
+       {
+        "key": "cost_x2",
+        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
+        "value": 0.193,
+        "need": "> 0R",
+        "pass": true,
+        "note": "ต้นทุนเฉลี่ย 0.021R/ไม้"
+       },
+       {
+        "key": "delay_1",
+        "name": "เข้าช้าไป 1 แท่ง",
+        "value": 0.15,
+        "need": "> 0R",
+        "pass": true,
+        "note": ""
+       },
+       {
+        "key": "noise",
+        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
+        "value": 100.0,
+        "need": "≥ 70% ของรอบยังกำไร",
+        "pass": true,
+        "note": "expectancy เฉลี่ย +0.229R"
+       },
+       {
+        "key": "long_short",
+        "name": "ทั้งฝั่ง Long และ Short",
+        "value": "L +0.34R (178) / S -0.03R (94)",
+        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
+        "pass": true,
+        "note": ""
+       },
+       {
+        "key": "time",
+        "name": "กำไรสม่ำเสมอรายครึ่งปี",
+        "value": "13/18",
+        "need": "≥ 60% ของครึ่งปี",
+        "pass": true,
+        "note": ""
+       },
+       {
+        "key": "top_trades",
+        "name": "ตัด 14 ไม้ที่ดีที่สุด (5%) ออก",
+        "value": 0.09,
+        "need": "> 0R",
+        "pass": true,
+        "note": ""
+       },
+       {
+        "key": "plateau",
+        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
+        "value": 1.0,
+        "need": "≥ 0.5",
+        "pass": true,
+        "note": ""
+       }
+      ],
+      "wf_windows": [
+       {
+        "is": 6,
+        "oos": 2,
+        "trades": 104,
+        "expectancy": 0.3608,
+        "t": 2.87
+       },
+       {
+        "is": 9,
+        "oos": 3,
+        "trades": 277,
+        "expectancy": 0.2067,
+        "t": 2.67
+       },
+       {
+        "is": 12,
+        "oos": 3,
+        "trades": 272,
+        "expectancy": 0.2138,
+        "t": 2.59
+       },
+       {
+        "is": 18,
+        "oos": 3,
+        "trades": 256,
+        "expectancy": 0.2005,
+        "t": 2.45
+       },
+       {
+        "is": 24,
+        "oos": 6,
+        "trades": 224,
+        "expectancy": 0.1968,
+        "t": 2.29
+       }
+      ]
+     },
+     "gates": [
+      {
+       "name": "OOS trades",
+       "value": 272,
+       "need": 30,
+       "pass": true
+      },
+      {
+       "name": "OOS expectancy (R)",
+       "value": 0.2138,
+       "need": 0.05,
+       "pass": true
+      },
+      {
+       "name": "OOS t-stat",
+       "value": 2.59,
+       "need": 2,
+       "pass": true
+      },
+      {
+       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
+       "value": 2.59,
+       "need": 3.57,
+       "pass": false
+      },
+      {
+       "name": "MC PF @95%",
+       "value": 1.126,
+       "need": 1,
+       "pass": true
+      },
+      {
+       "name": "ชนะการสุ่มจุดเข้า (percentile)",
+       "value": 99.3,
        "need": 90,
        "pass": true
       },
@@ -288469,6 +287787,300 @@
       {
        "name": "Robustness score",
        "value": 75,
+       "need": 60.0,
+       "pass": true
+      }
+     ],
+     "status": "WATCH"
+    },
+    {
+     "strategy": "cci_trend",
+     "tf": "H4",
+     "n_combos": 12,
+     "oos": {
+      "trades": 480,
+      "net_r": 42.64,
+      "expectancy": 0.0888,
+      "gross_expectancy": 0.1067,
+      "win_rate": 33.8,
+      "pf": 1.154,
+      "avg_win": 1.976,
+      "avg_loss": -0.872,
+      "max_dd_r": 17.9,
+      "t_stat": 1.24,
+      "trades_per_year": 56.6,
+      "risk_pct": 1.0,
+      "cagr_pct": 4.45,
+      "max_dd_pct": 16.5,
+      "mar": 0.27,
+      "max_consec_loss": 13,
+      "avg_bars": 17.1
+     },
+     "oos_years": 8.48,
+     "wfe": 0.28,
+     "plateau": 1.0,
+     "param_switches": 18,
+     "distinct_params": 11,
+     "current_params": {
+      "cci_level": 150.0,
+      "sl_atr": 2.5,
+      "rr": 1.5,
+      "max_hold_h": 120
+     },
+     "current_is_t": 3.03,
+     "current_lock": {
+      "start": "2026-09-30T21:00:00+00:00",
+      "end": "2026-12-31T22:00:00+00:00"
+     },
+     "name": "CCI Breakout",
+     "random_benchmark": {
+      "sims": 300,
+      "actual_exp": 0.0888,
+      "random_mean": 0.0017,
+      "random_p95": 0.1231,
+      "percentile": 89.3
+     },
+     "mc_1y": {
+      "method": "bootstrap",
+      "sims": 5000,
+      "n_trades": 57,
+      "risk_pct": 1.0,
+      "return_pct": {
+       "5": -12.99,
+       "25": -3.96,
+       "50": 3.88,
+       "75": 12.43,
+       "95": 27.39
+      },
+      "max_dd_pct": {
+       "5": 4.9,
+       "25": 7.01,
+       "50": 9.18,
+       "75": 12.25,
+       "95": 17.74
+      },
+      "pf_p5": 0.641,
+      "expectancy_p5": -0.236,
+      "prob_profit": 62.7,
+      "prob_dd_over_limit": 41.36,
+      "risk_of_ruin": 0.02,
+      "dd_limit_pct": 10,
+      "confidence": [
+       {
+        "confidence": 50,
+        "return_pct": 3.88,
+        "max_dd_pct": 9.18,
+        "pf": 1.137,
+        "expectancy": 0.078
+       },
+       {
+        "confidence": 60,
+        "return_pct": 0.84,
+        "max_dd_pct": 10.16,
+        "pf": 1.043,
+        "expectancy": 0.0252
+       },
+       {
+        "confidence": 70,
+        "return_pct": -2.27,
+        "max_dd_pct": 11.42,
+        "pf": 0.951,
+        "expectancy": -0.0304
+       },
+       {
+        "confidence": 80,
+        "return_pct": -5.69,
+        "max_dd_pct": 13.06,
+        "pf": 0.851,
+        "expectancy": -0.0939
+       },
+       {
+        "confidence": 90,
+        "return_pct": -9.69,
+        "max_dd_pct": 15.42,
+        "pf": 0.735,
+        "expectancy": -0.1703
+       },
+       {
+        "confidence": 95,
+        "return_pct": -12.99,
+        "max_dd_pct": 17.74,
+        "pf": 0.641,
+        "expectancy": -0.236
+       },
+       {
+        "confidence": 97,
+        "return_pct": -15.26,
+        "max_dd_pct": 19.04,
+        "pf": 0.581,
+        "expectancy": -0.2832
+       },
+       {
+        "confidence": 99,
+        "return_pct": -18.82,
+        "max_dd_pct": 21.84,
+        "pf": 0.484,
+        "expectancy": -0.3596
+       }
+      ],
+      "suggested_risk_pct": 0.56
+     },
+     "mc_pf_p5": 0.956,
+     "robustness": {
+      "score": 62,
+      "grade": "พอใช้",
+      "passed": 5,
+      "applicable": 8,
+      "tests": [
+       {
+        "key": "wf_windows",
+        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
+        "value": "5/5",
+        "need": "≥ 75% เป็นบวก",
+        "pass": true,
+        "note": "6/2m: +0.074R · 9/3m: +0.093R · 12/3m: +0.089R · 18/3m: +0.132R · 24/6m: +0.062R"
+       },
+       {
+        "key": "cost_x2",
+        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
+        "value": 0.071,
+        "need": "> 0R",
+        "pass": true,
+        "note": "ต้นทุนเฉลี่ย 0.018R/ไม้"
+       },
+       {
+        "key": "delay_1",
+        "name": "เข้าช้าไป 1 แท่ง",
+        "value": 0.096,
+        "need": "> 0R",
+        "pass": true,
+        "note": ""
+       },
+       {
+        "key": "noise",
+        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
+        "value": 100.0,
+        "need": "≥ 70% ของรอบยังกำไร",
+        "pass": true,
+        "note": "expectancy เฉลี่ย +0.082R"
+       },
+       {
+        "key": "long_short",
+        "name": "ทั้งฝั่ง Long และ Short",
+        "value": "L +0.25R (252) / S -0.09R (228)",
+        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "time",
+        "name": "กำไรสม่ำเสมอรายครึ่งปี",
+        "value": "10/17",
+        "need": "≥ 60% ของครึ่งปี",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "top_trades",
+        "name": "ตัด 24 ไม้ที่ดีที่สุด (5%) ออก",
+        "value": -0.111,
+        "need": "> 0R",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "plateau",
+        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
+        "value": 1.0,
+        "need": "≥ 0.5",
+        "pass": true,
+        "note": ""
+       }
+      ],
+      "wf_windows": [
+       {
+        "is": 6,
+        "oos": 2,
+        "trades": 530,
+        "expectancy": 0.0741,
+        "t": 1.09
+       },
+       {
+        "is": 9,
+        "oos": 3,
+        "trades": 506,
+        "expectancy": 0.0932,
+        "t": 1.34
+       },
+       {
+        "is": 12,
+        "oos": 3,
+        "trades": 480,
+        "expectancy": 0.0888,
+        "t": 1.24
+       },
+       {
+        "is": 18,
+        "oos": 3,
+        "trades": 489,
+        "expectancy": 0.1324,
+        "t": 1.76
+       },
+       {
+        "is": 24,
+        "oos": 6,
+        "trades": 429,
+        "expectancy": 0.0622,
+        "t": 0.76
+       }
+      ]
+     },
+     "gates": [
+      {
+       "name": "OOS trades",
+       "value": 480,
+       "need": 30,
+       "pass": true
+      },
+      {
+       "name": "OOS expectancy (R)",
+       "value": 0.0888,
+       "need": 0.05,
+       "pass": true
+      },
+      {
+       "name": "OOS t-stat",
+       "value": 1.24,
+       "need": 2,
+       "pass": false
+      },
+      {
+       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
+       "value": 1.24,
+       "need": 3.57,
+       "pass": false
+      },
+      {
+       "name": "MC PF @95%",
+       "value": 0.956,
+       "need": 1,
+       "pass": false
+      },
+      {
+       "name": "ชนะการสุ่มจุดเข้า (percentile)",
+       "value": 89.3,
+       "need": 90,
+       "pass": false
+      },
+      {
+       "name": "Parameter plateau",
+       "value": 1.0,
+       "need": 0.4,
+       "pass": true
+      },
+      {
+       "name": "Robustness score",
+       "value": 62,
        "need": 60.0,
        "pass": true
       }
@@ -333376,6 +332988,301 @@
      "status": "OFF"
     },
     {
+     "strategy": "ichimoku_tk",
+     "tf": "H1",
+     "n_combos": 6,
+     "oos": {
+      "trades": 635,
+      "net_r": -24.55,
+      "expectancy": -0.0387,
+      "gross_expectancy": -0.0004,
+      "win_rate": 29.3,
+      "pf": 0.945,
+      "avg_win": 2.249,
+      "avg_loss": -0.986,
+      "max_dd_r": 77.18,
+      "t_stat": -0.62,
+      "trades_per_year": 74.9,
+      "risk_pct": 1.0,
+      "cagr_pct": -3.73,
+      "max_dd_pct": 54.75,
+      "mar": -0.07,
+      "max_consec_loss": 29,
+      "avg_bars": 21.5
+     },
+     "oos_years": 8.48,
+     "wfe": -0.16,
+     "plateau": 0.67,
+     "param_switches": 12,
+     "distinct_params": 6,
+     "current_params": {
+      "tenkan": 9,
+      "kijun": 26,
+      "sl_atr": 2.5,
+      "rr": 2.5,
+      "max_hold_h": 120
+     },
+     "current_is_t": 2.92,
+     "current_lock": {
+      "start": "2026-09-30T21:00:00+00:00",
+      "end": "2026-12-31T22:00:00+00:00"
+     },
+     "name": "Ichimoku TK Cross + Cloud",
+     "random_benchmark": {
+      "sims": 300,
+      "actual_exp": -0.0387,
+      "random_mean": -0.0541,
+      "random_p95": 0.0396,
+      "percentile": 60.7
+     },
+     "mc_1y": {
+      "method": "bootstrap",
+      "sims": 5000,
+      "n_trades": 75,
+      "risk_pct": 1.0,
+      "return_pct": {
+       "5": -22.46,
+       "25": -12.49,
+       "50": -4.03,
+       "75": 5.16,
+       "95": 20.39
+      },
+      "max_dd_pct": {
+       "5": 7.42,
+       "25": 10.77,
+       "50": 14.51,
+       "75": 19.28,
+       "95": 26.24
+      },
+      "pf_p5": 0.575,
+      "expectancy_p5": -0.33,
+      "prob_profit": 37.8,
+      "prob_dd_over_limit": 80.48,
+      "risk_of_ruin": 1.38,
+      "dd_limit_pct": 10,
+      "confidence": [
+       {
+        "confidence": 50,
+        "return_pct": -4.03,
+        "max_dd_pct": 14.51,
+        "pf": 0.939,
+        "expectancy": -0.0429
+       },
+       {
+        "confidence": 60,
+        "return_pct": -7.3,
+        "max_dd_pct": 16.21,
+        "pf": 0.874,
+        "expectancy": -0.0899
+       },
+       {
+        "confidence": 70,
+        "return_pct": -10.67,
+        "max_dd_pct": 18.16,
+        "pf": 0.806,
+        "expectancy": -0.1398
+       },
+       {
+        "confidence": 80,
+        "return_pct": -14.37,
+        "max_dd_pct": 20.47,
+        "pf": 0.735,
+        "expectancy": -0.1964
+       },
+       {
+        "confidence": 90,
+        "return_pct": -19.07,
+        "max_dd_pct": 23.81,
+        "pf": 0.643,
+        "expectancy": -0.2724
+       },
+       {
+        "confidence": 95,
+        "return_pct": -22.46,
+        "max_dd_pct": 26.24,
+        "pf": 0.575,
+        "expectancy": -0.33
+       },
+       {
+        "confidence": 97,
+        "return_pct": -24.55,
+        "max_dd_pct": 27.81,
+        "pf": 0.539,
+        "expectancy": -0.3657
+       },
+       {
+        "confidence": 99,
+        "return_pct": -27.66,
+        "max_dd_pct": 30.52,
+        "pf": 0.481,
+        "expectancy": -0.424
+       }
+      ],
+      "suggested_risk_pct": 0.38
+     },
+     "mc_pf_p5": 0.805,
+     "robustness": {
+      "score": 12,
+      "grade": "เปราะบาง",
+      "passed": 1,
+      "applicable": 8,
+      "tests": [
+       {
+        "key": "wf_windows",
+        "name": "WF หลายขนาดหน้าต่าง (IS/OOS)",
+        "value": "3/5",
+        "need": "≥ 75% เป็นบวก",
+        "pass": false,
+        "note": "6/2m: +0.013R · 9/3m: +0.008R · 12/3m: -0.039R · 18/3m: -0.017R · 24/6m: +0.117R"
+       },
+       {
+        "key": "cost_x2",
+        "name": "ต้นทุน ×2 (spread+slippage+comm.)",
+        "value": -0.077,
+        "need": "> 0R",
+        "pass": false,
+        "note": "ต้นทุนเฉลี่ย 0.038R/ไม้"
+       },
+       {
+        "key": "delay_1",
+        "name": "เข้าช้าไป 1 แท่ง",
+        "value": -0.085,
+        "need": "> 0R",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "noise",
+        "name": "Noise ในราคา ±0.1 ATR (10 รอบ)",
+        "value": 40.0,
+        "need": "≥ 70% ของรอบยังกำไร",
+        "pass": false,
+        "note": "expectancy เฉลี่ย +0.005R"
+       },
+       {
+        "key": "long_short",
+        "name": "ทั้งฝั่ง Long และ Short",
+        "value": "L -0.07R (337) / S -0.01R (298)",
+        "need": "ไม่มีฝั่งที่ขาดทุนชัดเจน",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "time",
+        "name": "กำไรสม่ำเสมอรายครึ่งปี",
+        "value": "7/15",
+        "need": "≥ 60% ของครึ่งปี",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "top_trades",
+        "name": "ตัด 32 ไม้ที่ดีที่สุด (5%) ออก",
+        "value": -0.224,
+        "need": "> 0R",
+        "pass": false,
+        "note": ""
+       },
+       {
+        "key": "plateau",
+        "name": "พารามิเตอร์ข้างเคียงก็กำไร",
+        "value": 0.67,
+        "need": "≥ 0.5",
+        "pass": true,
+        "note": ""
+       }
+      ],
+      "wf_windows": [
+       {
+        "is": 6,
+        "oos": 2,
+        "trades": 721,
+        "expectancy": 0.0133,
+        "t": 0.21
+       },
+       {
+        "is": 9,
+        "oos": 3,
+        "trades": 693,
+        "expectancy": 0.0079,
+        "t": 0.11
+       },
+       {
+        "is": 12,
+        "oos": 3,
+        "trades": 635,
+        "expectancy": -0.0387,
+        "t": -0.62
+       },
+       {
+        "is": 18,
+        "oos": 3,
+        "trades": 586,
+        "expectancy": -0.0171,
+        "t": -0.27
+       },
+       {
+        "is": 24,
+        "oos": 6,
+        "trades": 449,
+        "expectancy": 0.1165,
+        "t": 1.65
+       }
+      ]
+     },
+     "gates": [
+      {
+       "name": "OOS trades",
+       "value": 635,
+       "need": 30,
+       "pass": true
+      },
+      {
+       "name": "OOS expectancy (R)",
+       "value": -0.0387,
+       "need": 0.05,
+       "pass": false
+      },
+      {
+       "name": "OOS t-stat",
+       "value": -0.62,
+       "need": 2,
+       "pass": false
+      },
+      {
+       "name": "t ปรับตามจำนวนระบบที่เทียบ (289)",
+       "value": -0.62,
+       "need": 3.57,
+       "pass": false
+      },
+      {
+       "name": "MC PF @95%",
+       "value": 0.805,
+       "need": 1,
+       "pass": false
+      },
+      {
+       "name": "ชนะการสุ่มจุดเข้า (percentile)",
+       "value": 60.7,
+       "need": 90,
+       "pass": false
+      },
+      {
+       "name": "Parameter plateau",
+       "value": 0.67,
+       "need": 0.4,
+       "pass": true
+      },
+      {
+       "name": "Robustness score",
+       "value": 12,
+       "need": 60.0,
+       "pass": false
+      }
+     ],
+     "status": "OFF"
+    },
+    {
      "strategy": "donchian_mid",
      "tf": "D1",
      "n_combos": 8,
@@ -348207,110 +348114,154 @@
     }
    ],
    "oos_r": [
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
+    -0.463,
     -1.0,
     -1.0,
-    1.5,
-    1.5,
+    -0.464,
     -1.0,
-    1.5,
-    1.5,
-    1.5,
+    2.5,
     -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    1.5,
+    -0.342,
+    0.354,
+    -0.012,
+    2.5,
+    2.5,
     -1.0,
     -1.0,
     -1.0,
     -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
+    1.005,
+    1.2,
     -1.0,
     -1.0,
     -1.0,
-    1.5,
-    1.5,
-    1.5,
+    2.5,
+    -0.305,
     -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    1.5,
+    2.5,
+    -0.67,
+    2.5,
+    0.658,
     -1.0,
     -1.0,
     -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
     -1.0,
     -1.0,
-    1.5,
+    2.5,
     -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
+    0.574,
     -1.0,
     -1.0,
+    2.5,
+    2.5,
     -1.0,
-    1.5,
-    1.5,
+    -1.0,
+    0.051,
     -1.0,
     -1.0,
-    1.5,
+    2.5,
+    2.5,
+    -1.0,
+    -1.0,
+    -1.0,
+    2.5,
+    2.5,
+    -1.0,
+    -0.777,
+    -0.365,
+    -1.0,
+    -1.0,
+    0.398,
+    0.713,
+    -0.47,
+    2.5,
+    2.5,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -0.649,
+    2.5,
+    2.5,
+    2.5,
+    -0.193,
+    -1.0,
+    2.5,
+    -1.0,
+    2.5,
+    0.18,
+    2.5,
+    2.5,
+    0.182,
+    -0.134,
+    0.083,
+    -0.53,
+    -1.0,
+    2.5,
+    0.029,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    2.5,
+    0.422,
+    2.5,
+    -1.0,
+    2.5,
+    2.5,
+    -1.0,
+    -0.587,
+    2.5,
+    -1.0,
+    -1.0,
+    2.5,
+    -1.0,
+    -1.0,
+    -0.776,
+    -1.0,
+    -1.0,
+    2.5,
+    -1.0,
+    2.5,
+    -1.0,
+    -1.0,
+    2.5,
+    2.5,
+    2.5,
+    -1.0,
+    -1.0,
+    2.5,
+    2.5,
+    2.5,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -0.451,
+    0.579,
+    2.5,
+    2.5,
+    2.5,
+    -1.0,
+    2.5,
+    2.5,
+    -1.0,
+    -1.0,
+    -0.207,
+    2.5,
+    -1.0,
+    -1.0,
+    2.5,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    2.5,
+    -0.547,
+    -1.0,
+    2.5,
+    2.5,
     -1.0,
     -1.0,
     2.5,
@@ -348323,69 +348274,17 @@
     -1.0,
     -1.0,
     -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    2.5,
-    -0.334,
-    -0.758,
-    -1.0,
-    -1.0,
+    0.547,
+    -0.251,
     2.5,
     2.5,
-    -1.0,
+    2.5,
+    2.5,
     2.5,
     2.5,
     -1.0,
     -1.0,
-    -1.0,
-    -0.675,
-    -1.0,
-    -1.0,
     2.5,
-    2.5,
-    -1.0,
-    2.5,
-    2.5,
-    -1.0,
-    -1.0,
-    -0.164,
-    2.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    -0.95,
-    2.5,
-    -1.0,
-    0.044,
-    -1.0,
-    -0.043,
-    -1.0,
-    -1.0,
-    -1.0,
-    2.5,
-    -1.0,
-    2.5,
-    -1.0,
-    2.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
     -1.0,
     -1.0,
     2.5,
@@ -348393,1181 +348292,779 @@
     -1.0,
     2.5,
     -1.0,
-    1.5,
-    1.5,
-    1.5,
     -1.0,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
+    2.5,
+    2.5,
+    2.5,
+    -0.309,
     2.5,
     -1.0,
     -1.0,
     2.5,
-    -1.0,
     2.5,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    -0.854,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    1.5,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
-    -1.0,
-    1.5,
-    -1.0,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.624,
-    1.5,
-    -1.0,
-    -1.0,
-    -1.0,
-    1.5,
-    1.5,
-    -1.0,
     2.5,
-    -1.0,
-    2.5,
-    -1.0,
     -1.0
    ],
    "oos_equity": [
     {
-     "time": 1523451600,
-     "value": 10150.0
+     "time": 1523019600,
+     "value": 9953.7
     },
     {
-     "time": 1524747600,
-     "value": 10302.25
+     "time": 1523437200,
+     "value": 9854.16
     },
     {
-     "time": 1525107600,
-     "value": 10199.23
+     "time": 1523538000,
+     "value": 9755.62
     },
     {
-     "time": 1526461200,
-     "value": 10352.22
+     "time": 1523638800,
+     "value": 9710.36
     },
     {
-     "time": 1526907600,
-     "value": 10248.69
-    },
-    {
-     "time": 1528981200,
-     "value": 10146.21
+     "time": 1524474000,
+     "value": 9613.25
     },
     {
      "time": 1529557200,
-     "value": 10298.4
+     "value": 9853.58
     },
     {
-     "time": 1530162000,
-     "value": 10452.88
+     "time": 1556730000,
+     "value": 9755.05
     },
     {
-     "time": 1530608400,
-     "value": 10348.35
+     "time": 1556902800,
+     "value": 9721.68
     },
     {
-     "time": 1531990800,
-     "value": 10503.57
+     "time": 1558026000,
+     "value": 9756.1
     },
     {
-     "time": 1533272400,
-     "value": 10661.13
+     "time": 1558630800,
+     "value": 9754.93
     },
     {
-     "time": 1534150800,
-     "value": 10821.04
+     "time": 1559538000,
+     "value": 9998.8
     },
     {
-     "time": 1535475600,
-     "value": 10712.83
+     "time": 1560978000,
+     "value": 10248.77
     },
     {
-     "time": 1536210000,
-     "value": 10605.7
+     "time": 1562331600,
+     "value": 10146.28
     },
     {
-     "time": 1536670800,
-     "value": 10499.65
+     "time": 1562806800,
+     "value": 10044.82
     },
     {
-     "time": 1538139600,
-     "value": 10394.65
+     "time": 1563555600,
+     "value": 9944.37
     },
     {
-     "time": 1538571600,
-     "value": 10290.7
+     "time": 1564678800,
+     "value": 9844.93
     },
     {
-     "time": 1539262800,
-     "value": 10445.06
+     "time": 1567702800,
+     "value": 9943.87
     },
     {
-     "time": 1539738000,
-     "value": 10340.61
+     "time": 1575396000,
+     "value": 10063.2
     },
     {
-     "time": 1540357200,
-     "value": 10237.21
+     "time": 1575640800,
+     "value": 9962.57
     },
     {
-     "time": 1541048400,
-     "value": 10134.84
+     "time": 1576087200,
+     "value": 9862.94
     },
     {
-     "time": 1542103200,
-     "value": 10286.86
+     "time": 1577080800,
+     "value": 9764.31
     },
     {
-     "time": 1542722400,
-     "value": 10183.99
+     "time": 1578261600,
+     "value": 10008.42
     },
     {
-     "time": 1543413600,
-     "value": 10082.15
+     "time": 1580839200,
+     "value": 9977.89
     },
     {
-     "time": 1543903200,
-     "value": 10233.38
+     "time": 1581084000,
+     "value": 9878.11
     },
     {
-     "time": 1545228000,
-     "value": 10386.88
+     "time": 1582495200,
+     "value": 10125.07
     },
     {
-     "time": 1545847200,
-     "value": 10283.01
+     "time": 1584018000,
+     "value": 10057.23
     },
     {
-     "time": 1546495200,
-     "value": 10437.26
+     "time": 1584349200,
+     "value": 10308.66
     },
     {
-     "time": 1548741600,
-     "value": 10593.82
+     "time": 1587488400,
+     "value": 10376.49
     },
     {
-     "time": 1550484000,
-     "value": 10752.73
+     "time": 1587546000,
+     "value": 10272.73
     },
     {
-     "time": 1550584800,
-     "value": 10914.02
+     "time": 1591808400,
+     "value": 10170.0
     },
     {
-     "time": 1552039200,
-     "value": 10804.88
+     "time": 1592197200,
+     "value": 10068.3
     },
     {
-     "time": 1553173200,
-     "value": 10696.83
-    },
-    {
-     "time": 1553590800,
-     "value": 10589.86
-    },
-    {
-     "time": 1554238800,
-     "value": 10483.96
-    },
-    {
-     "time": 1555419600,
-     "value": 10641.22
-    },
-    {
-     "time": 1556024400,
-     "value": 10534.81
-    },
-    {
-     "time": 1557320400,
-     "value": 10429.46
-    },
-    {
-     "time": 1557766800,
-     "value": 10585.9
-    },
-    {
-     "time": 1558515600,
-     "value": 10480.04
-    },
-    {
-     "time": 1559293200,
-     "value": 10637.24
-    },
-    {
-     "time": 1559581200,
-     "value": 10796.8
-    },
-    {
-     "time": 1560517200,
-     "value": 10688.83
-    },
-    {
-     "time": 1560992400,
-     "value": 10849.17
-    },
-    {
-     "time": 1561424400,
-     "value": 11011.9
-    },
-    {
-     "time": 1563440400,
-     "value": 10901.78
-    },
-    {
-     "time": 1564707600,
-     "value": 10792.77
-    },
-    {
-     "time": 1565125200,
-     "value": 10954.66
-    },
-    {
-     "time": 1565686800,
-     "value": 11118.98
-    },
-    {
-     "time": 1566795600,
-     "value": 11007.79
-    },
-    {
-     "time": 1567674000,
-     "value": 10897.71
-    },
-    {
-     "time": 1569416400,
-     "value": 10788.73
-    },
-    {
-     "time": 1569848400,
-     "value": 10950.56
-    },
-    {
-     "time": 1571994000,
-     "value": 11114.82
-    },
-    {
-     "time": 1573567200,
-     "value": 11281.55
-    },
-    {
-     "time": 1575036000,
-     "value": 11168.73
-    },
-    {
-     "time": 1575626400,
-     "value": 11057.04
-    },
-    {
-     "time": 1577196000,
-     "value": 11222.9
-    },
-    {
-     "time": 1577973600,
-     "value": 11391.24
-    },
-    {
-     "time": 1578477600,
-     "value": 11277.33
-    },
-    {
-     "time": 1579586400,
-     "value": 11164.56
-    },
-    {
-     "time": 1580709600,
-     "value": 11052.91
-    },
-    {
-     "time": 1582034400,
-     "value": 11218.7
-    },
-    {
-     "time": 1582567200,
-     "value": 11106.52
-    },
-    {
-     "time": 1583715600,
-     "value": 10995.45
-    },
-    {
-     "time": 1584104400,
-     "value": 11160.38
-    },
-    {
-     "time": 1584363600,
-     "value": 11048.78
-    },
-    {
-     "time": 1586192400,
-     "value": 11214.51
-    },
-    {
-     "time": 1586869200,
-     "value": 11382.73
-    },
-    {
-     "time": 1589749200,
-     "value": 11553.47
-    },
-    {
-     "time": 1589806800,
-     "value": 11437.94
-    },
-    {
-     "time": 1591016400,
-     "value": 11323.56
-    },
-    {
-     "time": 1592917200,
-     "value": 11493.41
-    },
-    {
-     "time": 1593608400,
-     "value": 11378.48
-    },
-    {
-     "time": 1594213200,
-     "value": 11549.15
-    },
-    {
-     "time": 1595322000,
-     "value": 11722.39
-    },
-    {
-     "time": 1595883600,
-     "value": 11898.23
-    },
-    {
-     "time": 1596574800,
-     "value": 12076.7
-    },
-    {
-     "time": 1598965200,
-     "value": 11955.93
-    },
-    {
-     "time": 1599570000,
-     "value": 11836.37
-    },
-    {
-     "time": 1600174800,
-     "value": 11718.01
-    },
-    {
-     "time": 1600693200,
-     "value": 11893.78
-    },
-    {
-     "time": 1602594000,
-     "value": 11774.84
-    },
-    {
-     "time": 1603976400,
-     "value": 11951.46
-    },
-    {
-     "time": 1604584800,
-     "value": 12130.74
+     "time": 1604383200,
+     "value": 9967.62
     },
     {
      "time": 1604916000,
-     "value": 12009.43
+     "value": 9867.94
     },
     {
-     "time": 1606212000,
-     "value": 12189.57
+     "time": 1606471200,
+     "value": 10114.64
     },
     {
-     "time": 1606788000,
-     "value": 12067.67
+     "time": 1606816800,
+     "value": 10013.49
     },
     {
-     "time": 1607522400,
-     "value": 11947.0
+     "time": 1607551200,
+     "value": 10070.97
     },
     {
-     "time": 1608516000,
-     "value": 12126.2
+     "time": 1608098400,
+     "value": 9970.26
     },
     {
-     "time": 1608530400,
-     "value": 12004.94
-    },
-    {
-     "time": 1609754400,
-     "value": 12185.01
-    },
-    {
-     "time": 1611309600,
-     "value": 12063.16
+     "time": 1608544800,
+     "value": 9870.56
     },
     {
      "time": 1612447200,
-     "value": 12244.11
+     "value": 10117.32
     },
     {
-     "time": 1613484000,
-     "value": 12121.67
+     "time": 1614636000,
+     "value": 10370.25
     },
     {
-     "time": 1614348000,
-     "value": 12303.5
+     "time": 1616029200,
+     "value": 10266.55
     },
     {
-     "time": 1614679200,
-     "value": 12180.46
+     "time": 1617195600,
+     "value": 10163.89
     },
     {
-     "time": 1615269600,
-     "value": 12058.66
+     "time": 1619715600,
+     "value": 10169.07
     },
     {
-     "time": 1616058000,
-     "value": 11938.07
+     "time": 1620032400,
+     "value": 10067.38
     },
     {
-     "time": 1617094800,
-     "value": 12117.14
-    },
-    {
-     "time": 1618808400,
-     "value": 12298.9
-    },
-    {
-     "time": 1618837200,
-     "value": 12175.91
-    },
-    {
-     "time": 1620118800,
-     "value": 12054.15
+     "time": 1620277200,
+     "value": 9966.7
     },
     {
      "time": 1621256400,
-     "value": 12234.96
+     "value": 10215.87
     },
     {
-     "time": 1622725200,
-     "value": 12112.61
+     "time": 1622523600,
+     "value": 10471.27
     },
     {
-     "time": 1625058000,
-     "value": 11991.49
+     "time": 1622811600,
+     "value": 10366.56
     },
     {
-     "time": 1626325200,
-     "value": 12291.27
+     "time": 1623618000,
+     "value": 10262.89
     },
     {
-     "time": 1627650000,
-     "value": 12168.36
+     "time": 1623675600,
+     "value": 10160.26
+    },
+    {
+     "time": 1624957200,
+     "value": 10414.27
     },
     {
      "time": 1628456400,
-     "value": 12472.57
+     "value": 10674.62
     },
     {
-     "time": 1629334800,
-     "value": 12347.84
+     "time": 1628859600,
+     "value": 10567.88
     },
     {
-     "time": 1629896400,
-     "value": 12224.37
+     "time": 1631034000,
+     "value": 10485.77
     },
     {
-     "time": 1630990800,
-     "value": 12102.12
+     "time": 1631638800,
+     "value": 10447.49
     },
     {
-     "time": 1631624400,
-     "value": 11981.1
+     "time": 1631782800,
+     "value": 10343.02
     },
     {
-     "time": 1632214800,
-     "value": 11861.29
+     "time": 1632330000,
+     "value": 10239.59
     },
     {
-     "time": 1632704400,
-     "value": 11742.68
+     "time": 1633021200,
+     "value": 10280.34
     },
     {
-     "time": 1632906000,
-     "value": 11625.25
+     "time": 1635512400,
+     "value": 10353.64
     },
     {
-     "time": 1634893200,
-     "value": 11799.63
-    },
-    {
-     "time": 1634907600,
-     "value": 11681.63
-    },
-    {
-     "time": 1636016400,
-     "value": 11564.82
+     "time": 1636030800,
+     "value": 10304.98
     },
     {
      "time": 1636552800,
-     "value": 11738.29
+     "value": 10562.6
     },
     {
-     "time": 1637071200,
-     "value": 11620.91
+     "time": 1637676000,
+     "value": 10826.67
     },
     {
-     "time": 1639692000,
-     "value": 11504.7
+     "time": 1640671200,
+     "value": 10718.4
     },
     {
-     "time": 1640772000,
-     "value": 11389.65
+     "time": 1641391200,
+     "value": 10611.22
     },
     {
-     "time": 1641880800,
-     "value": 11275.75
+     "time": 1641909600,
+     "value": 10505.11
     },
     {
      "time": 1643220000,
-     "value": 11163.0
+     "value": 10400.05
     },
     {
-     "time": 1644602400,
-     "value": 11330.44
+     "time": 1644516000,
+     "value": 10332.56
     },
     {
-     "time": 1644919200,
-     "value": 11217.14
+     "time": 1645077600,
+     "value": 10590.87
     },
     {
-     "time": 1645668000,
-     "value": 11385.39
+     "time": 1645696800,
+     "value": 10855.64
     },
     {
      "time": 1646748000,
-     "value": 11556.17
+     "value": 11127.03
     },
     {
-     "time": 1648630800,
-     "value": 11440.61
+     "time": 1649782800,
+     "value": 11105.56
     },
     {
-     "time": 1650618000,
-     "value": 11326.21
+     "time": 1650531600,
+     "value": 10994.5
     },
     {
-     "time": 1651554000,
-     "value": 11609.36
+     "time": 1652446800,
+     "value": 11269.37
     },
     {
-     "time": 1653282000,
-     "value": 11570.59
+     "time": 1655125200,
+     "value": 11156.67
     },
     {
-     "time": 1654030800,
-     "value": 11482.88
+     "time": 1657112400,
+     "value": 11435.59
     },
     {
-     "time": 1654160400,
-     "value": 11368.05
-    },
-    {
-     "time": 1655384400,
-     "value": 11254.37
-    },
-    {
-     "time": 1657026000,
-     "value": 11535.73
-    },
-    {
-     "time": 1657803600,
-     "value": 11824.12
-    },
-    {
-     "time": 1658408400,
-     "value": 11705.88
+     "time": 1658509200,
+     "value": 11456.17
     },
     {
      "time": 1660122000,
-     "value": 11998.53
+     "value": 11742.58
     },
     {
-     "time": 1661922000,
-     "value": 12298.49
+     "time": 1663246800,
+     "value": 12036.14
     },
     {
-     "time": 1663059600,
-     "value": 12175.51
+     "time": 1664384400,
+     "value": 12058.05
     },
     {
-     "time": 1664542800,
-     "value": 12053.75
+     "time": 1665666000,
+     "value": 12041.89
     },
     {
-     "time": 1665450000,
-     "value": 11933.22
+     "time": 1666371600,
+     "value": 12051.89
     },
     {
-     "time": 1666774800,
-     "value": 11852.67
+     "time": 1667422800,
+     "value": 11988.01
     },
     {
-     "time": 1666933200,
-     "value": 11734.14
+     "time": 1667566800,
+     "value": 11868.13
     },
     {
-     "time": 1667379600,
-     "value": 11616.8
+     "time": 1668103200,
+     "value": 12164.83
     },
     {
-     "time": 1668506400,
-     "value": 11907.22
+     "time": 1670263200,
+     "value": 12168.36
     },
     {
-     "time": 1670205600,
-     "value": 12204.9
+     "time": 1670580000,
+     "value": 12046.68
     },
     {
      "time": 1671084000,
-     "value": 12082.85
+     "value": 11926.21
     },
     {
-     "time": 1673215200,
-     "value": 12384.92
+     "time": 1671516000,
+     "value": 11806.95
     },
     {
-     "time": 1674540000,
-     "value": 12694.54
+     "time": 1671732000,
+     "value": 11688.88
     },
     {
-     "time": 1674741600,
-     "value": 12567.6
+     "time": 1673272800,
+     "value": 11981.1
     },
     {
-     "time": 1675346400,
-     "value": 12441.92
+     "time": 1675360800,
+     "value": 12031.66
     },
     {
-     "time": 1678471200,
-     "value": 12421.52
+     "time": 1676613600,
+     "value": 12332.45
+    },
+    {
+     "time": 1678442400,
+     "value": 12209.13
     },
     {
      "time": 1678870800,
-     "value": 12732.06
+     "value": 12514.36
     },
     {
-     "time": 1679403600,
-     "value": 12604.74
-    },
-    {
-     "time": 1681088400,
-     "value": 12478.69
+     "time": 1680670800,
+     "value": 12827.22
     },
     {
      "time": 1681477200,
-     "value": 12353.9
+     "value": 12698.94
     },
     {
-     "time": 1684256400,
-     "value": 12236.54
+     "time": 1683046800,
+     "value": 12624.4
     },
     {
-     "time": 1687352400,
-     "value": 12542.45
+     "time": 1683147600,
+     "value": 12940.01
     },
     {
-     "time": 1689123600,
-     "value": 12417.03
+     "time": 1683277200,
+     "value": 12810.61
     },
     {
-     "time": 1690477200,
-     "value": 12422.49
+     "time": 1683666000,
+     "value": 12682.5
     },
     {
-     "time": 1690794000,
-     "value": 12298.27
+     "time": 1684414800,
+     "value": 12999.57
     },
     {
-     "time": 1693328400,
-     "value": 12292.98
+     "time": 1685509200,
+     "value": 12869.57
     },
     {
-     "time": 1694005200,
-     "value": 12170.05
+     "time": 1686301200,
+     "value": 12740.88
     },
     {
-     "time": 1694782800,
-     "value": 12048.35
+     "time": 1686848400,
+     "value": 12642.01
     },
     {
-     "time": 1695286800,
-     "value": 11927.86
+     "time": 1687266000,
+     "value": 12515.59
     },
     {
-     "time": 1695819600,
-     "value": 12226.06
+     "time": 1688720400,
+     "value": 12390.43
     },
     {
-     "time": 1696870800,
-     "value": 12103.8
+     "time": 1689670800,
+     "value": 12700.19
     },
     {
-     "time": 1697806800,
-     "value": 12406.4
+     "time": 1689915600,
+     "value": 12573.19
     },
     {
-     "time": 1698800400,
-     "value": 12282.33
+     "time": 1691586000,
+     "value": 12887.52
     },
     {
-     "time": 1701439200,
-     "value": 12589.39
+     "time": 1693976400,
+     "value": 12758.64
     },
     {
-     "time": 1702490400,
-     "value": 12463.5
+     "time": 1695690000,
+     "value": 12631.06
     },
     {
-     "time": 1704448800,
-     "value": 12338.86
+     "time": 1696208400,
+     "value": 12946.83
     },
     {
-     "time": 1704722400,
-     "value": 12215.47
+     "time": 1697634000,
+     "value": 13270.5
     },
     {
-     "time": 1705600800,
-     "value": 12093.32
+     "time": 1698426000,
+     "value": 13602.27
     },
     {
-     "time": 1707112800,
-     "value": 11972.38
+     "time": 1698771600,
+     "value": 13466.24
     },
     {
-     "time": 1707213600,
-     "value": 11852.66
+     "time": 1699956000,
+     "value": 13331.58
     },
     {
-     "time": 1708293600,
-     "value": 11734.13
+     "time": 1700575200,
+     "value": 13664.87
     },
     {
-     "time": 1708956000,
-     "value": 11616.79
+     "time": 1701640800,
+     "value": 14006.49
+    },
+    {
+     "time": 1703700000,
+     "value": 14356.66
+    },
+    {
+     "time": 1704463200,
+     "value": 14213.09
+    },
+    {
+     "time": 1705068000,
+     "value": 14070.96
+    },
+    {
+     "time": 1705456800,
+     "value": 13930.25
+    },
+    {
+     "time": 1705644000,
+     "value": 13790.95
+    },
+    {
+     "time": 1706882400,
+     "value": 13728.75
+    },
+    {
+     "time": 1708308000,
+     "value": 13808.24
     },
     {
      "time": 1709301600,
-     "value": 11907.21
+     "value": 14153.44
     },
     {
-     "time": 1709618400,
-     "value": 12204.89
+     "time": 1709632800,
+     "value": 14507.28
+    },
+    {
+     "time": 1709906400,
+     "value": 14869.96
     },
     {
      "time": 1711026000,
-     "value": 12082.84
+     "value": 14721.26
     },
     {
-     "time": 1711933200,
-     "value": 12384.91
+     "time": 1711645200,
+     "value": 15089.29
     },
     {
-     "time": 1711976400,
-     "value": 12261.07
+     "time": 1712854800,
+     "value": 15466.53
     },
     {
-     "time": 1712883600,
-     "value": 12444.98
+     "time": 1712941200,
+     "value": 15311.86
     },
     {
-     "time": 1715331600,
-     "value": 12631.66
+     "time": 1713762000,
+     "value": 15158.74
     },
     {
-     "time": 1715950800,
-     "value": 12821.13
+     "time": 1716411600,
+     "value": 15127.36
     },
     {
-     "time": 1716195600,
-     "value": 12692.92
+     "time": 1717779600,
+     "value": 15505.55
     },
     {
-     "time": 1717736400,
-     "value": 12565.99
+     "time": 1718355600,
+     "value": 15350.49
     },
     {
-     "time": 1718974800,
-     "value": 12440.33
-    },
-    {
-     "time": 1719478800,
-     "value": 12315.93
-    },
-    {
-     "time": 1720155600,
-     "value": 12500.67
-    },
-    {
-     "time": 1721048400,
-     "value": 12688.18
+     "time": 1719997200,
+     "value": 15196.99
     },
     {
      "time": 1721134800,
-     "value": 12878.5
+     "value": 15576.91
     },
     {
-     "time": 1722502800,
-     "value": 12749.71
+     "time": 1721336400,
+     "value": 15421.14
     },
     {
-     "time": 1723640400,
-     "value": 12622.22
+     "time": 1721826000,
+     "value": 15266.93
     },
     {
-     "time": 1724245200,
-     "value": 12495.99
+     "time": 1722358800,
+     "value": 15114.26
     },
     {
-     "time": 1726232400,
-     "value": 12683.43
+     "time": 1722603600,
+     "value": 14963.12
     },
     {
-     "time": 1726563600,
-     "value": 12556.6
+     "time": 1725973200,
+     "value": 14813.49
     },
     {
-     "time": 1727197200,
-     "value": 12744.95
+     "time": 1726822800,
+     "value": 15183.83
     },
     {
-     "time": 1729213200,
-     "value": 13063.57
+     "time": 1728406800,
+     "value": 15100.77
     },
     {
-     "time": 1729688400,
-     "value": 12932.94
+     "time": 1728608400,
+     "value": 14949.76
     },
     {
-     "time": 1730379600,
-     "value": 12803.61
+     "time": 1730887200,
+     "value": 15323.51
     },
     {
-     "time": 1731535200,
-     "value": 13123.7
+     "time": 1731391200,
+     "value": 15706.59
     },
     {
-     "time": 1732500000,
-     "value": 12992.46
-    },
-    {
-     "time": 1733925600,
-     "value": 13317.27
+     "time": 1731996000,
+     "value": 15549.53
     },
     {
      "time": 1734559200,
-     "value": 13184.1
+     "value": 15394.03
     },
     {
-     "time": 1735653600,
-     "value": 13052.26
+     "time": 1737468000,
+     "value": 15778.88
     },
     {
-     "time": 1736978400,
-     "value": 13248.04
-    },
-    {
-     "time": 1737439200,
-     "value": 13446.76
-    },
-    {
-     "time": 1738533600,
-     "value": 13312.3
-    },
-    {
-     "time": 1738720800,
-     "value": 13511.98
+     "time": 1738216800,
+     "value": 15621.1
     },
     {
      "time": 1739239200,
-     "value": 13714.66
+     "value": 16011.62
     },
     {
-     "time": 1739973600,
-     "value": 13577.51
+     "time": 1740492000,
+     "value": 15851.51
     },
     {
      "time": 1741870800,
-     "value": 13781.18
+     "value": 15692.99
     },
     {
-     "time": 1742360400,
-     "value": 13987.89
+     "time": 1743670800,
+     "value": 15536.06
     },
     {
-     "time": 1743368400,
-     "value": 14197.71
+     "time": 1745326800,
+     "value": 15380.7
     },
     {
-     "time": 1743627600,
-     "value": 14410.68
+     "time": 1749762000,
+     "value": 15226.89
     },
     {
-     "time": 1744174800,
-     "value": 14266.57
+     "time": 1752742800,
+     "value": 15074.63
     },
     {
-     "time": 1744808400,
-     "value": 14480.57
+     "time": 1753938000,
+     "value": 14923.88
     },
     {
-     "time": 1745269200,
-     "value": 14697.78
+     "time": 1754902800,
+     "value": 15005.51
     },
     {
-     "time": 1746550800,
-     "value": 14918.24
+     "time": 1755882000,
+     "value": 14967.85
     },
     {
-     "time": 1747990800,
-     "value": 15142.02
+     "time": 1756472400,
+     "value": 15342.04
     },
     {
-     "time": 1748955600,
-     "value": 14990.6
+     "time": 1756904400,
+     "value": 15725.6
     },
     {
-     "time": 1750122000,
-     "value": 14840.69
+     "time": 1757941200,
+     "value": 16118.74
     },
     {
-     "time": 1751014800,
-     "value": 15063.3
+     "time": 1759712400,
+     "value": 16521.7
     },
     {
-     "time": 1752498000,
-     "value": 14912.67
+     "time": 1760331600,
+     "value": 16934.75
     },
     {
-     "time": 1753189200,
-     "value": 15136.36
+     "time": 1760619600,
+     "value": 17358.12
     },
     {
-     "time": 1753894800,
-     "value": 15363.41
+     "time": 1760706000,
+     "value": 17184.53
     },
     {
-     "time": 1754600400,
-     "value": 15593.86
+     "time": 1764007200,
+     "value": 17012.69
     },
     {
-     "time": 1755118800,
-     "value": 15437.92
+     "time": 1766440800,
+     "value": 17438.01
     },
     {
-     "time": 1755680400,
-     "value": 15283.54
+     "time": 1767002400,
+     "value": 17263.63
     },
     {
-     "time": 1756386000,
-     "value": 15512.79
+     "time": 1767564000,
+     "value": 17090.99
     },
     {
-     "time": 1756818000,
-     "value": 15745.48
+     "time": 1768226400,
+     "value": 17518.26
     },
     {
-     "time": 1757394000,
-     "value": 15981.67
+     "time": 1768960800,
+     "value": 17956.22
     },
     {
-     "time": 1758128400,
-     "value": 15821.85
+     "time": 1769018400,
+     "value": 17776.66
     },
     {
-     "time": 1758603600,
-     "value": 16059.18
+     "time": 1769551200,
+     "value": 18221.08
     },
     {
-     "time": 1759194000,
-     "value": 16300.06
+     "time": 1771797600,
+     "value": 18038.86
     },
     {
-     "time": 1759870800,
-     "value": 16544.57
+     "time": 1773147600,
+     "value": 17858.48
     },
     {
-     "time": 1760403600,
-     "value": 16792.73
+     "time": 1774213200,
+     "value": 18304.94
     },
     {
-     "time": 1761224400,
-     "value": 16624.81
+     "time": 1780664400,
+     "value": 18762.56
     },
     {
-     "time": 1762754400,
-     "value": 16482.83
+     "time": 1781082000,
+     "value": 19231.63
     },
     {
-     "time": 1762812000,
-     "value": 16730.07
-    },
-    {
-     "time": 1763517600,
-     "value": 16562.77
-    },
-    {
-     "time": 1764352800,
-     "value": 16811.21
-    },
-    {
-     "time": 1765533600,
-     "value": 17063.38
-    },
-    {
-     "time": 1766426400,
-     "value": 17319.33
-    },
-    {
-     "time": 1767088800,
-     "value": 17146.14
-    },
-    {
-     "time": 1768773600,
-     "value": 17403.33
-    },
-    {
-     "time": 1768946400,
-     "value": 17664.38
-    },
-    {
-     "time": 1769450400,
-     "value": 17487.74
-    },
-    {
-     "time": 1770026400,
-     "value": 17312.86
-    },
-    {
-     "time": 1772215200,
-     "value": 17572.55
-    },
-    {
-     "time": 1772460000,
-     "value": 17396.83
-    },
-    {
-     "time": 1773896400,
-     "value": 17657.78
-    },
-    {
-     "time": 1774256400,
-     "value": 17481.2
-    },
-    {
-     "time": 1775667600,
-     "value": 17306.39
-    },
-    {
-     "time": 1776632400,
-     "value": 17025.33
-    },
-    {
-     "time": 1777366800,
-     "value": 17280.71
-    },
-    {
-     "time": 1778446800,
-     "value": 17107.91
-    },
-    {
-     "time": 1779282000,
-     "value": 16936.83
-    },
-    {
-     "time": 1779973200,
-     "value": 16767.46
-    },
-    {
-     "time": 1781010000,
-     "value": 17018.97
+     "time": 1781730000,
+     "value": 19172.2
     },
     {
      "time": 1782291600,
-     "value": 17274.26
+     "value": 19651.5
     },
     {
-     "time": 1784019600,
-     "value": 17101.51
+     "time": 1782910800,
+     "value": 19454.99
+    },
+    {
+     "time": 1784725200,
+     "value": 19260.44
     },
     {
      "time": 1785934800,
-     "value": 17529.05
+     "value": 19741.95
     },
     {
-     "time": 1786654800,
-     "value": 17353.76
+     "time": 1787288400,
+     "value": 20235.5
     },
     {
-     "time": 1787533200,
-     "value": 17787.61
+     "time": 1789390800,
+     "value": 20741.39
     },
     {
-     "time": 1787749200,
-     "value": 17609.73
-    },
-    {
-     "time": 1789520400,
-     "value": 17433.63
+     "time": 1789635600,
+     "value": 20533.97
     }
    ],
    "previous": {
@@ -349611,6 +349108,7 @@
    "symbol": "NAS100",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 42164,
@@ -428636,6 +428134,7 @@
    "symbol": "US500",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 42168,
@@ -507568,6 +507067,7 @@
    "symbol": "BTCUSD",
    "status": "WATCH",
    "data_source": "binance",
+   "history_source": "exness",
    "data_from": "2014-01-15T00:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 76849,
@@ -592584,6 +592084,7 @@
    "symbol": "ETHUSD",
    "status": "WATCH",
    "data_source": "binance",
+   "history_source": "exness",
    "data_from": "2018-02-09T10:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 76298,
@@ -677285,6 +676786,7 @@
    "symbol": "GBPJPY",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 149596,
@@ -766506,12 +766008,14 @@
      "time": 1782828000,
      "value": 47987.95
     }
-   ]
+   ],
+   "previous": null
   },
   "AUDUSD": {
    "symbol": "AUDUSD",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 149675,
@@ -850163,12 +849667,14 @@
      "time": 1743670800,
      "value": 16695.6
     }
-   ]
+   ],
+   "previous": null
   },
   "USDCAD": {
    "symbol": "USDCAD",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "1999-01-04T06:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 172301,
@@ -933377,12 +932883,14 @@
      "time": 1787072400,
      "value": 15146.23
     }
-   ]
+   ],
+   "previous": null
   },
   "NVDA": {
    "symbol": "NVDA",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 16426,
@@ -1004645,12 +1004153,14 @@
      "time": 1790600400,
      "value": 16461.1
     }
-   ]
+   ],
+   "previous": null
   },
   "MSFT": {
    "symbol": "MSFT",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 16425,
@@ -1077973,12 +1077483,14 @@
      "time": 1790690400,
      "value": 16515.81
     }
-   ]
+   ],
+   "previous": null
   },
   "AMZN": {
    "symbol": "AMZN",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 16402,
@@ -1151734,12 +1151246,14 @@
      "time": 1790776800,
      "value": 16277.99
     }
-   ]
+   ],
+   "previous": null
   },
   "META": {
    "symbol": "META",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 16425,
@@ -1224144,12 +1223658,14 @@
      "time": 1790341200,
      "value": 26173.3
     }
-   ]
+   ],
+   "previous": null
   },
   "AAPL": {
    "symbol": "AAPL",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 16421,
@@ -1296658,12 +1296174,14 @@
      "time": 1790600400,
      "value": 13769.58
     }
-   ]
+   ],
+   "previous": null
   },
   "XAGUSD": {
    "symbol": "XAGUSD",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2017-03-01T00:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 56974,
@@ -1375946,12 +1375464,14 @@
      "time": 1789520400,
      "value": 16681.19
     }
-   ]
+   ],
+   "previous": null
   },
   "DE30": {
    "symbol": "DE30",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 41103,
@@ -1458702,12 +1458222,14 @@
      "time": 1790740800,
      "value": 29978.22
     }
-   ]
+   ],
+   "previous": null
   },
   "JP225": {
    "symbol": "JP225",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
    "bars_h1": 41217,
@@ -1539510,12 +1539032,14 @@
      "time": 1790744400,
      "value": 14243.77
     }
-   ]
+   ],
+   "previous": null
   },
   "USOIL": {
    "symbol": "USOIL",
    "status": "WATCH",
    "data_source": "yahoo",
+   "history_source": "exness",
    "data_from": "2017-01-03T02:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
    "bars_h1": 58189,
@@ -1618401,7 +1617925,8 @@
      "time": 1672696800,
      "value": 11283.36
     }
-   ]
+   ],
+   "previous": null
   }
  },
  "portfolio": {
@@ -1618722,7 +1618247,7 @@
      }
     ],
     "max_dd_r": 165.8,
-    "kept": true,
+    "kept": false,
     "forced_off": true
    },
    {

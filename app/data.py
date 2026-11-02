@@ -267,6 +267,16 @@ def _seed_exness(sym: str) -> pd.DataFrame | None:
         return None
 
 
+def history_source(sym: str) -> str:
+    """Which long price history the research of a symbol is built on: 'exness' (the user's broker, data/history_exness),
+    'mt5' (older MT5 / Dukascopy files in data/history) or 'free' (free feeds only). A change means different prices,
+    so systems are judged again from scratch (user, 2 Nov 2026)."""
+    ex = _seed_exness(sym)
+    if ex is not None and len(ex) > 1000:
+        return "exness"
+    return "mt5" if (HISTORY_DIR / f"{sym}_H1.csv.gz").exists() else "free"
+
+
 def _seed(sym: str) -> pd.DataFrame | None:
     """Long H1 history: the Exness export first (user's broker), else the older MT5/Dukascopy files in data/history."""
     ex = _seed_exness(sym)
