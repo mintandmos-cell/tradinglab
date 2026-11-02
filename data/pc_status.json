@@ -9,26 +9,12 @@
   "checked": 17,
   "errors": []
  },
- "time": "2026-11-02T21:00:14.276267+00:00",
+ "time": "2026-11-02T21:54:49.862885+00:00",
  "account": "DEMO",
- "balance": 9923.59,
- "equity": 9950.22,
+ "balance": 9914.29,
+ "equity": 9942.28,
  "start_balance": 10000.0,
  "positions": [
-  {
-   "ticket": 2782356317,
-   "symbol": "EURUSD",
-   "system": "TL56-H1",
-   "signal_id": "EURUSD-H1-vol_breakout-1793606400",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 1.1235,
-   "sl": 1.11885,
-   "tp": 1.12871,
-   "price": 1.11921,
-   "profit": -8.58,
-   "time": "2026-11-02T09:14:05+00:00"
-  },
   {
    "ticket": 2782537699,
    "symbol": "USDJPY",
@@ -39,8 +25,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 157.911,
-   "profit": -1.01,
+   "price": 157.938,
+   "profit": -0.16,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -53,8 +39,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.938,
-   "profit": 34.4,
+   "price": 95.369,
+   "profit": 25.78,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -67,12 +53,25 @@
    "price_open": 26034.6,
    "sl": 25806.0,
    "tp": 26495.9,
-   "price": 25910.3,
-   "profit": -9.74,
+   "price": 25929.3,
+   "profit": -8.25,
    "time": "2026-11-02T17:00:20+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2782356317,
+   "signal_id": "EURUSD-H1-vol_breakout-1793606400",
+   "time": "2026-11-02T21:54:48.680492+00:00",
+   "symbol": "EURUSD",
+   "system": "TL56-H1",
+   "side": "BUY",
+   "lots": 0.02,
+   "price_open": 1.1235,
+   "price": 1.11885,
+   "reason": "SL",
+   "profit": -9.3
+  },
   {
    "ticket": 2779689255,
    "signal_id": "ETHUSD-H1-vol_breakout-1793574000",
