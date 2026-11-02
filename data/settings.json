@@ -94,6 +94,23 @@
   "active": true,
   "watch": false
  },
- "force_off": [],
+ "force_off": [
+  "EURUSD:vol_breakout:H1",
+  "USDJPY:vol_breakout:H1",
+  "XAUUSD:vol_breakout:H1",
+  "NAS100:vol_breakout:H1",
+  "US500:vol_breakout:H1",
+  "BTCUSD:vol_breakout:H1",
+  "ETHUSD:vol_breakout:H1",
+  "AUDUSD:vol_breakout:H1",
+  "USDCAD:vol_breakout:H1",
+  "NVDA:vol_breakout:H1",
+  "MSFT:vol_breakout:H1",
+  "META:vol_breakout:H1",
+  "AAPL:vol_breakout:H1",
+  "XAGUSD:vol_breakout:H1",
+  "DE30:vol_breakout:H1",
+  "USOIL:vol_breakout:H1"
+ ],
  "scan_interval_sec": 120
 }

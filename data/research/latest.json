@@ -29,7 +29,7 @@
  "symbols": {
   "EURUSD": {
    "symbol": "EURUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -38,27 +38,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 2.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -0.01,
-     "exp": -0.0004,
-     "trades": 2453,
-     "robust": 38
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "ichimoku_tk",
    "strategy_name": "Ichimoku TK Cross + Cloud",
@@ -165966,7 +165946,7 @@
   },
   "USDJPY": {
    "symbol": "USDJPY",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2002-08-23T10:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -165975,27 +165955,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 1.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 0.1,
-     "exp": 0.0047,
-     "trades": 2318,
-     "robust": 12
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "zlema_cross",
    "strategy_name": "Zero-Lag EMA Crossover",
@@ -269048,25 +269008,6 @@
      "exp": -0.0387,
      "trades": 635,
      "robust": 12
-    },
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 1.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 1.3,
-     "exp": 0.0933,
-     "trades": 1061,
-     "robust": 75
     }
    ],
    "max_symbol_risk_pct": 1.0,
@@ -349668,7 +349609,7 @@
   },
   "NAS100": {
    "symbol": "NAS100",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -349677,27 +349618,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 1.69,
-     "exp": 0.0746,
-     "trades": 1112,
-     "robust": 88
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "keltner_trend",
    "strategy_name": "Keltner Channel Trend",
@@ -428713,7 +428634,7 @@
   },
   "US500": {
    "symbol": "US500",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -428722,27 +428643,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 0.92,
-     "exp": 0.052,
-     "trades": 1021,
-     "robust": 50
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "vhf_trend",
    "strategy_name": "Vertical Horizontal Filter",
@@ -507665,7 +507566,7 @@
   },
   "BTCUSD": {
    "symbol": "BTCUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "binance",
    "data_from": "2014-01-15T00:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -507674,27 +507575,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 2.19,
-     "exp": 0.2327,
-     "trades": 1440,
-     "robust": 75
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "chop_break",
    "strategy_name": "Choppiness Breakout",
@@ -592701,7 +592582,7 @@
   },
   "ETHUSD": {
    "symbol": "ETHUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "binance",
    "data_from": "2018-02-09T10:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -592710,27 +592591,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 1.92,
-     "exp": 0.2168,
-     "trades": 1172,
-     "robust": 88
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "tema_cross",
    "strategy_name": "TEMA Crossover",
@@ -766649,7 +766510,7 @@
   },
   "AUDUSD": {
    "symbol": "AUDUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2002-09-01T22:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -766658,27 +766519,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -2.4,
-     "exp": -0.1017,
-     "trades": 2050,
-     "robust": 0
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "rsi50_trend",
    "strategy_name": "RSI 50-Line Trend",
@@ -850326,7 +850167,7 @@
   },
   "USDCAD": {
    "symbol": "USDCAD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "1999-01-04T06:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -850335,27 +850176,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 2.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -1.14,
-     "exp": -0.0433,
-     "trades": 2154,
-     "robust": 0
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "squeeze_breakout",
    "strategy_name": "Volatility Squeeze Breakout",
@@ -933560,7 +933381,7 @@
   },
   "NVDA": {
    "symbol": "NVDA",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
@@ -933569,27 +933390,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 1.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 0.79,
-     "exp": 0.1426,
-     "trades": 226,
-     "robust": 62
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "mtf_ema",
    "strategy_name": "Multi-Timeframe EMA",
@@ -1004848,7 +1004649,7 @@
   },
   "MSFT": {
    "symbol": "MSFT",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
@@ -1004857,27 +1004658,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 1.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -0.67,
-     "exp": -0.0714,
-     "trades": 352,
-     "robust": 0
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "pivot_bounce",
    "strategy_name": "Daily Pivot S1/R1 Bounce",
@@ -1151957,7 +1151738,7 @@
   },
   "META": {
    "symbol": "META",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
@@ -1151966,27 +1151747,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 2.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -1.81,
-     "exp": -0.2391,
-     "trades": 208,
-     "robust": 0
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "ichimoku_tk",
    "strategy_name": "Ichimoku TK Cross + Cloud",
@@ -1224387,7 +1224148,7 @@
   },
   "AAPL": {
    "symbol": "AAPL",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-12-02T14:00:00+00:00",
    "data_to": "2026-11-02T11:00:00+00:00",
@@ -1224396,27 +1224157,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 2.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 0.3,
-     "exp": 0.0357,
-     "trades": 270,
-     "robust": 38
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "elder_ray",
    "strategy_name": "Elder-Ray Pullback",
@@ -1296921,7 +1296662,7 @@
   },
   "XAGUSD": {
    "symbol": "XAGUSD",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2017-03-01T00:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -1296930,27 +1296671,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 1.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -0.31,
-     "exp": -0.0226,
-     "trades": 734,
-     "robust": 12
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "hv_breakout",
    "strategy_name": "Volatility-Regime Breakout",
@@ -1376229,7 +1375950,7 @@
   },
   "DE30": {
    "symbol": "DE30",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2019-07-16T07:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -1376238,27 +1375959,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.0,
-      "sl_atr": 2.5,
-      "rr": 2.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": 0.96,
-     "exp": 0.0591,
-     "trades": 1034,
-     "robust": 62
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "ny_open_breakout",
    "strategy_name": "New York Open Range Breakout",
@@ -1539813,7 +1539514,7 @@
   },
   "USOIL": {
    "symbol": "USOIL",
-   "status": "ACTIVE",
+   "status": "WATCH",
    "data_source": "yahoo",
    "data_from": "2017-01-03T02:00:00+00:00",
    "data_to": "2026-11-02T12:00:00+00:00",
@@ -1539822,27 +1539523,7 @@
     "cutoff": "2026-09-30T21:00:00+00:00",
     "until": "2026-12-31T22:00:00+00:00"
    },
-   "systems": [
-    {
-     "strategy": "vol_breakout",
-     "strategy_name": "Volatility Breakout (Crabel)",
-     "tf": "H1",
-     "params": {
-      "k_atr": 1.5,
-      "sl_atr": 2.5,
-      "rr": 0.0,
-      "max_hold_h": 120
-     },
-     "status": "ACTIVE",
-     "risk_pct": 0.5,
-     "kept": true,
-     "source": "portfolio",
-     "t": -0.27,
-     "exp": -0.0174,
-     "trades": 1050,
-     "robust": 12
-    }
-   ],
+   "systems": [],
    "max_symbol_risk_pct": 1.0,
    "strategy": "rvi_trend",
    "strategy_name": "Relative Vigor Index",
@@ -1618732,7 +1618413,7 @@
     "strategy": "vol_breakout",
     "name": "Volatility Breakout (Crabel)",
     "tf": "H1",
-    "status": "ACTIVE",
+    "status": "OFF",
     "t_month": 1.63,
     "months": 319,
     "trades": 24638,
@@ -1619041,7 +1618722,8 @@
      }
     ],
     "max_dd_r": 165.8,
-    "kept": true
+    "kept": true,
+    "forced_off": true
    },
    {
     "strategy": "rsi50_trend",
