@@ -10,6 +10,7 @@ import base64
 import json
 import logging
 import subprocess
+import time
 
 import requests
 
@@ -26,7 +27,11 @@ LAST = {"error": "", "source": ""}
 
 
 def token() -> str:
+    # an empty result (e.g. Windows credential manager not ready right after a reboot) is retried every 5 minutes
+    if _tok["v"] == "" and time.time() - _tok.get("at", 0) > 300:
+        _tok["v"] = None
     if _tok["v"] is None:
+        _tok["at"] = time.time()
         t = (load_settings().get("github_token") or "").strip()
         LAST["source"] = "local.json" if t else ""
         if not t:
