@@ -25,25 +25,53 @@ AI_NOTES = RESEARCH_DIR / "ai_notes.md"
 
 TIMEFRAMES = {"H1": 60, "H4": 240, "D1": 1440}
 
+# Costs = the user's broker, Exness Pro (no commission; spreads from the PC's symbol list 2 Nov 2026, rounded up).
 # Free-data tickers are proxies: Yahoo FX is mid-quote, GC/NQ/ES are futures (levels differ
 # slightly from broker CFDs), so signals always also carry SL/TP *distances*.
 SYMBOLS: dict[str, dict] = {
     "EURUSD": {"name": "Euro / US Dollar", "group": "Forex", "yahoo": "EURUSD=X", "quote": "USD",
-               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00008, "slippage": 0.00002, "commission": 0.00007},
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00007, "slippage": 0.00002, "commission": 0.0},
     "GBPUSD": {"name": "British Pound / US Dollar", "group": "Forex", "yahoo": "GBPUSD=X", "quote": "USD",
-               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00012, "slippage": 0.00002, "commission": 0.00007},
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00009, "slippage": 0.00002, "commission": 0.0},
     "USDJPY": {"name": "US Dollar / Japanese Yen", "group": "Forex", "yahoo": "JPY=X", "quote": "JPY",
-               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.012, "slippage": 0.002, "commission": 0.010},
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.009, "slippage": 0.002, "commission": 0.0},
     "XAUUSD": {"name": "Gold / US Dollar", "group": "Metals", "yahoo": "GC=F", "quote": "USD",
-               "contract": 100, "digits": 2, "pip": 0.1, "spread": 0.20, "slippage": 0.05, "commission": 0.0},
+               "contract": 100, "digits": 2, "pip": 0.1, "spread": 0.18, "slippage": 0.05, "commission": 0.0},
     "NAS100": {"name": "Nasdaq 100", "group": "Indices", "yahoo": "NQ=F", "quote": "USD",
-               "contract": 1, "digits": 2, "pip": 1.0, "spread": 1.5, "slippage": 0.5, "commission": 0.0},
+               "contract": 1, "digits": 2, "pip": 1.0, "spread": 1.0, "slippage": 0.5, "commission": 0.0},
     "US500": {"name": "S&P 500", "group": "Indices", "yahoo": "ES=F", "quote": "USD",
-              "contract": 1, "digits": 2, "pip": 1.0, "spread": 0.5, "slippage": 0.15, "commission": 0.0},
+              "contract": 1, "digits": 2, "pip": 1.0, "spread": 0.35, "slippage": 0.15, "commission": 0.0},
     "BTCUSD": {"name": "Bitcoin / US Dollar", "group": "Crypto", "binance": "BTCUSDT", "quote": "USD",
-               "contract": 1, "digits": 2, "pip": 1.0, "spread": 15.0, "slippage": 5.0, "commission": 0.0},
+               "contract": 1, "digits": 2, "pip": 1.0, "spread": 6.0, "slippage": 5.0, "commission": 0.0},
     "ETHUSD": {"name": "Ethereum / US Dollar", "group": "Crypto", "binance": "ETHUSDT", "quote": "USD",
-               "contract": 1, "digits": 2, "pip": 0.1, "spread": 1.2, "slippage": 0.4, "commission": 0.0},
+               "contract": 1, "digits": 2, "pip": 0.1, "spread": 0.8, "slippage": 0.4, "commission": 0.0},
+    # --- universe added 2 Nov 2026 (user: Exness, FX + US stocks + crypto + gold/oil/indices). Contract sizes from the PC's
+    # Exness symbol list (data/exness/symbols.json). Exness disables SOL / XRP / LTC (only BTC / ETH crypto are tradable on
+    # the user's account), so silver, DAX and Nikkei take those 3 places.
+    "GBPJPY": {"name": "British Pound / Japanese Yen", "group": "Forex", "yahoo": "GBPJPY=X", "quote": "JPY",
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.025, "slippage": 0.005, "commission": 0.0},
+    "AUDUSD": {"name": "Australian Dollar / US Dollar", "group": "Forex", "yahoo": "AUDUSD=X", "quote": "USD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00012, "slippage": 0.00002, "commission": 0.0},
+    "USDCAD": {"name": "US Dollar / Canadian Dollar", "group": "Forex", "yahoo": "CAD=X", "quote": "CAD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00018, "slippage": 0.00002, "commission": 0.0},
+    "NVDA": {"name": "NVIDIA", "group": "Stocks", "yahoo": "NVDA", "quote": "USD",
+             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.10, "slippage": 0.03, "commission": 0.0},
+    "MSFT": {"name": "Microsoft", "group": "Stocks", "yahoo": "MSFT", "quote": "USD",
+             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.20, "slippage": 0.05, "commission": 0.0},
+    "AMZN": {"name": "Amazon", "group": "Stocks", "yahoo": "AMZN", "quote": "USD",
+             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.12, "slippage": 0.03, "commission": 0.0},
+    "META": {"name": "Meta Platforms", "group": "Stocks", "yahoo": "META", "quote": "USD",
+             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.35, "slippage": 0.08, "commission": 0.0},
+    "AAPL": {"name": "Apple", "group": "Stocks", "yahoo": "AAPL", "quote": "USD",
+             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.12, "slippage": 0.03, "commission": 0.0},
+    "XAGUSD": {"name": "Silver / US Dollar", "group": "Metals", "yahoo": "SI=F", "quote": "USD",
+               "contract": 5000, "digits": 3, "pip": 0.01, "spread": 0.020, "slippage": 0.005, "commission": 0.0},
+    "DE30": {"name": "Germany 40 (DAX)", "group": "Indices", "yahoo": "^GDAXI", "quote": "EUR",
+             "contract": 1, "digits": 2, "pip": 1.0, "spread": 1.2, "slippage": 0.4, "commission": 0.0},
+    "JP225": {"name": "Japan 225 (Nikkei)", "group": "Indices", "yahoo": "^N225", "quote": "JPY",
+              "contract": 1, "digits": 2, "pip": 1.0, "spread": 8.0, "slippage": 2.0, "commission": 0.0},
+    "USOIL": {"name": "WTI Crude Oil", "group": "Energy", "yahoo": "CL=F", "quote": "USD",
+              "contract": 1000, "digits": 3, "pip": 0.01, "spread": 0.03, "slippage": 0.01, "commission": 0.0},
 }
 
 DEFAULT_SETTINGS = {

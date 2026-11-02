@@ -104,7 +104,7 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        symbol: [EURUSD, GBPUSD, USDJPY, XAUUSD, NAS100, US500, BTCUSD, ETHUSD]
+        symbol: [EURUSD, GBPUSD, USDJPY, GBPJPY, AUDUSD, USDCAD, XAUUSD, XAGUSD, USOIL, NAS100, US500, DE30, JP225, NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
         tf: [H1, H4, D1]
     env:
       PYTHONWARNINGS: ignore

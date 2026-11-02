@@ -82,6 +82,10 @@ SYMBOL_ALIASES = [
     ["NAS100", "USTEC", "US100", "NDX100", "NQ100", "USTECH", "NAS100USD", "USTEC100"],
     ["US500", "SP500", "SPX500", "US500USD", "SPX", "USA500"],
     ["XAUUSD", "GOLD"],
+    ["XAGUSD", "SILVER"],
+    ["DE30", "DE40", "GER40", "GER30", "DAX40", "DE30EUR"],
+    ["JP225", "JPN225", "NIKKEI", "JP225USD"],
+    ["USOIL", "WTI", "USOUSD", "CL", "XTIUSD"],
     ["BTCUSD", "BITCOIN"],
     ["ETHUSD", "ETHEREUM"],
 ]
@@ -239,8 +243,35 @@ def server_to_utc(idx, settings=None) -> pd.DatetimeIndex:
     return ny.tz_convert("UTC")
 
 
+EXNESS_DIR = HISTORY_DIR.parent / "history_exness"
+
+
+def _seed_exness(sym: str) -> pd.DataFrame | None:
+    """The user's broker (Exness) H1 history, exported by the PC robot (data/history_exness, bar times already UTC).
+    User's rule (2 Nov 2026): research and backtests run on THIS broker's prices."""
+    f = EXNESS_DIR / f"{sym}_H1.csv.gz"
+    if not f.exists():
+        return None
+    try:
+        d = pd.read_csv(f)
+        d.index = pd.to_datetime(d.pop("time"), utc=True)
+        month = d.index.year * 12 + d.index.month
+        counts = pd.Series(1, index=month).groupby(level=0).size()
+        dense = counts[counts > 120]                    # skip daily-bars-as-H1 padding (stocks trade ~7 h a day)
+        if len(dense):
+            d = d[month >= int(dense.index.min())]
+        d = d.iloc[:-1]                                  # the export's last bar was still forming
+        return _clean(d[["open", "high", "low", "close", "volume"]].astype(float))
+    except Exception as e:
+        log.warning("Exness history %s unreadable: %s", sym, e)
+        return None
+
+
 def _seed(sym: str) -> pd.DataFrame | None:
-    """Long Dukascopy H1 history committed in data/history (None if not fetched yet)."""
+    """Long H1 history: the Exness export first (user's broker), else the older MT5/Dukascopy files in data/history."""
+    ex = _seed_exness(sym)
+    if ex is not None and len(ex) > 1000:
+        return ex
     f = HISTORY_DIR / f"{sym}_H1.csv.gz"
     if not f.exists():
         return None
@@ -289,7 +320,8 @@ def with_history(sym: str, live: pd.DataFrame) -> pd.DataFrame:
 # Yahoo gold is a futures contract (a few dollars off the broker's spot price) and its FX bars are rough, so with the
 # repository secret TWELVE_DATA_KEY the newest H1 bars of these symbols come from Twelve Data's spot feed instead —
 # the same feed the chart page shows. Free plan: 800 requests a day, so each symbol is fetched at most once per hour.
-TWELVE = {"EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY", "XAUUSD": "XAU/USD"}
+TWELVE = {"EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY", "XAUUSD": "XAU/USD",
+          "GBPJPY": "GBP/JPY", "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "XAGUSD": "XAG/USD"}
 PRICE_SOURCE: dict[str, str] = {}
 
 
@@ -417,6 +449,8 @@ def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataF
         if src == "yahoo":
             df = with_history(sym, df)       # cache keeps the raw Yahoo bars; the history file is joined on read
             df = with_twelve(sym, df)        # spot FX / gold from Twelve Data when the key is configured
+        elif src == "binance" and _seed_exness(sym) is not None:
+            df = with_history(sym, df)       # Exness crypto history + the newest Binance bars on top
         df = market_hours(sym, df, settings)
         _mem[key] = (time.time(), df)
         return df

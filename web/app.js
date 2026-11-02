@@ -306,9 +306,12 @@ const Sync = {
 const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขียว / แดง" }, tv: { up: "#26a69a", down: "#ef5350", name: "แบบ TradingView" },
   blue: { up: "#3b82f6", down: "#f59e0b", name: "ฟ้า / ส้ม (ตาบอดสีอ่านง่าย)" }, mono: { up: "#e6e9ef", down: "#6b7280", name: "ขาว / เทา" } };
 const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
-  NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD" };
+  NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD", GBPJPY: "OANDA:GBP_JPY", AUDUSD: "OANDA:AUD_USD", USDCAD: "OANDA:USD_CAD",
+  USOIL: "OANDA:WTICO_USD", XAGUSD: "OANDA:XAG_USD", DE30: "OANDA:DE30_EUR", JP225: "OANDA:JP225_USD",
+  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
 const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
-const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX" };
+const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX",
+  GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
 
 // Broker clock: MT5 "New York close" servers run New York time + 7 h (GMT+2 / GMT+3). H4 and D1 candles are cut on
 // that clock (same as the Python side), so their shapes match the user's MT5 chart.
@@ -417,7 +420,7 @@ const ICONS = {
 };
 const ROUTES = {
   chart: { title: "กราฟ", sub: "แท่งเทียน สัญญาณ และเทรดของระบบ", render: renderChart, ws: true },
-  systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทั้ง 50 ระบบ", render: renderSystems, ws: true },
+  systems: { title: "ระบบเทรด", sub: "Equity curve และรายละเอียดของทุกระบบ (ตามเทรนด์ 100 ระบบ)", render: renderSystems, ws: true },
   lab: { title: "Strategy Lab", sub: "ผลทดสอบทีละขั้น: Backtest → Walk-Forward → สุ่ม → Robustness → Monte Carlo", render: renderLab, ws: true },
   signals: { title: "สัญญาณ", sub: "สัญญาณเข้าเทรด พร้อม Lot / SL / TP สำหรับ MT5", render: renderSignals },
   calc: { title: "เครื่องคำนวณ", sub: "Lot size · R:R · SL / TP", render: renderCalc },
@@ -467,7 +470,9 @@ async function navigate() {
 }
 
 // ------------------------------------------------------------------ workspace (chart / systems / lab): main area + right rail
-const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH" };
+const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH",
+  GBPJPY: "GJ", AUDUSD: "AU", USDCAD: "UC", USOIL: "OIL", XAGUSD: "XAG", DE30: "DAX", JP225: "NKY",
+  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
 // Android back button (user's rule): it closes the open popup first; pages never pile up in the history
 // (navigation replaces the current entry), so with nothing open, back leaves the app / closes the web page.

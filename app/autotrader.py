@@ -395,55 +395,62 @@ def run_tasks(c: dict, st: dict) -> None:
     """data/pc_tasks.json on GitHub = work Claude asks this PC to do (the cloud cannot reach the broker):
        {"id": "...", "list_symbols": true, "export_history": {"EURUSD": "EURUSD", "NAS100": "USTEC", ...}, "bars": 200000}
     Results go back to GitHub: data/exness/symbols.json, data/history_exness/{SYM}_H1.csv.gz (UTC bar times),
-    data/exness/task_report.json. Runs once per id, between candles only."""
+    data/exness/task_report.json. ONE step per call (called every 2 min, between candles only) so trading never waits."""
     import gzip
     import io
     now = pd.Timestamp.now(tz="UTC")
     if not (5 <= now.minute <= 50) or st.get("pending"):
         return
-    task = ghsync.get_json("data/pc_tasks.json")
-    if not task or not task.get("id") or task["id"] == st.get("task_done"):
-        return
+    job = st.get("task")
+    if not job:
+        task = ghsync.get_json("data/pc_tasks.json")
+        if not task or not task.get("id") or task["id"] == st.get("task_done"):
+            return
+        steps = (["__list__"] if task.get("list_symbols") else []) + list((task.get("export_history") or {}).items())
+        job = st["task"] = {"id": task["id"], "steps": steps, "bars": int(task.get("bars", 200000)),
+                            "report": {"id": task["id"], "started": now.isoformat(), "symbols": {}}}
+        _log("task", id=task["id"], steps=len(steps))
     mt5 = _mt5()
-    st["task_done"] = task["id"]
-    report = {"id": task["id"], "started": now.isoformat(), "server": getattr(mt5.account_info(), "server", ""),
-              "utc_offset_h": data.mt5_utc_offset(), "symbols": {}}
-    _log("task", id=task["id"])
-    if task.get("list_symbols"):
-        rows = []
-        for i in mt5.symbols_get() or []:
-            rows.append({k: getattr(i, k, None) for k in (
+    rep = job["report"]
+    rep.update(server=getattr(mt5.account_info(), "server", ""), utc_offset_h=data.mt5_utc_offset())
+    if job["steps"]:
+        step = job["steps"].pop(0)
+        if step == "__list__":
+            rows = [{k: getattr(i, k, None) for k in (
                 "name", "path", "description", "digits", "point", "spread", "trade_contract_size", "trade_tick_value",
-                "trade_tick_size", "volume_min", "volume_step", "swap_long", "swap_short", "currency_profit", "trade_mode")})
-        ghsync.put_file("data/exness/symbols.json", json.dumps(rows, indent=0).encode(), "pc: Exness symbol list [skip ci]")
-        report["listed"] = len(rows)
-    bars = int(task.get("bars", 200000))
-    off = data.mt5_utc_offset() or 0
-    for sym, name in (task.get("export_history") or {}).items():
-        try:
-            real = data.mt5_resolve(name) or name
-            mt5.symbol_select(real, True)
-            rates = None
-            for n in (bars, 150000, 100000, 60000, 30000):
-                rates = mt5.copy_rates_from_pos(real, mt5.TIMEFRAME_H1, 0, n)
-                if rates is not None and len(rates):
-                    break
-            if rates is None or not len(rates):
-                report["symbols"][sym] = {"name": real, "error": str(mt5.last_error())}
-                continue
-            df = pd.DataFrame(rates)
-            df["time"] = pd.to_datetime(df["time"], unit="s", utc=True) - pd.Timedelta(hours=off)
-            df = df.rename(columns={"tick_volume": "volume"})[["time", "open", "high", "low", "close", "volume"]]
-            buf = io.BytesIO()
-            with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as g:
-                g.write(df.to_csv(index=False, date_format="%Y-%m-%dT%H:%M:%SZ").encode())
-            ok = ghsync.put_file(f"data/history_exness/{sym}_H1.csv.gz", buf.getvalue(), f"pc: Exness H1 history {sym} [skip ci]")
-            report["symbols"][sym] = {"name": real, "bars": len(df), "from": str(df.time.iloc[0]), "to": str(df.time.iloc[-1]), "sent": ok}
-        except Exception as e:
-            report["symbols"][sym] = {"name": name, "error": repr(e)[:200]}
-    report["finished"] = datetime.now(timezone.utc).isoformat()
-    ghsync.put_file("data/exness/task_report.json", json.dumps(report, indent=1).encode(), "pc: task report [skip ci]")
-    _log("task_done", id=task["id"], symbols=len(report["symbols"]))
+                "trade_tick_size", "volume_min", "volume_step", "swap_long", "swap_short", "currency_profit", "trade_mode")}
+                for i in mt5.symbols_get() or []]
+            ghsync.put_file("data/exness/symbols.json", json.dumps(rows, indent=0).encode(), "pc: Exness symbol list [skip ci]")
+            rep["listed"] = len(rows)
+        else:
+            sym, name = step
+            try:
+                real = data.mt5_resolve(name) or name
+                mt5.symbol_select(real, True)
+                rates = None
+                for n in (job["bars"], 150000, 100000, 60000, 30000):
+                    rates = mt5.copy_rates_from_pos(real, mt5.TIMEFRAME_H1, 0, n)
+                    if rates is not None and len(rates):
+                        break
+                if rates is None or not len(rates):
+                    rep["symbols"][sym] = {"name": real, "error": str(mt5.last_error())}
+                else:
+                    df = pd.DataFrame(rates)
+                    df["time"] = pd.to_datetime(df["time"], unit="s", utc=True) - pd.Timedelta(hours=data.mt5_utc_offset() or 0)
+                    df = df.rename(columns={"tick_volume": "volume"})[["time", "open", "high", "low", "close", "volume"]]
+                    buf = io.BytesIO()
+                    with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as g:
+                        g.write(df.to_csv(index=False, date_format="%Y-%m-%dT%H:%M:%SZ").encode())
+                    ok = ghsync.put_file(f"data/history_exness/{sym}_H1.csv.gz", buf.getvalue(), f"pc: Exness H1 history {sym} [skip ci]")
+                    rep["symbols"][sym] = {"name": real, "bars": len(df), "from": str(df.time.iloc[0]), "to": str(df.time.iloc[-1]), "sent": ok}
+            except Exception as e:
+                rep["symbols"][sym] = {"name": name, "error": repr(e)[:200]}
+            _log("task_step", symbol=sym, **{k: v for k, v in rep["symbols"].get(sym, {}).items() if k != "name"})
+    if not job["steps"]:
+        rep["finished"] = datetime.now(timezone.utc).isoformat()
+        ghsync.put_file("data/exness/task_report.json", json.dumps(rep, indent=1).encode(), "pc: task report [skip ci]")
+        st["task_done"], st["task"] = job["id"], None
+        _log("task_done", id=job["id"], symbols=len(rep["symbols"]))
 
 
 def follow_alerts(c: dict, st: dict, pull: bool = True) -> None:
