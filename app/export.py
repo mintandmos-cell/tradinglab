@@ -16,7 +16,7 @@ from .config import AI_NOTES, CLOUD, DATA_DIR, ROOT, SITE_DIR, SYMBOLS, load_set
 from .strategies import STRATEGIES, public_list
 
 log = logging.getLogger("tradinglab.export")
-CLOUD_STATE = DATA_DIR / "cloud_state.json"
+CLOUD_STATE = DATA_DIR / "cloud_status.json"   # committed by the bot (cloud_state.json was git-ignored on PCs)
 # settings the browser may show; never secrets or the account balance
 PUBLIC_SETTINGS = ("risk_per_trade_pct", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "research", "alerts", "force_off")
 
