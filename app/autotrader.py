@@ -457,20 +457,42 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
     st["pending"] = keep
 
 
-_upd = {"at": 0.0}
+_upd = {"at": 0.0, "blocked": 0.0}
 _poll = {"at": 0.0}
 _retry = {"at": 0.0}
 CODE_PATHS = ["app", "tools", "requirements.txt"]
 
 
-def code_update_available() -> bool:
-    """Does origin/main have newer program code than this folder? (data files are ignored)"""
+def _git(*args, timeout=120):
     import subprocess
+    return subprocess.run(["git", *args], capture_output=True, text=True, timeout=timeout)
+
+
+def code_update_available() -> bool:
+    """Newer program code on GitHub? Pull it HERE first (moving aside any untracked file that blocks the pull) and only
+    report True once this folder really has it, so autotrade.bat restarts into the new code - never a restart loop."""
     try:
-        subprocess.run(["git", "fetch", "-q", "origin", "main"], capture_output=True, timeout=60, check=True)
-        out = subprocess.run(["git", "diff", "--name-only", "HEAD", "origin/main", "--", *CODE_PATHS],
-                             capture_output=True, text=True, timeout=30, check=True).stdout
-        return bool(out.strip())
+        if _git("fetch", "-q", "origin", "main", timeout=60).returncode:
+            return False
+        if not _git("diff", "--name-only", "HEAD", "origin/main", "--", *CODE_PATHS).stdout.strip():
+            return False
+        _git("checkout", "--", "data/signals.json", "data/research/latest.json")
+        r = _git("pull", "--rebase", "--autostash", "-X", "theirs")
+        if r.returncode and "would be overwritten" in (r.stderr + r.stdout):
+            moved = DATA_DIR / "_moved_by_update"
+            moved.mkdir(exist_ok=True)
+            for ln in (r.stderr + r.stdout).splitlines():
+                f = DATA_DIR.parent / ln.strip()
+                if ln.startswith("\t") and f.is_file():
+                    f.replace(moved / f.name)
+                    _log("update_moved", file=ln.strip())
+            r = _git("pull", "--rebase", "--autostash", "-X", "theirs")
+        if _git("diff", "--name-only", "HEAD", "origin/main", "--", *CODE_PATHS).stdout.strip():
+            _log("update_failed", detail=(r.stderr or r.stdout)[-400:])
+            _upd["blocked"] = time.time() + 6 * 3600
+            _push(cfg(), "⚠️ อัปเดตโปรแกรมไม่สำเร็จ", "git pull ไม่ผ่าน — โปรแกรมเดิมยังทำงานต่อ จะลองใหม่ใน 6 ชม.", priority=4)
+            return False
+        return True
     except Exception as e:
         log.warning("update check failed: %s", e)
         return False
@@ -539,7 +561,8 @@ def main() -> None:
                 # remote updates (user's request 28 Oct 2026: Claude fixes the program while the user is away): when the
                 # program code on GitHub changed, exit with code 3 -> autotrade.bat pulls the new code and starts again.
                 # Checked between candles only (minute 20-50) and never with an order still waiting.
-                if 20 <= now.minute <= 50 and not st.get("pending") and time.time() - _upd["at"] > 300:
+                if 20 <= now.minute <= 50 and not st.get("pending") and time.time() - _upd["at"] > 300 \
+                        and time.time() > _upd["blocked"]:
                     _upd["at"] = time.time()
                     if code_update_available():
                         _log("update", reason="new program code on GitHub - restarting")
