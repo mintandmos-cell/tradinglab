@@ -160,6 +160,41 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     return out
 
 
+LEDGER_FILE = RESEARCH_DIR / "trial_ledger.json"
+
+
+def ledger() -> dict:
+    """The permanent record of every test ever looked at (user, 2 Nov 2026): "SYM|strategy|TF" -> {first, last}. Systems
+    deleted from the library stay in it, so dropping losers (or swapping 100 failures for 100 new ideas) never lowers the
+    multiple-testing bar: 100 removed + 100 new = 200 tests. Only tests with >= 10 OOS trades are recorded (as counted)."""
+    return read_json(LEDGER_FILE, {"tests": {}})
+
+
+def record_tests(by_sym: dict[str, list[dict]]) -> dict:
+    led = ledger()
+    tests = led.setdefault("tests", {})
+    today = datetime.now(timezone.utc).date().isoformat()
+    for sym, parts in by_sym.items():
+        for p in parts:
+            for c in p["candidates"]:
+                if c["oos"]["trades"] >= 10:
+                    t = tests.setdefault(f"{sym}|{c['strategy']}|{p['tf']}", {"first": today})
+                    t["last"] = today
+    led["updated"] = today
+    write_json(LEDGER_FILE, led)
+    return led
+
+
+def ghost_tests(sym: str, current: set, settings: dict) -> int:
+    """Tests of this symbol in the ledger that are not among today's candidates (deleted / retired systems, or ones that
+    now have too few trades). Without a ledger: the retired strategies x timeframes, as before."""
+    tests = ledger().get("tests", {})
+    mine = {k for k in tests if k.split("|")[0] == sym}
+    if not mine:
+        return n_retired_candidates(settings)
+    return len({k for k in mine if k not in current})
+
+
 def n_retired_candidates(settings: dict) -> int:
     return len(RETIRED) * len(settings["research"].get("timeframes", ["H1", "H4", "D1"]))
 
@@ -178,6 +213,8 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
     from collections import defaultdict
     tfs = settings["research"].get("timeframes", ["H1", "H4", "D1"])
     n_port = (len(STRATEGIES) + len(RETIRED)) * len(tfs)
+    seen = {tuple(k.split("|")[1:]) for k in ledger().get("tests", {})}          # every strategy x TF ever tested
+    n_port = max(n_port, len(seen | {(sid, tf) for sid in STRATEGIES for tf in tfs}))
     t_need = adjusted_t(n_port)          # replaced below by the effective number of independent portfolio candidates
     cands = []
     for sid in STRATEGIES:
@@ -302,7 +339,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     # retired strategies stay in the count (user's rule): dropping losers must never lower the bar for the rest.
     # The count is the EFFECTIVE number of independent tests (correlated candidates count less), retired ones scaled alike.
     used = [c for c in cands if c["oos"]["trades"] >= 10]
-    raw_n = len(used) + n_retired_candidates(settings)
+    raw_n = len(used) + ghost_tests(sym, {f"{sym}|{c['strategy']}|{c['tf']}" for c in used}, settings)
     if cfg.get("effective_trials", True) and used:
         heavy_of = {(p["tf"], sid): h for p in parts for sid, h in p["heavy"].items()}
         m_eff, k = effective_tests([weekly_r(heavy_of.get((c["tf"], c["strategy"]), {}).get("oos_eq", [])) for c in used])
@@ -403,6 +440,7 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
     for p in parts:
         by_sym.setdefault(p["symbol"], []).append(p)
         save_heavy(p)
+    record_tests(by_sym)                 # the permanent test ledger first: deleted systems keep counting
     for sym in symbols or list(SYMBOLS):
         if sym not in by_sym:
             continue

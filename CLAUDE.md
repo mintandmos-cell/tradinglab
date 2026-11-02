@@ -90,6 +90,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - TRAILING: param `trail_atr` (0 = off); trend families also try every no-TP combo with `TRAIL_ATR` 3.0 (grids up to 32).
   The stop follows the best price of COMPLETED bars only (backtest `simulate(trail=)`, tracking `scanner._track` -> `stop_now`,
   robot `trail_positions` moves the MT5 SL after each hourly scan; only tightens). Exit reason "Trail".
+- TEST LEDGER (user, 2 Nov 2026): `data/research/trial_ledger.json` = every SYM|strategy|TF ever tested (>= 10 OOS trades),
+  never delete entries; `research.ghost_tests` adds ledger tests missing from today's candidates (deleted / retired systems) to
+  the luck-gate count, `record_tests` runs at every merge. Portfolio count = every strategy x TF ever tested.
 - LUCK GATE: `research.effective_tests` = Li & Ji eigenvalue count of independent tests from weekly OOS R correlations
   (settings research.effective_trials); n = M_eff x (raw incl. retired) / usable. Same for the portfolio test (monthly R).
 - TRIALS: `trial_systems` per symbol = WATCH candidates failing ONLY the luck gate (max 2, H4/D1 first), status "TRIAL",
