@@ -1,18 +1,14 @@
 {
- "last_scan_hour": "2026-11-02 17:00:00+00:00",
- "new_signals": [
-  "GBPJPY-H4-weekly_breakout-1793584800",
-  "AAPL-H4-elder_ray-1793379600",
-  "DE30-H1-ny_open_breakout-1793631600"
- ],
+ "last_scan_hour": "2026-11-02 18:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 14,
   "errors": []
  },
- "time": "2026-11-02T17:00:36.711552+00:00",
+ "time": "2026-11-02T18:00:26.926308+00:00",
  "account": "DEMO",
  "balance": 9923.59,
- "equity": 9938.07,
+ "equity": 9947.42,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -25,8 +21,8 @@
    "price_open": 1.1235,
    "sl": 1.11885,
    "tp": 1.12871,
-   "price": 1.12032,
-   "profit": -6.36,
+   "price": 1.12039,
+   "profit": -6.22,
    "time": "2026-11-02T09:14:05+00:00"
   },
   {
@@ -39,8 +35,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 157.837,
-   "profit": -3.36,
+   "price": 157.811,
+   "profit": -4.18,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -53,8 +49,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.657,
-   "profit": 20.02,
+   "price": 95.21,
+   "profit": 28.96,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -67,8 +63,8 @@
    "price_open": 26034.6,
    "sl": 25806.0,
    "tp": 26495.9,
-   "price": 26036.1,
-   "profit": 0.12,
+   "price": 26000.1,
+   "profit": -2.71,
    "time": "2026-11-02T17:00:20+00:00"
   }
  ],
