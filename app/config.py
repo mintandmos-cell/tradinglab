@@ -237,7 +237,8 @@ def broker_costs(sym: str) -> dict:
 
 def symbol_spec(sym: str, settings: dict | None = None) -> dict:
     settings = settings or load_settings()
-    return {**SYMBOLS[sym], **broker_costs(sym), **settings.get("symbol_overrides", {}).get(sym, {}), "symbol": sym}
+    # the broker's MEASURED costs win over hand-set estimates (user, 2 Nov 2026: test on the broker's own costs)
+    return {**SYMBOLS[sym], **settings.get("symbol_overrides", {}).get(sym, {}), **broker_costs(sym), "symbol": sym}
 
 
 def read_json(path: Path, default):

@@ -18,49 +18,41 @@
  "symbol_overrides": {
   "EURUSD": {
    "contract": 100000,
-   "spread": 8e-05,
    "slippage": 2e-05,
-   "commission": 7e-05
+   "commission": 0
   },
   "GBPUSD": {
    "contract": 100000,
-   "spread": 0.00012,
    "slippage": 2e-05,
-   "commission": 7e-05
+   "commission": 0
   },
   "USDJPY": {
    "contract": 100000,
-   "spread": 0.012,
    "slippage": 0.002,
-   "commission": 0.01
+   "commission": 0
   },
   "XAUUSD": {
    "contract": 100,
-   "spread": 0.2,
    "slippage": 0.05,
    "commission": 0
   },
   "NAS100": {
    "contract": 1,
-   "spread": 1.5,
    "slippage": 0.5,
    "commission": 0
   },
   "US500": {
    "contract": 1,
-   "spread": 0.5,
    "slippage": 0.15,
    "commission": 0
   },
   "BTCUSD": {
    "contract": 1,
-   "spread": 15,
    "slippage": 5,
    "commission": 0
   },
   "ETHUSD": {
    "contract": 1,
-   "spread": 1.2,
    "slippage": 0.4,
    "commission": 0
   }
