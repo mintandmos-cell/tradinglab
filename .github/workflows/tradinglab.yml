@@ -184,14 +184,20 @@ jobs:
 
       - name: Research parts of an earlier run
         if: needs.plan.outputs.mode == 'merge'
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ${{ inputs.artifact_ids == '' && 'part-*' || '' }}
-          artifact-ids: ${{ inputs.artifact_ids }}
-          path: data/research/parts
-          merge-multiple: true
-          run-id: ${{ inputs.from_run }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # every page of the run's artifacts (download-artifact stops at 200 when reading another run)
+          mkdir -p data/research/parts && cd data/research/parts
+          for page in 1 2 3 4; do
+            gh api "repos/${{ github.repository }}/actions/runs/${{ inputs.from_run }}/artifacts?per_page=100&page=$page" \
+              --jq '.artifacts[] | select(.name | startswith("part-")) | .id' >> ids.txt
+          done
+          echo "artifacts: $(wc -l < ids.txt)"
+          while read id; do
+            gh api "repos/${{ github.repository }}/actions/artifacts/$id/zip" > a.zip && unzip -oq a.zip && rm a.zip
+          done < ids.txt
+          rm ids.txt; ls | wc -l
 
       - name: Restore system payload cache
         uses: actions/cache/restore@v4
