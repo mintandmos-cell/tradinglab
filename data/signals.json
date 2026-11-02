@@ -192,12 +192,14 @@
   "reverse_of": "LONG",
   "price_source": "twelve",
   "cost_r": 0.051,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-02T06:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "cloud",
+  "exit_reason": "SL",
+  "exit_price": 1.11877
  },
  {
   "id": "XAUUSD-H4-cci_trend-1793350800",
