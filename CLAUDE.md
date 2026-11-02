@@ -1,7 +1,8 @@
 # TradingLab — runbook for Claude
 
 The user (Thai, trades manually in MetaTrader 5) asked Claude to keep the trading systems in this
-project up to date for USDJPY, EURUSD, GBPUSD, XAUUSD, NAS100, US500, BTCUSD, ETHUSD, using
+project up to date for 20 Exness symbols (2 Nov 2026: EURUSD GBPUSD USDJPY GBPJPY AUDUSD USDCAD · XAUUSD XAGUSD USOIL ·
+NAS100(USTEC) US500 DE30 JP225 · NVDA MSFT AMZN META AAPL · BTCUSD ETHUSD — SOL/XRP/LTC are disabled on the user's Exness), using
 walk-forward, robustness tests and Monte Carlo, long and short (exits: see below). Reply to the user in Thai.
 
 ## How it runs (no PC needed)
@@ -17,7 +18,8 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Exits (user's rule, 26 Oct 2026): **only TP, SL or an opposite signal** (exit at the next bar's open and reverse, reason "Rev").
   No time limit and no Friday close — `research.exit_max_hold` / `exit_friday_close` stay false unless the user asks again
   (the code for both is kept: `engine.week_guard` / `friday_cutoff`). A reversal signal carries `reverse_of` and tells the user to close the old order.
-- Sizing: every signal risks the fixed `risk_per_trade_pct` (0.25%, user's choice) of `account_balance` (5000 USD; cloud = variable
+- Sizing (user, 2 Nov 2026): EVERY signal risks 0.5% (`risk_per_trade_pct` = `portfolio_risk_pct` = 0.5), max 1% open risk per
+  asset (`max_symbol_risk_pct`); target asked 100%/yr — told the user that needs ~1% risk and 60-80% historical DD. Of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
   The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
   (chapters 6–8 explain the testing method step by step, ACTIVE/WATCH/OFF, references and limitations).
@@ -83,7 +85,13 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   / workflow History kept for manual retry) is joined with Yahoo bars by `with_history` (ratio-scaled at the overlap). A push touching
   `data/history/` makes the cloud run the full research. MT5 bar times are broker server time ("NY close" = New York + 7 h); `server_to_utc`
   (`settings.mt5_server_time`) converts them to UTC everywhere (seed files and live MT5), so FX weeks open Sunday 21/22 UTC.
-- `app/strategies.py` — strategy library (50) (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits).
+- `app/strategies.py` — strategy library (signal at bar close, enter next open; shared ATR SL / R:R TP / max-hold exits);
+  `app/strategies_trend.py` adds 69 trend systems (#58-#126) -> 109 active, of which 100 trend / breakout / momentum.
+- Method name (user asked for one, 2 Nov 2026): **QWG — Quarterly Walk-Forward Gauntlet** (WF OOS by quarter -> random-entry
+  benchmark -> 8 robustness tests -> Monte Carlo -> Šidák multiple-testing gate).
+- Exness data (user's rule 2 Nov 2026: backtest on the broker's own prices): the PC robot runs jobs from `data/pc_tasks.json`
+  (one step per 2-min poll: symbol list -> data/exness/symbols.json, H1 history -> data/history_exness/{SYM}_H1.csv.gz in UTC,
+  report data/exness/task_report.json). `data._seed` prefers these files over data/history; free feeds only extend the tail.
 - `app/engine.py` — backtest in R; `app/walkforward.py` — rolling WF + random-entry benchmark; `app/robustness.py` — 8 stress tests; `app/montecarlo.py`.
 - `app/research.py` — every strategy × TF × symbol goes through **every** step (WF OOS, random benchmark, 8 robustness tests, MC) via
   `research_part` → `merge`. QUARTER RULES (user, 27 Oct 2026): every candidate is cut at the same research cut-off = start of the
