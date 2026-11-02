@@ -162,3 +162,32 @@ def put_status(status: dict) -> bool:
         except Exception as e:
             _fail(f"heartbeat failed: {e!r}")
     return False
+
+
+def put_file(path: str, content: bytes, message: str) -> bool:
+    """Create / replace any file in the repository (used for the PC's Exness history exports)."""
+    if not token():
+        _fail(f"no GitHub token: {path} not sent")
+        return False
+    for _ in range(3):
+        try:
+            r = requests.get(API + path, headers=_hdr(), params={"ref": "main"}, timeout=30)
+            sha = r.json().get("sha") if r.status_code == 200 else None
+            body = {"message": message, "branch": "main", "content": base64.b64encode(content).decode()}
+            if sha:
+                body["sha"] = sha
+            r = requests.put(API + path, headers=_hdr(), json=body, timeout=180)
+            if r.status_code in (200, 201):
+                return True
+            _fail(f"put {path}: HTTP {r.status_code} {r.text[:200]}")
+        except Exception as e:
+            _fail(f"put {path} failed: {e!r}")
+    return False
+
+
+def get_json(path: str):
+    try:
+        text, _ = _get(path)
+        return json.loads(text)
+    except Exception:
+        return None
