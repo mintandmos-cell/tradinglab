@@ -22,18 +22,45 @@ RAW = f"https://raw.githubusercontent.com/{REPO}/main/"
 _tok = {"v": None}
 
 
+LAST = {"error": "", "source": ""}
+
+
 def token() -> str:
     if _tok["v"] is None:
         t = (load_settings().get("github_token") or "").strip()
+        LAST["source"] = "local.json" if t else ""
         if not t:
             try:
                 out = subprocess.run(["git", "credential", "fill"], input="protocol=https\nhost=github.com\n\n",
                                      capture_output=True, text=True, timeout=20).stdout
                 t = next((ln.split("=", 1)[1] for ln in out.splitlines() if ln.startswith("password=")), "")
-            except Exception:
-                t = ""
+                LAST["source"] = "git credential" if t else "none"
+            except Exception as e:
+                t, LAST["source"] = "", f"none ({e!r})"
         _tok["v"] = t
     return _tok["v"]
+
+
+def check() -> dict:
+    """Can this PC write to the repository? -> {ok, source, status, detail} (shown in the log and the heartbeat)."""
+    _tok["v"] = None
+    t = token()
+    if not t:
+        return {"ok": False, "source": LAST["source"], "status": None, "detail": "no token"}
+    try:
+        r = requests.get(f"https://api.github.com/repos/{REPO}", headers=_hdr(), timeout=30)
+        push = bool(r.ok and r.json().get("permissions", {}).get("push"))
+        return {"ok": push, "source": LAST["source"], "status": r.status_code,
+                "detail": "" if push else (r.text[:160] if not r.ok else "token has no write access")}
+    except Exception as e:
+        return {"ok": False, "source": LAST["source"], "status": None, "detail": repr(e)[:160]}
+
+
+def _fail(msg: str) -> None:
+    LAST["error"] = msg[:300]
+    log.warning(msg)
+    if " 401" in msg:                      # expired / revoked: read the credential again next time
+        _tok["v"] = None
 
 
 def _hdr() -> dict:
@@ -78,7 +105,7 @@ def publish(new: list[dict]) -> bool:
     if not new:
         return True
     if not token():
-        log.warning("no GitHub token: signals not published (set github_token in data/local.json)")
+        _fail("no GitHub token: signals not published (set github_token in data/local.json)")
         return False
     for _ in range(4):
         try:
@@ -100,11 +127,11 @@ def publish(new: list[dict]) -> bool:
                            sorted(local + [s for s in merged if s["id"] not in {x["id"] for x in local}],
                                   key=lambda s: s.get("created") or "", reverse=True)[:600])
                 return True
-            log.warning("publish: HTTP %s %s", r.status_code, r.text[:200])
+            _fail(f"publish: HTTP {r.status_code} {r.text[:200]}")
             if r.status_code not in (409, 422):
                 return False
         except Exception as e:
-            log.warning("publish failed: %s", e)
+            _fail(f"publish failed: {e!r}")
     return False
 
 
@@ -112,6 +139,7 @@ def put_status(status: dict) -> bool:
     """data/pc_status.json on GitHub = the PC's heartbeat: the cloud scan leaves candles the PC already scanned to the PC
     (scanner.pc_covered). Not in the workflow's push paths, so it does not trigger a site build."""
     if not token():
+        _fail("no GitHub token: heartbeat not sent")
         return False
     path = "data/pc_status.json"
     for _ in range(3):
@@ -125,7 +153,7 @@ def put_status(status: dict) -> bool:
             r = requests.put(API + path, headers=_hdr(), json=body, timeout=60)
             if r.status_code in (200, 201):
                 return True
-            log.warning("heartbeat: HTTP %s %s", r.status_code, r.text[:200])
+            _fail(f"heartbeat: HTTP {r.status_code} {r.text[:200]}")
         except Exception as e:
-            log.warning("heartbeat failed: %s", e)
+            _fail(f"heartbeat failed: {e!r}")
     return False

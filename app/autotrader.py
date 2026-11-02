@@ -363,7 +363,13 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     health = {"checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]}
     hb = publish_status(c, st, last_scan_hour=str(pd.Timestamp.now(tz="UTC").floor("h")), new_signals=[s["id"] for s in new],
                         scan=health)
-    _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb, **health)
+    _log("scan", new=[s["id"] for s in new], published=pub, heartbeat=hb, **health,
+         **({} if (hb and pub) else {"github_error": ghsync.LAST["error"]}))
+    if not hb and not st.get("gh_warned"):
+        st["gh_warned"] = True
+        _push(c, "⚠️ คอมส่งข้อมูลขึ้นเว็บไม่ได้", f"GitHub: {ghsync.LAST['error'][:150]} — คลาวด์จะแจ้งเตือนแทน (ช้ากว่า)", priority=4)
+    elif hb:
+        st["gh_warned"] = False
     st["scan_ok"] = True
     for s in new:
         if s.get("system_status") == "ACTIVE":
@@ -495,7 +501,9 @@ def main() -> None:
     print("   MT5 symbols: " + " | ".join(f"{k}->{v or '[NOT FOUND]'}" for k, v in names.items()))
     topic = (settings.get("notify") or {}).get("ntfy_topic") or ""
     print(f"   Phone alerts: ntfy topic = {topic or '(not set)'}  <- must be the topic your phone's ntfy app subscribes to")
-    print(f"   Website: {'[OK] GitHub connected - PC signals go to the website' if ghsync.token() else '[!] no GitHub token - PC signals will NOT reach the website'}")
+    gh = ghsync.check()
+    _log("github", **gh)
+    print(f"   Website: {'[OK] GitHub connected (' + gh['source'] + ')' if gh['ok'] else '[!] GitHub NOT writable - ' + str(gh['source']) + ' ' + str(gh['status']) + ' ' + gh['detail'] + '  -> put github_token in data/local.json'}")
     print(f"   Alert lots use balance {float(settings['account_balance']):,.0f} USD (Settings page) | "
           f"robot lots use the real MT5 balance")
     st = read_json(STATE_FILE, {})
