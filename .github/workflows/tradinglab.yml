@@ -13,14 +13,19 @@ on:
       mode:
         description: "scan = สแกนสัญญาณ · research = วิจัยใหม่ทั้งหมด (WF + robustness + Monte Carlo) · test = ส่งแจ้งเตือนทดสอบ"
         type: choice
-        options: [research, scan, test]
+        options: [research, scan, test, merge]
         default: research
+      from_run:
+        description: "merge = judge the research parts of an earlier run again (its run id) without re-testing"
+        type: string
+        default: ""
   push:
     branches: [main]
     paths: ["app/**", "web/**", "data/research/**", "data/settings.json", "data/history/**", "data/signals.json", ".github/workflows/**"]
 
 permissions:
   contents: write
+  actions: read
   pages: write
   id-token: write
 
@@ -173,6 +178,16 @@ jobs:
           path: data/research/parts
           merge-multiple: true
 
+      - name: Research parts of an earlier run
+        if: needs.plan.outputs.mode == 'merge'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: part-*
+          path: data/research/parts
+          merge-multiple: true
+          run-id: ${{ inputs.from_run }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Restore system payload cache
         uses: actions/cache/restore@v4
         with:
@@ -183,7 +198,7 @@ jobs:
       - name: Run
         run: |
           MODE="${{ needs.plan.outputs.mode }}"
-          if [ "$MODE" = "research" ]; then MODE="merge"; fi
+          if [ "$MODE" = "research" ] || [ "$MODE" = "merge" ]; then MODE="merge"; fi
           echo "mode=$MODE"
           python -m app.cloud "$MODE"
           if [ "$MODE" = "test" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi
