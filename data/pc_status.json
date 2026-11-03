@@ -5,10 +5,10 @@
   "checked": 17,
   "errors": []
  },
- "time": "2026-11-03T04:00:28.611595+00:00",
+ "time": "2026-11-03T04:40:41.057672+00:00",
  "account": "DEMO",
- "balance": 9914.29,
- "equity": 9924.11,
+ "balance": 9896.39,
+ "equity": 9916.68,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 157.866,
-   "profit": -2.44,
+   "price": 157.907,
+   "profit": -1.14,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -35,23 +35,9 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.701,
-   "profit": 19.14,
+   "price": 96.049,
+   "profit": 12.18,
    "time": "2026-11-02T14:00:50+00:00"
-  },
-  {
-   "ticket": 2785283307,
-   "symbol": "DE30",
-   "system": "TL45-H1",
-   "signal_id": "DE30-H1-ny_open_breakout-1793631600",
-   "side": "BUY",
-   "lots": 0.07,
-   "price_open": 26034.6,
-   "sl": 25806.0,
-   "tp": 26495.9,
-   "price": 25821.9,
-   "profit": -16.66,
-   "time": "2026-11-02T17:00:20+00:00"
   },
   {
    "ticket": 2786124974,
@@ -63,12 +49,25 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34098,
-   "profit": -0.4,
+   "price": 1.34046,
+   "profit": 0.12,
    "time": "2026-11-02T22:00:29+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2785283307,
+   "signal_id": "DE30-H1-ny_open_breakout-1793631600",
+   "time": "2026-11-03T04:40:39.702749+00:00",
+   "symbol": "DE30",
+   "system": "TL45-H1",
+   "side": "BUY",
+   "lots": 0.07,
+   "price_open": 26034.6,
+   "price": 25806.0,
+   "reason": "SL",
+   "profit": -17.9
+  },
   {
    "ticket": 2782356317,
    "signal_id": "EURUSD-H1-vol_breakout-1793606400",
