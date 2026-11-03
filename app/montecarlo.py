@@ -9,7 +9,9 @@ import numpy as np
 
 
 def run_mc(r, risk_pct: float = 1.0, n_trades: int | None = None, sims: int = 5000, method: str = "bootstrap",
-           dd_limit_pct: float = 10.0, ruin_pct: float = 30.0, seed: int = 11) -> dict:
+           dd_limit_pct: float = 10.0, ruin_pct: float = 30.0, seed: int = 11, block: int = 1) -> dict:
+    """method "block" (3 Nov 2026): resample runs of `block` consecutive trades (~a month of trading) so losing streaks
+    that come in clusters stay together — the plain bootstrap scatters them and under-states drawdowns."""
     r = np.asarray(r, float)
     if len(r) < 5:
         return {"error": "ต้องมีอย่างน้อย 5 เทรด"}
@@ -18,6 +20,11 @@ def run_mc(r, risk_pct: float = 1.0, n_trades: int | None = None, sims: int = 50
     if method == "shuffle":
         n = len(r)
         paths = np.array([rng.permutation(r) for _ in range(sims)])
+    elif method == "block" and block > 1 and len(r) > block:
+        k = int(np.ceil(n / block))
+        starts = rng.integers(0, len(r) - block + 1, size=(sims, k))
+        idx = (starts[:, :, None] + np.arange(block)[None, None, :]).reshape(sims, -1)[:, :n]
+        paths = r[idx]
     else:
         paths = r[rng.integers(0, len(r), size=(sims, n))]
     f = risk_pct / 100.0

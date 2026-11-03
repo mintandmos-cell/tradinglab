@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import indicators as ta
 from .data import add_months, period_start
-from .engine import cost_price, exit_rules, hold_bars, rollover_weights, run, simulate, swap_r, week_guard
+from .engine import cost_by_bar, cost_price, exit_rules, hold_bars, rollover_weights, run, simulate, swap_r, week_guard
 from .strategies import signals as strat_signals
 from .metrics import summarize
 from .strategies import grid
@@ -169,7 +169,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     a = ta.atr(h, l, c, 14)
     idx = df.index
-    cost = cost_price(spec)
+    costs = cost_by_bar(idx, spec)
     W = rollover_weights(idx, spec)
     rules = exit_rules()
     if rules["friday"]:
@@ -202,7 +202,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
                     continue
                 d = 1 if rng.random() < p_long else -1
                 sl_dist = f["p"]["sl_atr"] * a[i]
-                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, cost,
+                res = simulate(o, h, l, c, i + 1, d, sl_dist, f["p"]["rr"], H, float(costs[i + 1]),
                                int(wlast[i + 1]) if wlast is not None else None, opp,
                                float(f["p"].get("trail_atr") or 0) * a[i])
                 if res:

@@ -24,7 +24,7 @@ import pandas as pd
 
 from . import data
 from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, symbol_spec, write_json
-from .metrics import equity_points
+from .metrics import equity_points, summarize
 from .montecarlo import run_mc
 from .robustness import robustness
 from .strategies import RETIRED, STRATEGIES
@@ -78,20 +78,34 @@ def only_mt_failed(gates: list[dict]) -> bool:
     return failed == [3]
 
 
+def sel_oos(c: dict) -> dict:
+    """The OOS figures the gates judge: before the sealed holdout (when present), t of the MONTHLY R (3 Nov 2026)."""
+    return c.get("oos_sel") or c["oos"]
+
+
+def t_of(o: dict) -> float:
+    return float(o["t_month"]) if o.get("t_month") is not None else float(o["t_stat"])
+
+
 def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: int = 1) -> list[dict]:
-    o = best["oos"]
+    o = sel_oos(best)
+    t = t_of(o)
     t_need = adjusted_t(n_cand) if g.get("multiple_testing", True) else g["min_t"]
+    hold = best.get("holdout")
     checks = [
         ("OOS trades", o["trades"], g["min_oos_trades"], o["trades"] >= g["min_oos_trades"]),
         ("OOS expectancy (R)", o["expectancy"], g["min_expectancy"], o["expectancy"] >= g["min_expectancy"]),
-        ("OOS t-stat", o["t_stat"], g["min_t"], o["t_stat"] >= g["min_t"]),
-        (f"t ปรับตามจำนวนการทดสอบอิสระ (~{n_cand})", o["t_stat"], t_need, o["t_stat"] >= t_need),
+        ("OOS t-stat (รายเดือน)" if o.get("t_month") is not None else "OOS t-stat", round(t, 2), g["min_t"], t >= g["min_t"]),
+        (f"t ปรับตามจำนวนการทดสอบอิสระ (~{n_cand})", round(t, 2), t_need, t >= t_need),
         ("MC PF @95%", mc.get("pf_p5"), g["min_mc_pf_p5"], (mc.get("pf_p5") or 0) >= g["min_mc_pf_p5"]),
         ("ชนะการสุ่มจุดเข้า (percentile)", rb["percentile"] if rb else None, g["min_random_pct"],
          bool(rb) and rb["percentile"] >= g["min_random_pct"]),
         ("Parameter plateau", best["plateau"], g["min_plateau"], best["plateau"] >= g["min_plateau"]),
         ("Robustness score", rob.get("score"), g.get("min_robust_score", 60), (rob.get("score") or 0) >= g.get("min_robust_score", 60)),
     ]
+    if hold is not None:   # sealed final exam (last 12 months, never used by the other gates); < 3 trades cannot judge
+        checks.append(("ข้อสอบปิดผนึก 12 เดือนล่าสุด (R/ไม้)", hold.get("expectancy") if hold.get("trades", 0) >= 3 else "ไม่พอประเมิน",
+                       "≥ 0", hold.get("trades", 0) < 3 or (hold.get("expectancy") or 0) >= 0))
     return [{"name": n, "value": v, "need": need, "pass": bool(ok)} for n, v, need, ok in checks]
 
 
@@ -104,9 +118,49 @@ PARTS_DIR = RESEARCH_DIR / "parts"      # cloud matrix jobs: one research part p
 def _status(o: dict, gates: list[dict], has_params: bool) -> str:
     if all(g["pass"] for g in gates) and has_params:
         return "ACTIVE"
-    if o["expectancy"] > 0 and o["t_stat"] >= 1.0 and o["trades"] >= 15 and has_params:
+    if o["expectancy"] > 0 and t_of(o) >= 1.0 and o["trades"] >= 15 and has_params:
         return "WATCH"
     return "OFF"
+
+
+def monthly_t(trades: list[dict], folds: list[dict], until=None, since=None) -> float | None:
+    """t-stat of the OOS R summed per calendar month, months without a trade counted as 0, over the OOS span
+    (first fold start .. until). Trades that come in clusters are not independent: per-trade t over-states the evidence."""
+    if not folds:
+        return None
+    start = pd.Timestamp(since or folds[0]["oos_start"])
+    end = pd.Timestamp(until or folds[-1]["oos_end"])
+    months = pd.period_range(start.tz_convert(None).to_period("M"), (end - pd.Timedelta(seconds=1)).tz_convert(None).to_period("M"), freq="M")
+    if len(months) < 3:
+        return None
+    s = pd.Series(0.0, index=months.astype(str))
+    for t in trades:
+        et = pd.Timestamp(t["entry_time"])
+        if start <= et < end:
+            m = str(et.tz_convert(None).to_period("M"))
+            if m in s.index:
+                s[m] += float(t["r"])
+    sd = float(s.std(ddof=1))
+    return round(float(s.mean() / sd * np.sqrt(len(s))), 2) if sd > 0 else 0.0
+
+
+def split_oos(wf: dict, cfg: dict):
+    """(figures the gates judge = OOS before the holdout, the sealed holdout = last `holdout_months` before the cut-off)."""
+    hm = int(cfg.get("holdout_months", 0) or 0)
+    folds, tr = wf["folds"], wf["oos_trades"]
+    if not hm or not folds or not cfg.get("cutoff"):
+        return None, None
+    cut = pd.Timestamp(cfg["cutoff"])
+    h0 = data.add_months(cut, -hm)
+    pre = [t for t in tr if pd.Timestamp(t["entry_time"]) < h0]
+    post = [t for t in tr if h0 <= pd.Timestamp(t["entry_time"]) < cut]
+    yrs = max(1e-9, (h0 - pd.Timestamp(folds[0]["oos_start"])).days / 365.25)
+    sel = summarize([t["r"] for t in pre], yrs, 1.0, bars=[t["bars"] for t in pre], cost_r=[t["cost_r"] for t in pre])
+    sel["t_month"] = monthly_t(pre, folds, until=h0)
+    hr = [t["r"] for t in post]
+    hold = {"from": h0.isoformat(), "trades": len(hr), "net_r": round(float(np.sum(hr)), 2) if hr else 0.0,
+            "expectancy": round(float(np.mean(hr)), 4) if hr else None}
+    return sel, hold
 
 
 def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tuple[dict, dict]:
@@ -116,11 +170,15 @@ def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tu
     enough = len(r) >= 5
     rb = random_benchmark(df, wf, spec, tf) if enough else None
     per_year = max(int(round(wf["oos"]["trades_per_year"])), 10)
-    mc = run_mc(r, 1.0, n_trades=per_year, dd_limit_pct=settings["target_max_dd_pct"]) if enough else {}
-    mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000) if enough else {}
+    blk = max(1, int(round(per_year / 12)))        # ~one month of trades per block: losing streaks stay together
+    mc = run_mc(r, 1.0, n_trades=per_year, dd_limit_pct=settings["target_max_dd_pct"], method="block", block=blk) if enough else {}
+    mc_full = run_mc(r, 1.0, n_trades=len(r), sims=3000, method="block", block=blk) if enough else {}
+    sel, hold = split_oos(wf, cfg)
     rob = robustness(df, wf, spec, tf, cfg)
     summary = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
                                    "param_switches", "distinct_params", "current_params", "current_is_t", "current_lock")}
+    summary["oos"] = {**summary["oos"], "t_month": monthly_t(wf["oos_trades"], wf["folds"], None)}
+    summary.update(oos_sel=sel, holdout=hold)
     summary.update(name=STRATEGIES[wf["strategy"]]["name"], random_benchmark=rb,
                    mc_1y={k: mc[k] for k in MC_KEEP if k in mc}, mc_pf_p5=mc_full.get("pf_p5"), robustness=rob)
     heavy = {"oos_eq": [[int(t), round(float(x["r"]), 3)] for t, x in zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])],
@@ -320,10 +378,10 @@ def trial_systems(sym: str, cands: list[dict], settings: dict) -> list[dict]:
         return []
     near = [c for c in cands if c["status"] == "WATCH" and c.get("current_params") and only_mt_failed(c["gates"])
             and not _forced_off(settings, sym, c)]
-    near.sort(key=lambda c: (c["tf"] != "H1", c["oos"]["t_stat"]), reverse=True)
+    near.sort(key=lambda c: (c["tf"] != "H1", t_of(sel_oos(c))), reverse=True)
     return [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
              "params": c["current_params"], "status": "TRIAL", "source": "trial",
-             "risk_pct": float(tcfg.get("risk_pct", 0.1)), "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"],
+             "risk_pct": float(tcfg.get("risk_pct", 0.1)), "t": t_of(sel_oos(c)), "exp": c["oos"]["expectancy"],
              "trades": c["oos"]["trades"], "max_dd_r": c["oos"].get("max_dd_r"),
              "robust": (c["robustness"] or {}).get("score")} for c in near[:int(tcfg.get("max_per_symbol", 2))]]
 
@@ -351,7 +409,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         n_cand = raw_n
     for c in cands:
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
-        c["status"] = _status(c["oos"], c["gates"], bool(c["current_params"]))
+        c["status"] = _status(sel_oos(c), c["gates"], bool(c["current_params"]))
         c.pop("kept", None)
     # carry-over (user, 27 Oct 2026; narrowed 2 Nov 2026): in the SAME quarter, on the SAME price history, a system that was
     # ACTIVE stays ACTIVE when the ONLY gate it now fails is the multiple-testing one (that bar rises whenever strategies are
@@ -368,7 +426,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         if c["status"] == "ACTIVE" and _forced_off(settings, sym, c):
             c["status"], c["forced_off"] = "OFF", True
     rank = {"ACTIVE": 2, "WATCH": 1, "OFF": 0}
-    key = lambda c: (rank[c["status"]], c["oos"]["t_stat"] if c["oos"]["trades"] >= 10 else -99)
+    key = lambda c: (rank[c["status"]], t_of(sel_oos(c)) if c["oos"]["trades"] >= 10 else -99)
     cands.sort(key=key, reverse=True)
     active = [c for c in cands if c["status"] == "ACTIVE"]
     best = cands[0]
@@ -376,7 +434,7 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
     systems = [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
                 "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")), "source": "single",
-                "t": c["oos"]["t_stat"], "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
+                "t": t_of(sel_oos(c)), "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
                 "max_dd_r": c["oos"].get("max_dd_r"), "robust": (c["robustness"] or {}).get("score")} for c in active]
     mc = best["mc_1y"] or {}
     part = next(p for p in parts if p["tf"] == best["tf"])
@@ -541,6 +599,11 @@ def slim(c: dict) -> dict:
     out = {k: c.get(k) for k in ("strategy", "tf", "status", "kept", "forced_off", "current_params", "n_combos", "oos_years",
                                  "wfe", "plateau", "param_switches", "mc_pf_p5") if c.get(k) is not None}
     out["oos"] = {k: (c.get("oos") or {}).get(k) for k in SLIM_OOS}
+    if c.get("oos_sel"):
+        out["oos_sel"] = {k: c["oos_sel"].get(k) for k in SLIM_OOS + ("t_month",)}
+    if c.get("holdout"):
+        out["holdout"] = c["holdout"]
+    out["oos"]["t_month"] = (c.get("oos") or {}).get("t_month")
     out["robustness"] = {"score": (c.get("robustness") or {}).get("score")}
     if c.get("random_benchmark"):
         out["random_benchmark"] = {"percentile": c["random_benchmark"].get("percentile")}

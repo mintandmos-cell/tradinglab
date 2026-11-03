@@ -107,7 +107,10 @@ DEFAULT_SETTINGS = {
                   "min_mc_pf_p5": 1.0, "min_random_pct": 90.0, "min_plateau": 0.4,
                   "min_robust_score": 60.0,
                   "multiple_testing": True},   # OOS t must also beat the Sidak-adjusted threshold for the number of candidates compared
-        "effective_trials": True,        # count correlated candidates as fewer independent tests (Li & Ji eigenvalues; 2 Nov 2026)
+        "effective_trials": True,
+        "swap_mode": "free",             # free (the account books no swap, 3 Nov 2026) | charged
+        "holdout_months": 12,            # sealed final exam: the last 12 months before the cut-off are judged on their own
+        "t_basis": "monthly",            # t of the monthly OOS R (trades in a cluster are not independent) | trade        # count correlated candidates as fewer independent tests (Li & Ji eigenvalues; 2 Nov 2026)
     },
     # 2 Nov 2026 (user: "do everything"): risk shared by markets that move together, a pre-agreed drawdown stop, and
     # near-miss systems traded on the DEMO account only at a small risk to collect live evidence
@@ -237,13 +240,21 @@ def broker_costs(sym: str) -> dict:
             px = 0.0
         out[f"swap_{side}"] = px
     out["swap_3day"] = int(x.get("swap_3day", 3)) - 1 if x.get("swap_3day") is not None else 2   # MT5: 0 = Sunday
+    byh = x.get("spread_by_hour_p75")
+    if byh and pt:
+        out["spread_by_hour"] = [float(v) * pt if v is not None else None for v in byh]
     return out
 
 
 def symbol_spec(sym: str, settings: dict | None = None) -> dict:
     settings = settings or load_settings()
     # the broker's MEASURED costs win over hand-set estimates (user, 2 Nov 2026: test on the broker's own costs)
-    return {**SYMBOLS[sym], **settings.get("symbol_overrides", {}).get(sym, {}), **broker_costs(sym), "symbol": sym}
+    spec = {**SYMBOLS[sym], **settings.get("symbol_overrides", {}).get(sym, {}), **broker_costs(sym), "symbol": sym}
+    # user, 3 Nov 2026: the Exness Pro account books NO swap (checked on MT5 deals) -> research runs swap-free by default;
+    # "charged" puts the quoted swaps back (comparison runs / if the robot's daily swap check starts seeing charges)
+    if settings.get("research", {}).get("swap_mode", "free") == "free":
+        spec["swap_long"] = spec["swap_short"] = 0.0
+    return spec
 
 
 def read_json(path: Path, default):

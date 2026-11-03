@@ -75,6 +75,20 @@ def cost_price(spec: dict) -> float:
     return float(spec.get("spread", 0)) + 2 * float(spec.get("slippage", 0)) + float(spec.get("commission", 0))
 
 
+def cost_by_bar(times, spec: dict) -> np.ndarray:
+    """Entry cost per bar: the broker's spread for the UTC hour of that bar (75th pct of ~3 years, PC export
+    spread_by_hour; the rollover hours are several times wider) + 2 x slippage + commission. Flat cost when no profile."""
+    base = cost_price(spec)
+    byh = spec.get("spread_by_hour")
+    n = len(times)
+    if not byh or not n:
+        return np.full(n, base)
+    flat = float(spec.get("spread", 0))
+    prof = np.array([float(v) if v is not None else flat for v in byh])
+    hrs = pd.DatetimeIndex(times).hour.to_numpy()
+    return base - flat + prof[hrs]
+
+
 ROLLOVER_UTC = 21          # daily rollover ~ New York 17:00 (21:00 UTC in summer, 22:00 in winter: an hour does not matter here)
 
 
@@ -172,9 +186,10 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
     a = ta.atr(h, l, c, 14)
     sig, lines = signals(strategy_id, df, params)
     rules = exit_rules()
-    cost, H, rr = cost_price(spec), hold_bars(params, tf, rules), float(params["rr"])
+    H, rr = hold_bars(params, tf, rules), float(params["rr"])
     trail_k = float(params.get("trail_atr") or 0)
     times = df.index
+    costs = cost_by_bar(times, spec)
     W = rollover_weights(times, spec)
     n = len(o)
     if rules["friday"]:
@@ -195,6 +210,7 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
             continue
         d = int(sig[i])
         sl_dist = float(params["sl_atr"]) * a[i]
+        cost = float(costs[e])
         res = simulate(o, h, l, c, e, d, sl_dist, rr, H, cost, int(wlast[e]) if wlast is not None else None, opp,
                        trail_k * a[i])
         if res is None:
