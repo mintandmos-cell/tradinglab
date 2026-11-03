@@ -339,7 +339,7 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
               "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
               "start_balance": st.get("start_balance"),
               "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15],
-              "fills": st.get("fills", [])[:40]}
+              "fills": st.get("fills", [])[:40], "swap_watch": st.get("swap_watch")}
     st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)
 
@@ -405,6 +405,7 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     follow_alerts(c, st, pull=False)
     if c.get("trail_stops", True):
         trail_positions(c, st)
+    swap_watch(c, st)
     return new
 
 
@@ -469,6 +470,10 @@ def broker_costs(mt5) -> dict:
                     busy = sp[df.loc[sp.index, "tick_volume"] >= df["tick_volume"].quantile(0.5)]
                     row.update(spread_median=float(sp.median()), spread_p75=float(sp.quantile(0.75)),
                                spread_busy=float(busy.median()) if len(busy) else float(sp.median()), bars=int(len(df)))
+                    # spread by UTC hour of the bar (user, 3 Nov 2026: the rollover hours are far wider than the day)
+                    hrs = ((df.loc[sp.index, "time"].astype("int64") // 3600 - int(round(data.mt5_utc_offset() or 0))) % 24).astype(int)
+                    row["spread_by_hour_p75"] = [float(sp[hrs == h].quantile(0.75)) if (hrs == h).sum() >= 20 else None
+                                                 for h in range(24)]
             out["symbols"][sym] = row
         except Exception as e:
             out["symbols"][sym] = {"error": repr(e)[:200]}
@@ -506,6 +511,28 @@ def swap_check(mt5) -> dict:
     return {"time": now.isoformat(), "account": {"server": getattr(a, "server", ""), "trade_mode": getattr(a, "trade_mode", None),
             "leverage": getattr(a, "leverage", None), "name": "", "currency": getattr(a, "currency", "")},
             "positions": by, "quoted_rates": rates}
+
+
+def swap_watch(c: dict, st: dict) -> None:
+    """Once a day (user, 3 Nov 2026: the Pro demo account was charged no swap at all, so research runs swap-free):
+    look at the swap MT5 booked on the robot's positions of the last 3 days. Any non-zero swap -> push + status flag, so
+    the research can go back to charging swaps."""
+    day = datetime.now(timezone.utc).date().isoformat()
+    if st.get("swap_day") == day:
+        return
+    st["swap_day"] = day
+    try:
+        body = swap_check(_mt5())
+        paid = {k: r for k, r in body["positions"].items() if abs(float(r.get("swap") or 0)) > 1e-9}
+        st["swap_watch"] = {"day": day, "checked": len(body["positions"]), "charged": len(paid),
+                            "examples": [{"symbol": r["symbol"], "swap": round(r["swap"], 2), "type": r.get("type")} for r in list(paid.values())[:5]]}
+        _log("swap_watch", **st["swap_watch"])
+        if paid and not st.get("swap_warned"):
+            st["swap_warned"] = True
+            _push(c, "⚠️ บัญชีเริ่มถูกหักค่า swap",
+                  " · ".join(f"{r['symbol']} {r['swap']:+.2f}" for r in list(paid.values())[:4]) + " — ควรวิจัยใหม่แบบหัก swap", priority=4)
+    except Exception as e:
+        log.warning("swap watch: %s", e)
 
 
 def run_tasks(c: dict, st: dict) -> None:
