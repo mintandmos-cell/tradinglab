@@ -1,16 +1,17 @@
 {
- "last_scan_hour": "2026-11-03 21:00:00+00:00",
+ "last_scan_hour": "2026-11-03 22:00:00+00:00",
  "new_signals": [
-  "USDCAD-H1-ichimoku_tk-1793736000"
+  "USDJPY-D1-mr_rsi2_slope-1793656800",
+  "USOIL-H1-ichimoku_tk-1793739600"
  ],
  "scan": {
   "checked": 38,
   "errors": []
  },
- "time": "2026-11-03T21:00:52.516299+00:00",
+ "time": "2026-11-03T22:00:31.480040+00:00",
  "account": "DEMO",
  "balance": 9896.39,
- "equity": 9935.74,
+ "equity": 9931.89,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +24,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 158.73,
-   "profit": 24.79,
+   "price": 158.666,
+   "profit": 22.78,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -37,8 +38,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.886,
-   "profit": 15.44,
+   "price": 96.066,
+   "profit": 11.84,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -51,8 +52,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34131,
-   "profit": -0.73,
+   "price": 1.34156,
+   "profit": -0.98,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -65,8 +66,8 @@
    "price_open": 1.40089,
    "sl": 1.39781,
    "tp": null,
-   "price": 1.40085,
-   "profit": -0.63,
+   "price": 1.40101,
+   "profit": 1.88,
    "time": "2026-11-03T21:00:36+00:00"
   }
  ],
