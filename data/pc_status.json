@@ -8,10 +8,10 @@
   "checked": 38,
   "errors": []
  },
- "time": "2026-11-03T22:00:31.480040+00:00",
+ "time": "2026-11-03T22:00:49.824739+00:00",
  "account": "DEMO",
  "balance": 9896.39,
- "equity": 9931.89,
+ "equity": 9931.67,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -69,6 +69,20 @@
    "price": 1.40101,
    "profit": 1.88,
    "time": "2026-11-03T21:00:36+00:00"
+  },
+  {
+   "ticket": 2793293936,
+   "symbol": "USDJPY",
+   "system": "TL130-D1",
+   "signal_id": "USDJPY-D1-mr_rsi2_slope-1793656800",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 158.666,
+   "sl": 160.019,
+   "tp": 156.636,
+   "price": 158.709,
+   "profit": -0.27,
+   "time": "2026-11-03T22:00:34+00:00"
   }
  ],
  "closed": [
@@ -214,6 +228,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-03T22:00:33.620604+00:00",
+   "signal": "USDJPY-D1-mr_rsi2_slope-1793656800",
+   "symbol": "USDJPY",
+   "tf": "D1",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 158.666,
+   "fill": 158.666,
+   "signal_entry": 158.666,
+   "slip_pts": -0.0,
+   "drift_r": -0.0,
+   "delay_s": 34
+  },
   {
    "time": "2026-11-03T21:00:36.377791+00:00",
    "signal": "USDCAD-H1-ichimoku_tk-1793736000",
