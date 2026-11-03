@@ -1,9 +1,9 @@
 {
- "last_scan": "2026-11-03T16:08:29.286032+00:00",
+ "last_scan": "2026-11-03T16:38:45.558088+00:00",
  "last_error": null,
  "new_signals": 0,
  "checked": 38,
  "errors": [
-  "JP225 H1: newest closed bar is 28 h old (stale data)"
+  "JP225 H1: newest closed bar is 29 h old (stale data)"
  ]
 }
