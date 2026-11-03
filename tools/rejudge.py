@@ -43,6 +43,7 @@ def main() -> int:
             print("portfolio", pc["strategy"], pc["tf"], pc["status"], pc["t_month"], "need", lat["portfolio"]["t_needed"])
             if pc["status"] != "WATCH":
                 continue
+    research.attach_portfolio(lat, settings)
     write_json(research.LATEST_RESEARCH, lat)
     return 0
 

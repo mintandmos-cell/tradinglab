@@ -304,6 +304,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
     for sid in STRATEGIES:
         for tf in tfs:
             legs, monthly, pooled, first = [], defaultdict(float), [], None
+            pooled_m = []            # month of each pooled trade (sealed holdout split)
             for sym, parts in by_sym.items():
                 part = next((p for p in parts if p["tf"] == tf), None)
                 c = next((x for x in (part or {}).get("candidates", []) if x["strategy"] == sid), None)
@@ -320,6 +321,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                     for m, r in pd.Series(arr[:, 1]).groupby(np.asarray(ms)).sum().items():
                         monthly[m] += float(r)
                     pooled.extend(arr[:, 1].tolist())
+                    pooled_m.extend(ms.tolist())
                 legs.append({"symbol": sym, "trades": c["oos"]["trades"], "exp": c["oos"]["expectancy"], "t": c["oos"]["t_stat"],
                              "params": c["current_params"], "pct": (c.get("random_benchmark") or {}).get("percentile"),
                              "robust": (c.get("robustness") or {}).get("score")})
@@ -327,15 +329,29 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                 continue
             cutoff = pd.Timestamp(next(iter(by_sym.values()))[0].get("cutoff") or research_cutoff(settings))
             months = pd.period_range(first.tz_convert(None).to_period("M"), (cutoff - pd.Timedelta(seconds=1)).tz_convert(None).to_period("M"), freq="M")
-            mr = np.array([monthly.get(str(m), 0.0) for m in months])
+            # same sealed final exam as single systems (user, 3 Nov 2026): judge the months BEFORE the last
+            # holdout_months, then the holdout on its own (pooled expectancy >= 0)
+            hm = int(settings["research"].get("holdout_months", 12) or 0)
+            mr_all = np.array([monthly.get(str(m), 0.0) for m in months])
+            hold_from = str(months[-hm]) if hm and len(months) > hm + PORT_MIN_MONTHS else None
+            sel_m = [m for m in months if hold_from is None or str(m) < hold_from]
+            mr = np.array([monthly.get(str(m), 0.0) for m in sel_m])
             sd = mr.std(ddof=1) if len(mr) > 2 else 0
             t_m = float(mr.mean() / sd * np.sqrt(len(mr))) if sd > 0 else 0.0
-            pr = np.array(pooled)
+            pm = np.asarray(pooled_m)
+            pr_all = np.array(pooled)
+            pr = pr_all[pm < hold_from] if hold_from else pr_all
+            ph = pr_all[pm >= hold_from] if hold_from else np.array([])
+            if not len(pr):
+                continue
             active_legs = [x for x in legs if x["trades"] >= 10]
             breadth = (sum(x["exp"] > 0 for x in active_legs) / len(active_legs)) if active_legs else 0.0
             pcts = [x["pct"] for x in legs if x["pct"] is not None]
             robs = [x["robust"] for x in legs if x["robust"] is not None]
-            mc = run_mc(list(pr), 1.0, n_trades=len(pr), sims=2000) if len(pr) >= 20 else {}
+            blk = max(1, int(round(len(pr) / max(len(mr), 1))))       # ~one month of pooled trades per block
+            mc = run_mc(list(pr), 1.0, n_trades=len(pr), sims=2000, method="block", block=blk) if len(pr) >= 20 else {}
+            hold = {"from": hold_from, "trades": int(len(ph)), "expectancy": round(float(ph.mean()), 4) if len(ph) else None,
+                    "net_r": round(float(ph.sum()), 1)} if hold_from else None
             gates = [
                 {"name": "เดือน OOS", "value": len(mr), "need": PORT_MIN_MONTHS, "pass": len(mr) >= PORT_MIN_MONTHS},
                 {"name": f"t รายเดือนของพอร์ต (ปรับตาม {n_port} ผู้สมัคร)", "value": round(t_m, 2), "need": t_need, "pass": t_m >= t_need},
@@ -345,13 +361,16 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                  "pass": bool(pcts) and float(np.median(pcts)) >= 75},
                 {"name": "Robustness เฉลี่ย", "value": round(float(np.mean(robs))) if robs else None, "need": 50,
                  "pass": bool(robs) and float(np.mean(robs)) >= 50},
+                {"name": f"ข้อสอบปิดผนึก {hm} เดือนล่าสุด (Exp ≥ 0)", "value": (hold or {}).get("expectancy"), "need": 0,
+                 "pass": not hold or hold["trades"] < 3 or hold["expectancy"] >= 0},
             ]
             ok = all(g["pass"] for g in gates)
             status = "ACTIVE" if ok else ("WATCH" if t_m >= 2 and pr.mean() > 0 else "OFF")
-            cands.append({"_mr": pd.Series(mr, index=[str(m) for m in months]),
+            cands.append({"_mr": pd.Series(mr, index=[str(m) for m in sel_m]),
                           "strategy": sid, "name": STRATEGIES[sid]["name"], "tf": tf, "status": status, "t_month": round(t_m, 2),
                           "months": len(mr), "trades": len(pr), "exp": round(float(pr.mean()), 4), "net_r": round(float(pr.sum()), 1),
                           "r_month": round(float(mr.mean()), 3), "breadth": round(breadth, 2), "gates": gates, "legs": legs,
+                          "holdout": hold, "months_all": len(mr_all),
                           "max_dd_r": round(float(np.max(np.maximum.accumulate(np.cumsum(mr)) - np.cumsum(mr))), 1) if len(mr) else None})
     # same quarter: portfolio systems already ACTIVE stay until the quarter ends
     n_raw = n_port
@@ -507,6 +526,28 @@ def heavy(sym: str, tf: str) -> dict:
     return _heavy_cache[key]
 
 
+def attach_portfolio(out: dict, settings: dict) -> None:
+    """ACTIVE portfolio systems trade on every symbol (marked source = "portfolio")."""
+    risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
+    for pc in (out.get("portfolio") or {}).get("candidates", []):
+        if pc["status"] != "ACTIVE":
+            continue
+        for leg in pc["legs"]:
+            r = out["symbols"].get(leg["symbol"])
+            if not r or not leg.get("params") or f"{leg['symbol']}:{pc['strategy']}:{pc['tf']}" in settings.get("force_off", []) \
+                    or leg["symbol"] in settings.get("force_off", []):
+                continue
+            syst = r.setdefault("systems", [])
+            if any(x["strategy"] == pc["strategy"] and x["tf"] == pc["tf"] for x in syst):
+                continue
+            syst.append({"strategy": pc["strategy"], "strategy_name": pc["name"], "tf": pc["tf"], "params": leg["params"],
+                         "status": "ACTIVE", "risk_pct": float(settings.get("portfolio_risk_pct") or 0.1), "kept": bool(pc.get("kept")), "source": "portfolio",
+                         "t": leg["t"], "exp": leg["exp"], "trades": leg["trades"], "robust": leg["robust"]})
+            if r.get("status") != "ACTIVE":
+                r["status"] = "ACTIVE"
+                r["risk_pct"] = risk
+
+
 def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
     """Write latest.json (+ history snapshot) from research parts; heavy OOS data goes to data/research/oos/*.json.gz."""
     settings = load_settings()
@@ -548,24 +589,7 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
             log.exception("portfolio research failed")
     elif prev.get("portfolio"):
         out["portfolio"] = prev["portfolio"]
-    risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
-    for pc in (out.get("portfolio") or {}).get("candidates", []):
-        if pc["status"] != "ACTIVE":
-            continue
-        for leg in pc["legs"]:
-            r = out["symbols"].get(leg["symbol"])
-            if not r or not leg.get("params") or f"{leg['symbol']}:{pc['strategy']}:{pc['tf']}" in settings.get("force_off", []) \
-                    or leg["symbol"] in settings.get("force_off", []):
-                continue
-            syst = r.setdefault("systems", [])
-            if any(x["strategy"] == pc["strategy"] and x["tf"] == pc["tf"] for x in syst):
-                continue
-            syst.append({"strategy": pc["strategy"], "strategy_name": pc["name"], "tf": pc["tf"], "params": leg["params"],
-                         "status": "ACTIVE", "risk_pct": float(settings.get("portfolio_risk_pct") or 0.1), "kept": bool(pc.get("kept")), "source": "portfolio",
-                         "t": leg["t"], "exp": leg["exp"], "trades": leg["trades"], "robust": leg["robust"]})
-            if r.get("status") != "ACTIVE":
-                r["status"] = "ACTIVE"
-                r["risk_pct"] = risk
+    attach_portfolio(out, settings)
     for sym, r in out["symbols"].items():           # full records to cands/{SYM}.json.gz, a slim copy stays in latest.json
         if r.get("candidates"):
             save_candidates(sym, r["candidates"])
