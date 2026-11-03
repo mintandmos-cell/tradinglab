@@ -1,7 +1,7 @@
 {
- "id": "2026-11-02-costs-2",
+ "id": "2026-11-03-swaps-1",
  "list_symbols": false,
- "cost_stats": true,
+ "swap_check": true,
  "export_history": {},
  "bars": 200000
 }

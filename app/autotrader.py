@@ -475,6 +475,39 @@ def broker_costs(mt5) -> dict:
     return out
 
 
+def swap_check(mt5) -> dict:
+    """What the account REALLY pays overnight (user, 3 Nov 2026: is the Pro demo account swap-free?): the swap booked on
+    every deal of the last 60 days and on the open positions, next to the symbol's quoted swap rate."""
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    deals = mt5.history_deals_get(now - timedelta(days=60), now + timedelta(days=1)) or []
+    by: dict = {}
+    for d in deals:
+        if not d.position_id:
+            continue
+        r = by.setdefault(str(d.position_id), {"symbol": d.symbol, "swap": 0.0, "commission": 0.0, "profit": 0.0,
+                                                "open": None, "close": None, "volume": 0.0, "type": None})
+        r["swap"] += float(d.swap); r["commission"] += float(d.commission); r["profit"] += float(d.profit)
+        t = datetime.fromtimestamp(d.time, timezone.utc).isoformat()
+        if d.entry == 0:
+            r.update(open=t, volume=float(d.volume), type="BUY" if d.type == 0 else "SELL")
+        elif d.entry in (1, 3):
+            r["close"] = t
+    for p in mt5.positions_get() or []:
+        r = by.setdefault(str(p.ticket), {"symbol": p.symbol, "commission": 0.0, "profit": 0.0, "close": None})
+        r.update(swap=float(p.swap), open=datetime.fromtimestamp(p.time, timezone.utc).isoformat(), volume=float(p.volume),
+                 type="BUY" if p.type == 0 else "SELL", still_open=True, profit=float(p.profit))
+    rates = {}
+    for r in by.values():
+        i = mt5.symbol_info(r["symbol"])
+        if i:
+            rates[r["symbol"]] = {"swap_long": i.swap_long, "swap_short": i.swap_short, "swap_mode": int(i.swap_mode)}
+    a = mt5.account_info()
+    return {"time": now.isoformat(), "account": {"server": getattr(a, "server", ""), "trade_mode": getattr(a, "trade_mode", None),
+            "leverage": getattr(a, "leverage", None), "name": "", "currency": getattr(a, "currency", "")},
+            "positions": by, "quoted_rates": rates}
+
+
 def run_tasks(c: dict, st: dict) -> None:
     """data/pc_tasks.json on GitHub = work Claude asks this PC to do (the cloud cannot reach the broker):
        {"id": "...", "list_symbols": true, "export_history": {"EURUSD": "EURUSD", "NAS100": "USTEC", ...}, "bars": 200000}
@@ -491,6 +524,7 @@ def run_tasks(c: dict, st: dict) -> None:
         if not task or not task.get("id") or task["id"] == st.get("task_done"):
             return
         steps = (["__list__"] if task.get("list_symbols") else []) + (["__costs__"] if task.get("cost_stats") else []) \
+            + (["__swaps__"] if task.get("swap_check") else []) \
             + list((task.get("export_history") or {}).items())
         job = st["task"] = {"id": task["id"], "steps": steps, "bars": int(task.get("bars", 200000)),
                             "report": {"id": task["id"], "started": now.isoformat(), "symbols": {}}}
@@ -500,7 +534,11 @@ def run_tasks(c: dict, st: dict) -> None:
     rep.update(server=getattr(mt5.account_info(), "server", ""), utc_offset_h=data.mt5_utc_offset())
     if job["steps"]:
         step = job["steps"].pop(0)
-        if step == "__costs__":
+        if step == "__swaps__":
+            body = swap_check(mt5)
+            ghsync.put_file("data/exness/swap_check.json", json.dumps(body, indent=1).encode(), "pc: real swaps charged [skip ci]")
+            rep["swaps"] = len(body["positions"])
+        elif step == "__costs__":
             body = broker_costs(mt5)
             ghsync.put_file("data/exness/costs.json", json.dumps(body, indent=1).encode(), "pc: Exness spreads + swaps [skip ci]")
             rep["costs"] = {k: v.get("error") or "ok" for k, v in body["symbols"].items()}
