@@ -60,8 +60,9 @@ def _test(key, name, value, need, ok, note=""):
     return {"key": key, "name": name, "value": value, "need": need, "pass": None if ok is None else bool(ok), "note": note}
 
 
-def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise_sims: int = 10, seed: int = 3) -> dict:
+def robustness(df: pd.DataFrame, wf: dict, spec: dict, tf: str, cfg: dict, noise_sims: int | None = None, seed: int = 3) -> dict:
     base = wf["oos_trades"]
+    noise_sims = int(noise_sims or cfg.get("noise_sims") or 30)   # user, 3 Nov 2026: 10 runs gave a jumpy share -> 30
     tests = []
     if len(base) < 10:
         return {"score": None, "grade": "ไม่พอประเมิน", "tests": [], "passed": 0, "applicable": 0}

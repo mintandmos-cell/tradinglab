@@ -178,12 +178,37 @@ def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tu
     summary = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
                                    "param_switches", "distinct_params", "current_params", "current_is_t", "current_lock")}
     summary["oos"] = {**summary["oos"], "t_month": monthly_t(wf["oos_trades"], wf["folds"], None)}
-    summary.update(oos_sel=sel, holdout=hold)
+    summary.update(oos_sel=sel, holdout=hold, sides=sides_split(wf["oos_trades"]), bh=buy_hold(df, wf))
     summary.update(name=STRATEGIES[wf["strategy"]]["name"], random_benchmark=rb,
                    mc_1y={k: mc[k] for k in MC_KEEP if k in mc}, mc_pf_p5=mc_full.get("pf_p5"), robustness=rob)
     heavy = {"oos_eq": [[int(t), round(float(x["r"]), 3)] for t, x in zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])],
              "folds": wf["folds"]}
     return summary, heavy
+
+
+def sides_split(trades: list[dict]) -> dict:
+    """Long vs short OOS results (user, 3 Nov 2026: a system that only earns on longs in a rising market may just be riding
+    the market — compare with buy_hold)."""
+    out = {}
+    for name, d in (("long", 1), ("short", -1)):
+        rs = [float(t["r"]) for t in trades if t.get("dir") == d]
+        out[name] = {"n": len(rs), "exp": round(float(np.mean(rs)), 4) if rs else None, "net": round(float(np.sum(rs)), 2)}
+    return out
+
+
+def buy_hold(df, wf: dict) -> dict | None:
+    """Buy-and-hold over the same OOS span: % change and % per year of the close (no costs, no leverage)."""
+    folds = wf.get("folds") or []
+    if not folds or not len(df):
+        return None
+    a, b = pd.Timestamp(folds[0]["oos_start"]), pd.Timestamp(folds[-1]["oos_end"])
+    seg = df["close"][(df.index >= a) & (df.index < b)]
+    if len(seg) < 2 or seg.iloc[0] <= 0:
+        return None
+    yrs = max((seg.index[-1] - seg.index[0]).days / 365.25, 1e-9)
+    tot = float(seg.iloc[-1] / seg.iloc[0])
+    return {"from": seg.index[0].isoformat(), "to": seg.index[-1].isoformat(), "pct": round(100 * (tot - 1), 1),
+            "pct_year": round(100 * (tot ** (1 / yrs) - 1), 1) if yrs >= 0.5 else None}
 
 
 def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | None = None) -> dict:

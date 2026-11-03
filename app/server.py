@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import charts, data, notify, research, scanner
 from .charts import clean
-from .config import AI_NOTES, DATA_DIR, ROOT, SYMBOLS, TIMEFRAMES, load_settings, save_settings, symbol_spec
+from .config import AI_NOTES, DATA_DIR, ROOT, SYMBOLS, TIMEFRAMES, load_settings, read_json, save_settings, symbol_spec
 from .engine import run
 from .metrics import equity_points, summarize
 from .montecarlo import run_mc
@@ -211,6 +211,23 @@ def research_latest():
 @app.get("/api/picks")
 def picks():
     return ok(research.picks())
+
+
+@app.get("/api/compare")
+def compare_runs():
+    from . import compare
+    return ok(compare.load())
+
+
+@app.get("/api/slippage")
+def slippage():
+    from . import fills
+    return ok(fills.calibration())
+
+
+@app.get("/api/data_quality")
+def data_quality():
+    return ok(read_json(research.RESEARCH_DIR / "data_quality.json", {}))
 
 
 @app.get("/api/research/candidates")

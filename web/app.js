@@ -102,6 +102,9 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/scan") return { new: [] };
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
   if (p === "/api/picks") return staticGet("picks.json");
+  if (p === "/api/compare") return staticGet("compare.json").catch(() => ({}));
+  if (p === "/api/slippage") return staticGet("slippage.json").catch(() => ({}));
+  if (p === "/api/data_quality") return staticGet("data_quality.json").catch(() => ({}));
   if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
   if (p === "/api/system") return staticGet(`sys/${qp.symbol}_${qp.tf}_${qp.strategy}.json`).catch(() => {
     // not built yet (new symbol / strategy until the next full build): candles still show, without this system's overlay
@@ -1205,8 +1208,9 @@ async function renderLab(view) {
   $("#notesPane").innerHTML = notes ? md(notes) : '<div class="hint">ยังไม่มีบันทึก</div>';
 
   // ---- step by step
-  const [sp, full] = await Promise.all([api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`).catch(() => null),
-    (S.candCache[sym] ||= api(`/api/research/candidates?symbol=${sym}`).catch(() => []))]);
+  const [sp, full, cmpAll, dq] = await Promise.all([api(`/api/system?symbol=${sym}&tf=${tf}&strategy=${sid}`).catch(() => null),
+    (S.candCache[sym] ||= api(`/api/research/candidates?symbol=${sym}`).catch(() => [])),
+    (S.compare ||= api("/api/compare").catch(() => ({}))), (S.dq ||= api("/api/data_quality").catch(() => ({})))]);
   if (route() !== "lab" || S.labToken !== token) return;
   const cand = (full || []).find((c) => c.strategy === sid && c.tf === tf) || (R.candidates || []).find((c) => c.strategy === sid && c.tf === tf);
   const ranked = (R.candidates || []).filter((c) => c.oos?.trades >= 10).sort((a, b) => b.oos.t_stat - a.oos.t_stat);
@@ -1231,7 +1235,7 @@ async function renderLab(view) {
   const oosChart = rOos.length ? `<div class="mini-chart" id="oosMini"></div>` : "";
   $("#stepsPane").innerHTML = `<div class="steps">
     ${step(1, "ข้อมูลและกติกา", `<div class="kv2">${[["ข้อมูล", `${sp?.from ? fdt(sp.from, true).split(",")[0] : "–"} → ปัจจุบัน (${fnum(sp?.years, 1)} ปี)`], ["แหล่งข้อมูล", R.data_source || "–"],
-      ["เข้า", "อ่านสัญญาณตอนแท่งปิด เข้าที่ราคาเปิดแท่งถัดไป"], ["ออก", "ชน SL / ชน TP / มีสัญญาณตรงข้าม (กลับทิศ)"], ["ต้นทุน", "หัก spread + slippage × 2 + ค่าคอม ทุกไม้"]].map(([k, v]) => `<span class="k">${k}</span><span>${v}</span>`).join("")}</div>`)}
+      ["เข้า", "อ่านสัญญาณตอนแท่งปิด เข้าที่ราคาเปิดแท่งถัดไป"], ["ออก", "ชน SL / ชน TP / มีสัญญาณตรงข้าม (กลับทิศ)"], ["ต้นทุน", "หัก spread ตามชั่วโมงที่เข้า + slippage × 2 + ค่าคอม ทุกไม้ (swap: ไม่หัก เพราะบัญชีไม่มี swap · มีรอบเทียบแบบหักในข้อ 8)"]].map(([k, v]) => `<span class="k">${k}</span><span>${v}</span>`).join("")}</div>`)}
     ${step(2, "Backtest ทั้งช่วง (พารามิเตอร์ปัจจุบัน)", m ? `<div class="kpis">${kpi("เทรด", m.trades, fnum(m.trades_per_year, 0) + "/ปี")}${kpi("Expectancy", fr(m.expectancy, 3), "", cls(m.expectancy))}${kpi("t-stat", fnum(m.t_stat, 2))}${kpi("PF", fnum(m.pf, 2))}${kpi("Win rate", m.win_rate + "%")}${kpi("Max DD", fnum(m.max_dd_r, 1) + "R", "", "neg")}</div>
       <div class="hint">⚠️ เป็นผล in-sample — พารามิเตอร์ถูกเลือกจากข้อมูลบางส่วนในช่วงนี้เอง จึงมักดูดีเกินจริง ใช้ดูภาพรวมเท่านั้น</div>` : '<div class="hint">ไม่มีข้อมูล</div>')}
     ${step(3, "Walk-Forward (ข้อสอบที่ระบบไม่เคยเห็น)", o ? `<div class="kpis">${kpi("OOS เทรด", o.trades, `${fnum(cand.oos_years, 1)} ปี`)}${kpi("Expectancy", fr(o.expectancy, 3), "", cls(o.expectancy))}${kpi("t-stat", fnum(o.t_stat, 2), o.t_stat >= 2 ? "มีนัยสำคัญ" : "ยังไม่มีนัยสำคัญ", o.t_stat >= 2 ? "pos" : "")}${kpi("PF", fnum(o.pf, 2))}${kpi("WF Efficiency", cand.wfe ?? "–", "OOS ÷ IS")}${kpi("Plateau", fnum(cand.plateau * 100, 0) + "%", "พารามิเตอร์ข้างเคียงที่กำไร")}</div>
@@ -1245,7 +1249,8 @@ async function renderLab(view) {
     ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
       ${streakHtml(rOos, o?.trades_per_year)}
       <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
-    ${step(8, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? (cand?.kept && passed < judged ? `<b class="neg">ไม่ผ่านเกณฑ์รอบล่าสุด (${passed}/${judged})</b> แต่ยังเทรดอยู่เพราะกติกา “คงไว้จนจบไตรมาส” (ตกแค่ด่านหักโชค)` : "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง") : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
+    ${step(8, "เทียบเพิ่มเติม: ฝั่ง Buy/Sell · ซื้อแล้วถือ · ถ้าถูกหัก swap", extraHtml(cand, cmpAll, `${sym}:${sid}:${tf}`, dq?.symbols?.[sym]))}
+    ${step(9, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? (cand?.kept && passed < judged ? `<b class="neg">ไม่ผ่านเกณฑ์รอบล่าสุด (${passed}/${judged})</b> แต่ยังเทรดอยู่เพราะกติกา “คงไว้จนจบไตรมาส” (ตกแค่ด่านหักโชค)` : "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง") : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
   </div>`;
   if (rOos.length) {
     let cum = 0; const pts = (sp.oos.equity || []).map(([t, r]) => ({ time: shiftT(t), value: +(cum += r).toFixed(2) }));
@@ -1479,6 +1484,26 @@ function personalSettingsHtml() {
 // fund-style basket test: one system on all 8 symbols, judged on the pooled monthly OOS result
 // losing streaks (user, 2 Nov 2026: know in advance how many losses in a row are normal, so a streak never scares you
 // into stopping a system at the worst moment): worst run in the OOS history + the run a year of trading reaches 95% of the time
+// step 8 of the Lab (user, 3 Nov 2026): is the edge just the market's drift, and does it survive swap?
+function extraHtml(c, cmp, key, dq) {
+  if (!c) return '<div class="hint">–</div>';
+  const sd = c.sides || {}, bh = c.bh, L = sd.long || {}, Sh = sd.short || {};
+  const side = (x, name) => `${kpi(name, x.n ? fr(x.exp, 3) : "–", x.n ? `${x.n} ไม้ · รวม ${fnum(x.net, 1)}R` : "ไม่มีไม้", cls(x.exp))}`;
+  let note = "";
+  if (bh && L.n && Sh.n != null) {
+    if (bh.pct > 0 && (L.net || 0) > 0 && (Sh.net || 0) <= 0) note = "กำไรมาจากฝั่ง Buy ในช่วงที่ตลาดขึ้น — อาจแค่ตามตลาด ไม่ใช่ฝีมือระบบ (การเทียบสุ่มจุดเข้าในข้อ 5 ช่วยตรวจเรื่องนี้)";
+    else if (bh.pct < 0 && (Sh.net || 0) > 0 && (L.net || 0) <= 0) note = "กำไรมาจากฝั่ง Sell ในช่วงที่ตลาดลง — อาจแค่ตามตลาด";
+    else if ((L.net || 0) > 0 && (Sh.net || 0) > 0) note = "ทำกำไรได้ทั้งสองฝั่ง — ไม่ได้พึ่งทิศทางตลาดอย่างเดียว";
+  }
+  const x = (cmp && cmp.candidates || {})[key];
+  const swap = !cmp || !cmp.generated ? '<div class="hint">ยังไม่มีรอบทดสอบแบบหัก swap</div>' : !x ? '<div class="hint">ระบบนี้ไม่มีผลเด่นในทั้งสองรอบ</div>'
+    : `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>รอบ</th><th>สถานะ</th><th class="num">t รายเดือน</th><th class="num">Exp (R)</th></tr></thead><tbody>
+      ${[["ไม่หัก swap (ใช้จริง)", x.free], ["หัก swap (เทียบ)", x.swap]].map(([n, v]) => `<tr><td>${n}</td><td>${v[0] ? statusBadge(v[0]) : "–"}</td><td class="num">${fnum(v[1], 2)}</td><td class="num ${cls(v[2])}">${v[2] != null ? fnum(v[2], 3) : "–"}</td></tr>`).join("")}
+      </tbody></table></div>${x.free[0] === "ACTIVE" && x.swap[0] !== "ACTIVE" ? '<div class="hint neg">ผ่านเพราะบัญชีไม่มี swap — ถ้าย้ายไปบัญชีที่มี swap ระบบนี้จะไม่ผ่าน</div>' : ""}`;
+  const poor = dq && dq.poor_years && dq.poor_years.length ? `<div class="hint neg">ข้อมูลราคาปี ${dq.poor_years.join(", ")} มีช่วงขาดหรือราคากระโดดผิดปกติ</div>` : "";
+  return `<div class="kpis">${side(L, "ฝั่ง Buy")}${side(Sh, "ฝั่ง Sell")}${bh ? kpi("ซื้อแล้วถือ ช่วงเดียวกัน", (bh.pct > 0 ? "+" : "") + fnum(bh.pct, 1) + "%", bh.pct_year != null ? `${bh.pct_year > 0 ? "+" : ""}${fnum(bh.pct_year, 1)}%/ปี` : "", cls(bh.pct)) : ""}</div>
+    ${note ? `<div class="hint">${note}</div>` : ""}<div style="margin-top:10px"><b class="small">ถ้าถูกหัก swap</b></div>${swap}${poor}`;
+}
 function streakHtml(r, perYear) {
   if (!r || r.length < 20) return "";
   let worst = 0, cur = 0;
@@ -1791,7 +1816,10 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
   - Backtest, Walk-Forward, การสุ่มจุดเข้า และ forward test ใช้กฎนี้เหมือนกันทั้งหมด
 - ถ้าแท่งเดียวแตะทั้ง SL และ TP ให้ถือว่า **ชน SL ก่อน** (คิดแบบร้ายไว้ก่อน) และถ้าราคากระโดดข้าม SL จะออกที่ราคาเปิด
 - **หักต้นทุนทุกไม้ด้วยตัวเลขจริงของ Exness:** spread **ตามชั่วโมงที่เข้าเทรด** (ค่ากลางค่อนแพงของแท่ง H1 ย้อนหลัง ~3 ปี แยก 24 ชั่วโมง — ช่วงเปลี่ยนวันตีสี่ถึงหกโมงเช้าเวลาไทยแพงกว่าหลายเท่า) + slippage × 2 + ค่าคอม
-- **ค่า swap:** ตรวจจากประวัติจริงใน MT5 (3 พ.ย. 2026) แล้ว **บัญชี Pro ของคุณไม่ถูกหัก swap** การทดสอบจึงไม่หัก swap (มีโหมดหัก swap ไว้เทียบ) · โปรแกรมบนคอมตรวจ swap ที่ถูกหักจริงทุกวัน ถ้าเริ่มถูกหัก จะแจ้งเตือนให้กลับมาวิจัยแบบหัก swap
+- **ค่า swap:** ตรวจจากประวัติจริงใน MT5 (3 พ.ย. 2026) แล้ว **บัญชี Pro ของคุณไม่ถูกหัก swap** การทดสอบจึงไม่หัก swap · มี **รอบเทียบแบบหัก swap** ด้วยวิธีเดียวกันทุกอย่าง (ดูในหน้า Lab ข้อ 8) เพื่อให้เห็นว่าระบบไหนพึ่งการไม่มี swap
+  - โปรแกรมบนคอมตรวจ swap ที่ถูกหักจริงทุกวัน **ถ้าวันไหนเริ่มถูกหัก จะแจ้งเตือน และสลับการวิจัยกลับไปหัก swap พร้อมเริ่มวิจัยใหม่ให้อัตโนมัติ**
+- **slippage:** ตอนนี้ใช้ค่าประมาณ · โปรแกรมบันทึกราคาที่ได้จริงทุกไม้ เมื่อครบ 50 ไม้ (สินทรัพย์ละ ≥ 10) การทดสอบจะใช้ค่าที่วัดได้จริงแทนอัตโนมัติ (หน้า พอร์ต MT5)
+- **ตรวจคุณภาพข้อมูลราคา** (\`tools/check_history.py\`): หาช่วงที่ข้อมูลขาด ราคากระโดดแล้วเด้งกลับ (ราคาผิด) แท่งแบน และแท่งผิดรูป ทุกปีทุกสินทรัพย์ — ผล 3 พ.ย. 2026: FX / ทอง / ดัชนี / หุ้น สะอาด · **BTCUSD ปี 2014–ต้น 2018 ข้อมูลขาดเป็นส่วนใหญ่** จึงเริ่มใช้ตั้งแต่ ก.พ. 2018 · กติกาทั่วไป: เริ่มหลังเดือนสุดท้ายที่ข้อมูลบาง และหลังช่วงที่หายเกิน 7 วัน
 - วัดผลเป็น **R** (1R = เงินที่เสี่ยงต่อไม้) จึงเทียบข้ามสินทรัพย์ได้
 ### ขั้นที่ 2 — Backtest ทุกชุดพารามิเตอร์ (ชุดเล็ก ๆ)
 - ${S.strategies.length || 50} กลยุทธ์ × ${(S.settings?.research?.timeframes || ["H1", "H4", "D1"]).join(" / ")} แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือก 8–32 ชุด (ตัวแปรสัญญาณ 1–2 ตัว × ระยะ SL × TP)
@@ -1812,8 +1840,9 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 ### ขั้นที่ 4 — เทียบกับการสุ่มจุดเข้า
 - สุ่มจุดเข้า 300 รอบ โดยใช้ SL/TP/จำนวนไม้/สัดส่วน Long-Short เท่ากัน
 - ต้องชนะการสุ่มอย่างน้อย 90% — ถ้าไม่ชนะ แปลว่ากำไรมาจากตลาดวิ่งทางเดียว ไม่ใช่จากสัญญาณ
+- หน้า Lab ข้อ 8 แสดงเพิ่ม: **ผลฝั่ง Buy / Sell แยกกัน** และ **“ซื้อแล้วถือ” ในช่วงเดียวกัน** — ถ้ากำไรมาจากฝั่ง Buy อย่างเดียวในช่วงที่ตลาดขึ้น อาจแค่ตามตลาด
 ### ขั้นที่ 5 — Robustness 8 แบบ (พยายามทำให้ระบบพัง)
-- ตัดข้อมูล Walk-Forward แบบอื่นอีก 4 แบบ (ช่วงฝึกยาวขึ้น 1 ปี · สั้นลง 1 ปี · ช่วงสอบครึ่งปี · ใช้ข้อมูลทั้งหมดก่อนหน้าเป็นช่วงฝึก), ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 10 รอบ
+- ตัดข้อมูล Walk-Forward แบบอื่นอีก 4 แบบ (ช่วงฝึกยาวขึ้น 1 ปี · สั้นลง 1 ปี · ช่วงสอบครึ่งปี · ใช้ข้อมูลทั้งหมดก่อนหน้าเป็นช่วงฝึก), ต้นทุน × 2, เข้าช้า 1 แท่ง, ใส่ noise ในราคา 30 รอบ (เดิม 10 รอบ ผลแกว่งเกินไป)
 - ฝั่ง Long/Short ไม่มีฝั่งที่ขาดทุนชัด, กำไรสม่ำเสมอรายครึ่งปี, ตัด 5% ไม้ที่ดีที่สุดออกแล้วยังบวก, พารามิเตอร์ข้างเคียงก็กำไร
 ### ขั้นที่ 6 — Monte Carlo
 - สุ่มไม้ OOS ซ้ำ 5,000 รอบ **เป็นก้อน ๆ ละประมาณ 1 เดือน** (ไม้แพ้มักมาเป็นช่วง การสุ่มทีละไม้จะทำให้ DD ดูตื้นกว่าจริง) เพื่อดูว่า **ถ้าโชคไม่ดี** drawdown จะลึกแค่ไหน
@@ -2026,13 +2055,23 @@ function fillsHtml(f) {
       return `<tr><td><b>${esc(k)}</b></td><td class="num">${a.length}</td><td class="num ${sl > 0 ? "neg" : "pos"}">${sl == null ? "–" : fnum(sl, 1)}</td><td class="num ${dr > 0.05 ? "neg" : ""}">${dr == null ? "–" : (dr > 0 ? "+" : "") + fnum(dr, 3)}</td><td class="num">${dl == null ? "–" : fnum(dl, 0)}</td></tr>`; }).join("")}
     </tbody></table></div><div class="hint pad-x" style="padding:8px 14px 12px">+ = ได้ราคาแย่กว่า · ถ้า "ห่างจากราคาสัญญาณ" เกิน ~0.05R เป็นประจำ ต้นทุนจริงสูงกว่าที่ใช้ทดสอบ ต้องปรับต้นทุนในการทดสอบ</div></div>`;
 }
+// slippage the tests use vs the robot's real fills (app/fills.py): measured value replaces the estimate once there are enough
+function slipHtml(c) {
+  const rows = Object.entries((c && c.symbols) || {});
+  const head = `<div class="sec-h"><h2>ปรับ slippage จากของจริง</h2><span class="badge">${c?.total ?? 0}/${c?.min_total ?? 50} ไม้</span></div>`;
+  if (!rows.length) return head + `<div class="card"><div class="hint pad-x" style="padding:12px 14px">ยังไม่มีออเดอร์จริงพอ — เมื่อครบ ${c?.min_total ?? 50} ไม้ (และสินทรัพย์ละ ${c?.min_per_symbol ?? 10} ไม้) การทดสอบจะใช้ slippage ที่วัดได้แทนค่าประมาณ</div></div>`;
+  return head + `<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>สินทรัพย์</th><th class="num">ไม้</th><th class="num">slippage กลาง (จุด)</th><th class="num">p75 (จุด)</th><th class="num">ค่าที่ใช้ทดสอบตอนนี้</th></tr></thead><tbody>
+    ${rows.map(([k, x]) => `<tr><td><b>${esc(k)}</b></td><td class="num">${x.n}</td><td class="num">${fnum(x.median_pts, 1)}</td><td class="num">${fnum(x.p75_pts, 1)}</td><td class="num">${x.use != null ? `<b>${x.use}</b> (วัดจริง)` : `${x.estimate_price} (ประมาณ)`}</td></tr>`).join("")}
+    </tbody></table></div><div class="hint pad-x" style="padding:8px 14px 12px">ใช้ค่าเปอร์เซ็นไทล์ที่ 75 ของไม้จริง (นับเฉพาะฝั่งที่เสียเปรียบ) และไม่ต่ำกว่าครึ่งหนึ่งของค่าประมาณเดิม · ปรับให้อัตโนมัติในการวิจัยรอบถัดไป</div></div>`;
+}
 // markets that move together share one risk budget (same groups as app/scanner.py CLUSTERS)
 const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]], jpy_cross: ["คู่เงิน JPY", ["GBPJPY"]],
   metals: ["โลหะ", ["XAUUSD", "XAGUSD"]], energy: ["พลังงาน", ["USOIL"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"]],
   world_equity: ["ดัชนียุโรป/ญี่ปุ่น", ["DE30", "JP225"]], crypto: ["คริปโต", ["BTCUSD", "ETHUSD"]] };
 const clusterCap = (k) => { const c = S.settings?.cluster_risk_pct || {}; return +(c[k] ?? c.default ?? 1.5); };
 async function renderPort(view) {
-  const [sigs, syms, pc, killed] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus(), ghLive("data/research/auto_off.json")]);
+  const [sigs, syms, pc, killed, slip] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus(), ghLive("data/research/auto_off.json"),
+    api("/api/slippage").catch(() => ({}))]);
   S.pc = pc || S.pc; S.sigs = sigs; S.symbols = sortSyms(syms);
   const age = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null, online = age !== null && age < 70;
   const pos = (pc && pc.positions) || [], closed = (pc && pc.closed) || [];
@@ -2086,6 +2125,7 @@ async function renderPort(view) {
         : `<tr><td colspan="8" class="muted" style="text-align:center;padding:20px">ยังไม่มีออเดอร์ที่ปิด</td></tr>`}
     </tbody></table></div></div>
     ${fillsHtml((pc && pc.fills) || [])}
+    ${slipHtml(slip)}
     <div class="sec-h"><h2>ระบบของแต่ละสินทรัพย์</h2><a class="muted small" href="#/systems" style="margin-left:auto">รายละเอียดระบบ →</a></div>
     ${groupedTiles(S.symbols, sigs)}
   </div>`;

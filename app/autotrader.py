@@ -528,9 +528,17 @@ def swap_watch(c: dict, st: dict) -> None:
                             "examples": [{"symbol": r["symbol"], "swap": round(r["swap"], 2), "type": r.get("type")} for r in list(paid.values())[:5]]}
         _log("swap_watch", **st["swap_watch"])
         if paid and not st.get("swap_warned"):
-            st["swap_warned"] = True
+            # user, 3 Nov 2026: from that day research charges swap again. The flag file is pushed WITHOUT [skip ci]:
+            # the workflow sees data/exness/swap_charged.json in the push and re-runs the research (config.swap_mode).
+            flag = {"since": day, "account": body["account"].get("server"), "examples": st["swap_watch"]["examples"]}
+            sent = ghsync.put_file("data/exness/swap_charged.json",
+                                   json.dumps(flag, ensure_ascii=False, indent=1).encode("utf-8"),
+                                   "pc: account started paying swap -> research with swap")
+            st["swap_warned"] = bool(sent)
             _push(c, "⚠️ บัญชีเริ่มถูกหักค่า swap",
-                  " · ".join(f"{r['symbol']} {r['swap']:+.2f}" for r in list(paid.values())[:4]) + " — ควรวิจัยใหม่แบบหัก swap", priority=4)
+                  " · ".join(f"{r['symbol']} {r['swap']:+.2f}" for r in list(paid.values())[:4])
+                  + (" — สลับไปวิจัยแบบหัก swap แล้ว (เริ่มวิจัยใหม่อัตโนมัติ)" if sent else " — ส่งไฟล์แจ้ง GitHub ไม่สำเร็จ จะลองใหม่พรุ่งนี้"),
+                  priority=4)
     except Exception as e:
         log.warning("swap watch: %s", e)
 

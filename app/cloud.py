@@ -3,6 +3,7 @@
   python -m app.cloud scan       hourly: fresh prices -> new signals + forward tracking -> push alert -> rebuild site
   python -m app.cloud research   full research in ONE process (slow; the workflow uses prefetch -> part x 24 -> merge instead)
   python -m app.cloud prefetch | part SYMBOL TF | merge   the parallel research run
+  python -m app.cloud compare    judge a comparison run (swap charged) into data/research/compare/ only
   python -m app.cloud build      rebuild the site only
   python -m app.cloud test       send a test push (priority 5, like a real ACTIVE signal)
 """
@@ -32,6 +33,8 @@ def _sync_remote() -> None:
                              encoding="utf-8", timeout=30)
         if raw.returncode == 0 and raw.stdout.strip():
             Path(scanner.SIGNALS_FILE.parent / "pc_status.json").write_text(raw.stdout, encoding="utf-8")
+            from . import fills         # keep every real fill (the robot only keeps its newest) for slippage calibration
+            fills.collect(json.loads(raw.stdout))
         from tools.merge_signals import main as merge_signals
         merge_signals("origin/main")
     except Exception as e:  # offline / no git: scan with the checkout as before
@@ -57,6 +60,16 @@ def main(mode: str, *args: str) -> int:
         suffix = f"_{chunk.replace('/', 'of')}" if chunk else ""
         with gzip.open(research.PARTS_DIR / f"{sym}_{tf}{suffix}.json.gz", "wt", encoding="utf-8") as f:
             json.dump(part, f, separators=(",", ":"), default=str)
+        return 0
+    if mode == "compare":    # comparison run (variant swap): judge the parts aside, live results untouched, no scan
+        from . import compare
+        parts = []
+        for f in sorted(research.PARTS_DIR.glob("*.json.gz")):
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                parts.append(json.load(fh))
+        log.info("comparison: %d research parts", len(parts))
+        if parts:
+            compare.compare(parts)
         return 0
     full = None              # system payloads: full rebuild after a research merge, else export decides (once a day)
     if mode == "merge":      # research run, step 3: judge all candidates, write latest.json, then scan + build below

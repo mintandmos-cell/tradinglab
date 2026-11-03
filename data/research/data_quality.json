@@ -1,0 +1,129 @@
+{
+ "generated": "2026-11-03T09:15:19.057953+00:00",
+ "symbols": {
+  "BTCUSD": {
+   "symbol": "BTCUSD",
+   "from": "2018-02-14T15:00:00+00:00",
+   "to": "2026-11-02T10:00:00+00:00",
+   "bars": 76323,
+   "source": "exness",
+   "years": {
+    "2018": {
+     "bars": 7637,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 1,
+     "big_moves": 9,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 8754,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 8,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 8784,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 6,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 8760,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 1,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 8757,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 8760,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 6,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 8781,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 8760,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 7330,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 0.0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2018-10-15T06:00:00+00:00",
+     "close_before": 6510.33,
+     "close": 7015.8,
+     "next_close": 6618.06
+    },
+    {
+     "time": "2021-09-07T15:00:00+00:00",
+     "close_before": 47439.95,
+     "close": 46662.1,
+     "next_close": 47162.09
+    }
+   ],
+   "suggest_start": null
+  }
+ }
+}

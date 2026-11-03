@@ -260,6 +260,17 @@ def _seed_exness(sym: str) -> pd.DataFrame | None:
         dense = counts[counts > 120]                    # skip daily-bars-as-H1 padding (stocks trade ~7 h a day)
         if len(dense):
             d = d[month >= int(dense.index.min())]
+            # tools/check_history (3 Nov 2026): BTCUSD jumps 2014 -> 2017 and is sparse (2-100 bars a month) until Feb 2018;
+            # start after the LAST thin month (the newest month may be partial), so no fold or trade spans holes
+            counts = counts[counts.index >= int(dense.index.min())].iloc[:-1]
+            thin = counts[counts <= 120]
+            if len(thin):
+                month = d.index.year * 12 + d.index.month
+                d = d[month > int(thin.index.max())]
+            gaps = d.index.to_series().diff()
+            hole = gaps[gaps > pd.Timedelta(days=7)]     # a week+ without bars (holidays are shorter): start after it
+            if len(hole):
+                d = d[d.index >= hole.index[-1]]
         d = d.iloc[:-1]                                  # the export's last bar was still forming
         return _clean(d[["open", "high", "low", "close", "volume"]].astype(float))
     except Exception as e:
@@ -273,7 +284,8 @@ def history_source(sym: str) -> str:
     so systems are judged again from scratch (user, 2 Nov 2026)."""
     ex = _seed_exness(sym)
     if ex is not None and len(ex) > 1000:
-        return "exness"
+        # with the first month: cutting bad old data (tools/check_history, 3 Nov 2026) is a change of prices too
+        return f"exness@{ex.index[0]:%Y-%m}"
     return "mt5" if (HISTORY_DIR / f"{sym}_H1.csv.gz").exists() else "free"
 
 

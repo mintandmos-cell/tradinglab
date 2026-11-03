@@ -109,6 +109,7 @@ DEFAULT_SETTINGS = {
                   "multiple_testing": True},   # OOS t must also beat the Sidak-adjusted threshold for the number of candidates compared
         "effective_trials": True,
         "swap_mode": "free",             # free (the account books no swap, 3 Nov 2026) | charged
+        "noise_sims": 30,                # robustness noise test runs (was 10; user, 3 Nov 2026)
         "holdout_months": 12,            # sealed final exam: the last 12 months before the cut-off are judged on their own
         "t_basis": "monthly",            # t of the monthly OOS R (trades in a cluster are not independent) | trade        # count correlated candidates as fewer independent tests (Li & Ji eigenvalues; 2 Nov 2026)
     },
@@ -252,9 +253,30 @@ def symbol_spec(sym: str, settings: dict | None = None) -> dict:
     spec = {**SYMBOLS[sym], **settings.get("symbol_overrides", {}).get(sym, {}), **broker_costs(sym), "symbol": sym}
     # user, 3 Nov 2026: the Exness Pro account books NO swap (checked on MT5 deals) -> research runs swap-free by default;
     # "charged" puts the quoted swaps back (comparison runs / if the robot's daily swap check starts seeing charges)
-    if settings.get("research", {}).get("swap_mode", "free") == "free":
+    if swap_mode(settings) == "free":
         spec["swap_long"] = spec["swap_short"] = 0.0
+    # user, 3 Nov 2026: slippage from the robot's real fills once there are enough (app/fills.py), else the estimate
+    from .fills import measured_slippage
+    slip = measured_slippage(sym)
+    if slip is not None:
+        spec["slippage"] = slip
+        spec["slippage_source"] = "fills"
     return spec
+
+
+SWAP_FLAG = DATA_DIR / "exness" / "swap_charged.json"   # written by the PC robot the first day MT5 books a swap
+
+
+def swap_mode(settings: dict | None = None) -> str:
+    """'free' | 'charged'. Env TL_SWAP_MODE wins (comparison runs); then the PC's flag file (user, 3 Nov 2026: the day the
+    account starts paying swap, research goes back to charging it); then settings research.swap_mode."""
+    env = os.environ.get("TL_SWAP_MODE", "").strip().lower()
+    if env in ("free", "charged"):
+        return env
+    if SWAP_FLAG.exists():
+        return "charged"
+    settings = settings or load_settings()
+    return settings.get("research", {}).get("swap_mode", "free")
 
 
 def read_json(path: Path, default):

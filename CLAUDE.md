@@ -102,6 +102,19 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   t of MONTHLY OOS R (`research.monthly_t`, `t_of`, settings t_basis) on the OOS BEFORE the sealed holdout (`split_oos`,
   `oos_sel`; `holdout_months` 12 = 9th gate "holdout expectancy >= 0", < 3 trades = cannot judge). MC = block bootstrap
   (`run_mc(method="block")`, ~1 month of trades per block).
+- SWAP AUTO + COMPARISON (user, 3 Nov 2026): `config.swap_mode()` = env TL_SWAP_MODE > flag file data/exness/swap_charged.json
+  (the robot's daily `swap_watch` pushes it via `ghsync.put_file` the first day MT5 books a swap; the push re-runs research,
+  workflow plan checks commits for that file name — never put that file name in a commit message) > settings. Comparison run:
+  Run workflow -> research, variant = swap -> parts with TL_SWAP_MODE=charged -> `app.cloud compare` (`app/compare.py`) judges
+  them in a temp research folder and writes only data/research/compare/swap_charged.json; Lab step 8 shows free vs swap.
+  Run it AFTER the live run (it compares against latest.json at merge time; re-judge with mode merge + from_run + variant swap).
+- DATA QUALITY (3 Nov 2026): `tools/check_history.py` -> data/research/data_quality.json (holes, snap-back spikes, flat, bad
+  bars per year). `data._seed_exness` starts after the last thin month (<= 120 bars) and after the last 7-day hole
+  (BTCUSD 2014-2017 was sparse -> starts Feb 2018); `history_source` = "exness@YYYY-MM" so a new start re-judges.
+- Lab step 8: long/short split (`research.sides_split`) + buy-and-hold over the OOS span (`research.buy_hold`) + swap compare.
+  Robustness noise test 30 sims (`research.noise_sims`). SLIPPAGE: cloud scan copies the PC's fills into
+  data/research/fills_log.json (`fills.collect`); with >= 50 fills and >= 10 for a symbol, `config.symbol_spec` uses the p75
+  real slippage (never below half the estimate); พอร์ต MT5 page shows it.
 - WFA WINDOWS PER TF (user, 3 Nov 2026, later the same day — replaces the expanding default): settings research.wfa =
   H1 rolling IS 24 m / OOS 12 m, H4 and D1 rolling IS 36 m / OOS 12 m; folds counted BACKWARDS from the cut-off (the last fold
   ends at the start of the current quarter); live set re-picked each quarterly run (lock 3 months, hysteresis). Robustness

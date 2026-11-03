@@ -19,13 +19,18 @@ on:
         description: "merge = judge the research parts of an earlier run again (its run id) without re-testing"
         type: string
         default: ""
+      variant:
+        description: "research: normal = ผลที่ใช้เทรด · swap = รอบเทียบแบบหัก swap (ไม่แทนผลจริง เขียนลง data/research/compare/)"
+        type: choice
+        options: [normal, swap]
+        default: normal
       artifact_ids:
         description: "merge: comma-separated artifact ids (the cross-run artifact list stops at 200)"
         type: string
         default: ""
   push:
     branches: [main]
-    paths: ["app/**", "web/**", "data/research/**", "data/settings.json", "data/history/**", "data/signals.json", ".github/workflows/**"]
+    paths: ["app/**", "web/**", "data/research/**", "data/settings.json", "data/history/**", "data/exness/swap_charged.json", "data/signals.json", ".github/workflows/**"]
 
 permissions:
   contents: write
@@ -36,7 +41,7 @@ permissions:
 # One queue for hourly scans / site builds (a newer queued one replaces an older queued one — fine for scans).
 # Research runs (button, Saturday, new history pushed) get their own group so a queued scan can never cancel them.
 concurrency:
-  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || github.event.schedule == '30 2 1 1,4,7,10 *' || contains(toJSON(github.event.commits), 'data/history/')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || github.event.schedule == '30 2 1 1,4,7,10 *' || contains(toJSON(github.event.commits), 'data/history/') || contains(toJSON(github.event.commits), 'swap_charged')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
   cancel-in-progress: false
 
 jobs:
@@ -58,6 +63,8 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then MODE="build"; fi
           # new long price history pushed from the PC (export_mt5_history.bat): research it right away
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
+          # the PC saw the account pay swap (data/exness/swap_charged.json): research again, now charging swap
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'swap_charged') }}" = "true" ]; then MODE="research"; fi
           if [ "$MODE" = "due" ]; then
             # research runs once per quarter (cut-off = 1 Jan / 1 Apr / 1 Jul / 1 Oct 00:00 broker time = New York + 7 h)
             curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/main/data/research/latest.json" -o latest.json || true
@@ -119,6 +126,7 @@ jobs:
     env:
       PYTHONWARNINGS: ignore
       TL_OFFLINE: "1"
+      TL_SWAP_MODE: ${{ inputs.variant == 'swap' && 'charged' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -210,9 +218,11 @@ jobs:
         run: |
           MODE="${{ needs.plan.outputs.mode }}"
           if [ "$MODE" = "research" ] || [ "$MODE" = "merge" ]; then MODE="merge"; fi
+          # comparison run (variant swap): judge the parts into data/research/compare/ only — live results stay untouched
+          if [ "$MODE" = "merge" ] && [ "${{ inputs.variant }}" = "swap" ]; then MODE="compare"; export TL_SWAP_MODE=charged; fi
           echo "mode=$MODE"
           python -m app.cloud "$MODE"
-          if [ "$MODE" = "test" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi
+          if [ "$MODE" = "test" ] || [ "$MODE" = "compare" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi
 
       - name: Save system payload cache
         if: always()

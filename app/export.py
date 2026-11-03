@@ -143,6 +143,10 @@ def build(repo: str = "", chart_limit: int = 1200, full_sys: bool | None = None)
     for sym in (lat.get("symbols") or {}):            # full candidate records per symbol: only the Lab page loads them
         _dump(d / "research" / f"{sym}.json", research.candidates(sym))
     _dump(d / "picks.json", research.picks(lat))
+    from . import compare, fills
+    _dump(d / "compare.json", compare.load())                   # swap-charged comparison run (Lab page)
+    _dump(d / "slippage.json", fills.calibration())             # real fills vs the tested slippage (พอร์ต MT5 page)
+    _dump(d / "data_quality.json", read_json(research.RESEARCH_DIR / "data_quality.json", {}))
     _dump(d / "history.json", research.history())
     _dump(d / "signals.json", scanner.load_signals()[:200])
     _dump(d / "forward.json", scanner.forward_summary())
