@@ -96,6 +96,12 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Research matrix: 20 symbols x 3 TF x 4 chunks = 240 jobs. latest.json keeps SLIM candidates (`research.slim`); full records in
   `data/research/cands/{SYM}.json.gz` (`research.candidates`, Lab page via /api/research/candidates = site data/research/{SYM}.json).
   Full site payload build covers the 109 core systems + MR systems that are not OFF.
+- TESTING UPGRADES (user, 3 Nov 2026): `research.swap_mode` "free" (MT5 deals showed the Pro account books NO swap;
+  `config.symbol_spec` zeroes swaps) | "charged"; robot `swap_watch` checks booked swaps daily (push + pc_status swap_watch).
+  Entry cost = spread of the entry bar's UTC hour (`engine.cost_by_bar`, PC export `spread_by_hour_p75`). Gates use the
+  t of MONTHLY OOS R (`research.monthly_t`, `t_of`, settings t_basis) on the OOS BEFORE the sealed holdout (`split_oos`,
+  `oos_sel`; `holdout_months` 12 = 9th gate "holdout expectancy >= 0", < 3 trades = cannot judge). MC = block bootstrap
+  (`run_mc(method="block")`, ~1 month of trades per block).
 - WFA WINDOWS PER TF (user, 3 Nov 2026, later the same day — replaces the expanding default): settings research.wfa =
   H1 rolling IS 24 m / OOS 12 m, H4 and D1 rolling IS 36 m / OOS 12 m; folds counted BACKWARDS from the cut-off (the last fold
   ends at the start of the current quarter); live set re-picked each quarterly run (lock 3 months, hysteresis). Robustness
