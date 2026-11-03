@@ -1,10 +1,10 @@
 {
- "last_scan": "2026-11-03T22:23:19.097250+00:00",
+ "last_scan": "2026-11-03T23:14:43.608162+00:00",
  "last_error": null,
  "new_signals": 0,
  "checked": 38,
  "errors": [
-  "DE30 H1: newest closed bar is 5 h old (stale data)",
-  "JP225 H1: newest closed bar is 34 h old (stale data)"
+  "DE30 H1: newest closed bar is 6 h old (stale data)",
+  "JP225 H1: newest closed bar is 35 h old (stale data)"
  ]
 }
