@@ -1,0 +1,279 @@
+{
+ "time": "2026-11-03T00:27:03.897050+00:00",
+ "account": {
+  "server": "Exness-MT5Trial17",
+  "trade_mode": 0,
+  "leverage": 2000,
+  "name": "",
+  "currency": "USD"
+ },
+ "positions": {
+  "2754889530": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -9.05,
+   "open": "2026-10-28T02:40:50+00:00",
+   "close": "2026-10-28T08:15:02+00:00",
+   "volume": 0.07,
+   "type": "BUY"
+  },
+  "2757748035": {
+   "symbol": "ETHUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -9.85,
+   "open": "2026-10-28T14:00:27+00:00",
+   "close": "2026-10-28T18:36:05+00:00",
+   "volume": 0.37,
+   "type": "SELL"
+  },
+  "2758119554": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -9.25,
+   "open": "2026-10-28T15:00:21+00:00",
+   "close": "2026-10-28T18:43:40+00:00",
+   "volume": 0.05,
+   "type": "BUY"
+  },
+  "2760554425": {
+   "symbol": "BTCUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -6.24,
+   "open": "2026-10-28T20:00:22+00:00",
+   "close": "2026-10-28T20:28:57+00:00",
+   "volume": 0.01,
+   "type": "BUY"
+  },
+  "2760562520": {
+   "symbol": "XAUUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -24.69,
+   "open": "2026-10-28T20:00:58+00:00",
+   "close": "2026-10-28T22:45:46+00:00",
+   "volume": 0.01,
+   "type": "BUY"
+  },
+  "2761696400": {
+   "symbol": "XAUUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -25.15,
+   "open": "2026-10-29T02:00:30+00:00",
+   "close": "2026-10-29T04:13:14+00:00",
+   "volume": 0.01,
+   "type": "BUY"
+  },
+  "2761696486": {
+   "symbol": "BTCUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -7.33,
+   "open": "2026-10-29T02:00:31+00:00",
+   "close": "2026-10-29T14:32:48+00:00",
+   "volume": 0.01,
+   "type": "SELL"
+  },
+  "2761696789": {
+   "symbol": "ETHUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -9.7,
+   "open": "2026-10-29T02:00:33+00:00",
+   "close": "2026-10-29T14:33:01+00:00",
+   "volume": 0.31,
+   "type": "SELL"
+  },
+  "2768006439": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -0.74,
+   "open": "2026-10-29T22:38:43+00:00",
+   "close": "2026-10-30T00:10:47+00:00",
+   "volume": 0.03,
+   "type": "SELL"
+  },
+  "2768009292": {
+   "symbol": "US500",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": 11.02,
+   "open": "2026-10-29T22:40:24+00:00",
+   "close": "2026-10-30T16:46:28+00:00",
+   "volume": 0.14,
+   "type": "SELL"
+  },
+  "2768013509": {
+   "symbol": "USTEC",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": 20.36,
+   "open": "2026-10-29T22:42:17+00:00",
+   "close": "2026-10-30T14:22:12+00:00",
+   "volume": 0.05,
+   "type": "SELL"
+  },
+  "2768016193": {
+   "symbol": "XAUUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -29.63,
+   "open": "2026-10-29T22:43:32+00:00",
+   "close": "2026-10-30T03:11:58+00:00",
+   "volume": 0.01,
+   "type": "BUY"
+  },
+  "2768291430": {
+   "symbol": "BTCUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": 9.01,
+   "open": "2026-10-30T00:09:38+00:00",
+   "close": null,
+   "volume": 0.01,
+   "type": "SELL",
+   "still_open": true
+  },
+  "2768296987": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -3.58,
+   "open": "2026-10-30T00:11:03+00:00",
+   "close": "2026-10-30T00:41:21+00:00",
+   "volume": 0.03,
+   "type": "BUY"
+  },
+  "2769268406": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -2.12,
+   "open": "2026-10-30T02:43:15+00:00",
+   "close": "2026-10-30T03:02:31+00:00",
+   "volume": 0.02,
+   "type": "SELL"
+  },
+  "2779689255": {
+   "symbol": "ETHUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": 29.54,
+   "open": "2026-11-02T00:47:12+00:00",
+   "close": "2026-11-02T03:24:46+00:00",
+   "volume": 0.92,
+   "type": "BUY"
+  },
+  "2782356317": {
+   "symbol": "EURUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -9.3,
+   "open": "2026-11-02T09:14:05+00:00",
+   "close": "2026-11-02T21:54:41+00:00",
+   "volume": 0.02,
+   "type": "BUY"
+  },
+  "2782537699": {
+   "symbol": "USDJPY",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -3.87,
+   "open": "2026-11-02T10:00:20+00:00",
+   "close": null,
+   "volume": 0.05,
+   "type": "BUY",
+   "still_open": true
+  },
+  "2784039462": {
+   "symbol": "USOIL",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": 26.58,
+   "open": "2026-11-02T14:00:50+00:00",
+   "close": null,
+   "volume": 0.02,
+   "type": "SELL",
+   "still_open": true
+  },
+  "2785283307": {
+   "symbol": "DE30",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -10.94,
+   "open": "2026-11-02T17:00:20+00:00",
+   "close": null,
+   "volume": 0.07,
+   "type": "BUY",
+   "still_open": true
+  },
+  "2786124974": {
+   "symbol": "GBPUSD",
+   "swap": 0.0,
+   "commission": 0.0,
+   "profit": -0.83,
+   "open": "2026-11-02T22:00:29+00:00",
+   "close": null,
+   "volume": 0.01,
+   "type": "SELL",
+   "still_open": true
+  }
+ },
+ "quoted_rates": {
+  "USDJPY": {
+   "swap_long": 0.0,
+   "swap_short": -14.2,
+   "swap_mode": 1
+  },
+  "ETHUSD": {
+   "swap_long": -51.6,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "BTCUSD": {
+   "swap_long": -1778.7,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "XAUUSD": {
+   "swap_long": -481.0,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "US500": {
+   "swap_long": -162.3,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "USTEC": {
+   "swap_long": -653.1,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "EURUSD": {
+   "swap_long": -5.8,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "USOIL": {
+   "swap_long": 0.0,
+   "swap_short": -75.0,
+   "swap_mode": 1
+  },
+  "DE30": {
+   "swap_long": -43.7,
+   "swap_short": 0.0,
+   "swap_mode": 1
+  },
+  "GBPUSD": {
+   "swap_long": -2.2,
+   "swap_short": -0.7,
+   "swap_mode": 1
+  }
+ }
+}
