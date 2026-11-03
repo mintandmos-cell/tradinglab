@@ -1,9 +1,30 @@
 {
- "id": "2026-11-03-swaps-2",
- "started": "2026-11-03T00:27:03.171413+00:00",
+ "id": "2026-11-03-costs-3",
+ "started": "2026-11-03T01:36:56.163345+00:00",
  "symbols": {},
  "server": "Exness-MT5Trial17",
  "utc_offset_h": 0.0,
- "swaps": 21,
- "finished": "2026-11-03T00:27:06.891146+00:00"
+ "costs": {
+  "EURUSD": "ok",
+  "GBPUSD": "ok",
+  "USDJPY": "ok",
+  "XAUUSD": "ok",
+  "NAS100": "ok",
+  "US500": "ok",
+  "BTCUSD": "ok",
+  "ETHUSD": "ok",
+  "GBPJPY": "ok",
+  "AUDUSD": "ok",
+  "USDCAD": "ok",
+  "NVDA": "ok",
+  "MSFT": "ok",
+  "AMZN": "ok",
+  "META": "ok",
+  "AAPL": "ok",
+  "XAGUSD": "ok",
+  "DE30": "ok",
+  "JP225": "ok",
+  "USOIL": "ok"
+ },
+ "finished": "2026-11-03T01:37:07.799586+00:00"
 }
