@@ -1,20 +1,20 @@
 {
- "last_scan_hour": "2026-11-04 04:00:00+00:00",
+ "last_scan_hour": "2026-11-04 05:00:00+00:00",
  "new_signals": [],
  "scan": {
   "checked": 38,
   "errors": [
-   "NVDA H1: newest closed bar is 7 h old (stale data)",
-   "MSFT H1: newest closed bar is 7 h old (stale data)",
-   "AMZN H1: newest closed bar is 7 h old (stale data)",
-   "META H1: newest closed bar is 7 h old (stale data)",
-   "AAPL H1: newest closed bar is 7 h old (stale data)"
+   "NVDA H1: newest closed bar is 8 h old (stale data)",
+   "MSFT H1: newest closed bar is 8 h old (stale data)",
+   "AMZN H1: newest closed bar is 8 h old (stale data)",
+   "META H1: newest closed bar is 8 h old (stale data)",
+   "AAPL H1: newest closed bar is 8 h old (stale data)"
   ]
  },
- "time": "2026-11-04T04:55:00.045528+00:00",
+ "time": "2026-11-04T05:00:20.850859+00:00",
  "account": "DEMO",
  "balance": 9844.51,
- "equity": 9991.25,
+ "equity": 9975.37,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.795,
-   "profit": 37.26,
+   "price": 95.151,
+   "profit": 30.14,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34626,
-   "profit": -5.68,
+   "price": 1.34598,
+   "profit": -5.4,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +55,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.707,
-   "profit": 6.08,
+   "price": 157.822,
+   "profit": 5.35,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,8 +69,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25697.6,
-   "profit": 6.79,
+   "price": 25705.6,
+   "profit": 4.99,
    "time": "2026-11-04T01:00:36+00:00"
   },
   {
@@ -83,8 +83,8 @@
    "price_open": 62235.8,
    "sl": 61368.0,
    "tp": null,
-   "price": 60965.6,
-   "profit": 102.29,
+   "price": 61045.6,
+   "profit": 95.78,
    "time": "2026-11-04T01:00:37+00:00"
   }
  ],
