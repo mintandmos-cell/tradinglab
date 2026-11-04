@@ -11,10 +11,10 @@
    "AAPL H1: newest closed bar is 5 h old (stale data)"
   ]
  },
- "time": "2026-11-04T02:00:29.328415+00:00",
+ "time": "2026-11-04T02:07:05.497846+00:00",
  "account": "DEMO",
- "balance": 9838.65,
- "equity": 10036.15,
+ "balance": 9875.71,
+ "equity": 10008.95,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.701,
-   "profit": 39.14,
+   "price": 94.69,
+   "profit": 39.36,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34656,
-   "profit": -5.98,
+   "price": 1.34558,
+   "profit": -5.0,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,23 +55,9 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.633,
-   "profit": 6.55,
+   "price": 157.831,
+   "profit": 5.29,
    "time": "2026-11-03T22:00:34+00:00"
-  },
-  {
-   "ticket": 2793590696,
-   "symbol": "EURUSD",
-   "system": "TL14-H1",
-   "signal_id": "EURUSD-H1-ichimoku_tk-1793746800",
-   "side": "BUY",
-   "lots": 0.17,
-   "price_open": 1.12084,
-   "sl": 1.11913,
-   "tp": null,
-   "price": 1.12408,
-   "profit": 55.08,
-   "time": "2026-11-04T00:00:30+00:00"
   },
   {
    "ticket": 2793910757,
@@ -83,8 +69,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25676.6,
-   "profit": 11.51,
+   "price": 25681.6,
+   "profit": 10.38,
    "time": "2026-11-04T01:00:36+00:00"
   },
   {
@@ -95,14 +81,27 @@
    "side": "SELL",
    "lots": 12.7,
    "price_open": 62235.8,
-   "sl": 62853.1,
+   "sl": 62213.0,
    "tp": null,
-   "price": 61213.1,
-   "profit": 82.39,
+   "price": 61295.6,
+   "profit": 75.66,
    "time": "2026-11-04T01:00:37+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2793590696,
+   "signal_id": "EURUSD-H1-ichimoku_tk-1793746800",
+   "time": "2026-11-04T02:07:04.249426+00:00",
+   "symbol": "EURUSD",
+   "system": "TL14-H1",
+   "side": "BUY",
+   "lots": 0.17,
+   "price_open": 1.12084,
+   "price": 1.12302,
+   "reason": "SL",
+   "profit": 37.06
+  },
   {
    "ticket": 2782537699,
    "signal_id": "USDJPY-H1-vol_breakout-1793610000",
