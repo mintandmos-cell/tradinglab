@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T00:00:29.405536+00:00",
+   "signal": "EURUSD-H1-ichimoku_tk-1793746800",
+   "symbol": "EURUSD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "BUY",
+   "asked": 1.12084,
+   "fill": 1.12084,
+   "signal_entry": 1.12067,
+   "slip_pts": 0.0,
+   "drift_r": 0.063,
+   "delay_s": 29
+  },
+  {
    "time": "2026-11-03T22:00:33.620604+00:00",
    "signal": "USDJPY-D1-mr_rsi2_slope-1793656800",
    "symbol": "USDJPY",
@@ -57,5 +71,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-03T22:23:06.278900+00:00"
+ "updated": "2026-11-04T00:49:14.675064+00:00"
 }
