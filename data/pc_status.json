@@ -1,20 +1,23 @@
 {
- "last_scan_hour": "2026-11-04 05:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-04 06:00:00+00:00",
+ "new_signals": [
+  "NAS100-H4-mr_nlow_year-1793743200",
+  "XAGUSD-H1-ichimoku_tk-1793768400"
+ ],
  "scan": {
   "checked": 38,
   "errors": [
-   "NVDA H1: newest closed bar is 8 h old (stale data)",
-   "MSFT H1: newest closed bar is 8 h old (stale data)",
-   "AMZN H1: newest closed bar is 8 h old (stale data)",
-   "META H1: newest closed bar is 8 h old (stale data)",
-   "AAPL H1: newest closed bar is 8 h old (stale data)"
+   "NVDA H1: newest closed bar is 9 h old (stale data)",
+   "MSFT H1: newest closed bar is 9 h old (stale data)",
+   "AMZN H1: newest closed bar is 9 h old (stale data)",
+   "META H1: newest closed bar is 9 h old (stale data)",
+   "AAPL H1: newest closed bar is 9 h old (stale data)"
   ]
  },
- "time": "2026-11-04T05:04:03.069176+00:00",
+ "time": "2026-11-04T06:00:56.830474+00:00",
  "account": "DEMO",
  "balance": 9928.57,
- "equity": 9950.79,
+ "equity": 9935.44,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +30,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.57,
-   "profit": 21.76,
+   "price": 95.413,
+   "profit": 24.9,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +44,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34544,
-   "profit": -4.86,
+   "price": 1.34597,
+   "profit": -5.39,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +58,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.94,
-   "profit": 4.6,
+   "price": 158.043,
+   "profit": 3.94,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,8 +72,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25724.6,
-   "profit": 0.72,
+   "price": 25801.6,
+   "profit": -16.58,
    "time": "2026-11-04T01:00:36+00:00"
   }
  ],
