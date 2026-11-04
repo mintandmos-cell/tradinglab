@@ -1,14 +1,22 @@
 {
- "last_scan_hour": "2026-11-03 23:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-04 00:00:00+00:00",
+ "new_signals": [
+  "EURUSD-H1-ichimoku_tk-1793746800"
+ ],
  "scan": {
   "checked": 38,
-  "errors": []
+  "errors": [
+   "NVDA H1: newest closed bar is 3 h old (stale data)",
+   "MSFT H1: newest closed bar is 3 h old (stale data)",
+   "AMZN H1: newest closed bar is 3 h old (stale data)",
+   "META H1: newest closed bar is 3 h old (stale data)",
+   "AAPL H1: newest closed bar is 3 h old (stale data)"
+  ]
  },
- "time": "2026-11-03T23:00:16.147341+00:00",
+ "time": "2026-11-04T00:00:26.296246+00:00",
  "account": "DEMO",
  "balance": 9896.39,
- "equity": 9932.17,
+ "equity": 9925.38,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +29,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 158.683,
-   "profit": 23.31,
+   "price": 158.491,
+   "profit": 17.29,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -35,8 +43,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 96.066,
-   "profit": 11.84,
+   "price": 95.806,
+   "profit": 17.04,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -49,8 +57,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34118,
-   "profit": -0.6,
+   "price": 1.3435,
+   "profit": -2.92,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -63,8 +71,8 @@
    "price_open": 1.40089,
    "sl": 1.39781,
    "tp": null,
-   "price": 1.40098,
-   "profit": 1.41,
+   "price": 1.40042,
+   "profit": -7.38,
    "time": "2026-11-03T21:00:36+00:00"
   },
   {
@@ -77,8 +85,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.701,
-   "profit": -0.22,
+   "price": 158.498,
+   "profit": 1.06,
    "time": "2026-11-03T22:00:34+00:00"
   }
  ],
