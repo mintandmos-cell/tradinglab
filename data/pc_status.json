@@ -14,10 +14,10 @@
    "AAPL H1: newest closed bar is 4 h old (stale data)"
   ]
  },
- "time": "2026-11-04T01:00:52.953373+00:00",
+ "time": "2026-11-04T01:12:22.723886+00:00",
  "account": "DEMO",
- "balance": 9896.39,
- "equity": 9916.21,
+ "balance": 9848.55,
+ "equity": 9965.18,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -30,8 +30,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 158.452,
-   "profit": 16.06,
+   "price": 158.241,
+   "profit": 9.42,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -44,8 +44,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 96.115,
-   "profit": 10.86,
+   "price": 95.853,
+   "profit": 16.1,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -58,23 +58,9 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34396,
-   "profit": -3.38,
+   "price": 1.34485,
+   "profit": -4.27,
    "time": "2026-11-02T22:00:29+00:00"
-  },
-  {
-   "ticket": 2793203417,
-   "symbol": "USDCAD",
-   "system": "TL14-H1",
-   "signal_id": "USDCAD-H1-ichimoku_tk-1793736000",
-   "side": "BUY",
-   "lots": 0.22,
-   "price_open": 1.40089,
-   "sl": 1.39785,
-   "tp": null,
-   "price": 1.39927,
-   "profit": -25.47,
-   "time": "2026-11-03T21:00:36+00:00"
   },
   {
    "ticket": 2793293936,
@@ -86,8 +72,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.459,
-   "profit": 1.31,
+   "price": 158.248,
+   "profit": 2.64,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -100,8 +86,8 @@
    "price_open": 1.12084,
    "sl": 1.11913,
    "tp": null,
-   "price": 1.1217,
-   "profit": 14.62,
+   "price": 1.12306,
+   "profit": 37.74,
    "time": "2026-11-04T00:00:30+00:00"
   },
   {
@@ -114,8 +100,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25733.8,
-   "profit": -1.35,
+   "price": 25668.8,
+   "profit": 13.25,
    "time": "2026-11-04T01:00:36+00:00"
   },
   {
@@ -128,12 +114,25 @@
    "price_open": 62235.8,
    "sl": 62853.1,
    "tp": null,
-   "price": 62233.2,
-   "profit": 0.21,
+   "price": 61844.3,
+   "profit": 31.42,
    "time": "2026-11-04T01:00:37+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2793203417,
+   "signal_id": "USDCAD-H1-ichimoku_tk-1793736000",
+   "time": "2026-11-04T01:12:21.566061+00:00",
+   "symbol": "USDCAD",
+   "system": "TL14-H1",
+   "side": "BUY",
+   "lots": 0.22,
+   "price_open": 1.40089,
+   "price": 1.39785,
+   "reason": "SL",
+   "profit": -47.84
+  },
   {
    "ticket": 2785283307,
    "signal_id": "DE30-H1-ny_open_breakout-1793631600",
