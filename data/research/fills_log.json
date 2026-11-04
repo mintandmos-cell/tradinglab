@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T09:01:30.310836+00:00",
+   "signal": "USDCAD-H1-ichimoku_tk-1793779200",
+   "symbol": "USDCAD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 1.39564,
+   "fill": 1.39564,
+   "signal_entry": 1.39578,
+   "slip_pts": -0.0,
+   "drift_r": 0.04,
+   "delay_s": 90
+  },
+  {
    "time": "2026-11-04T06:00:58.963602+00:00",
    "signal": "XAGUSD-H1-ichimoku_tk-1793768400",
    "symbol": "XAGUSD",
@@ -127,5 +141,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T06:31:20.129959+00:00"
+ "updated": "2026-11-04T09:44:33.543984+00:00"
 }
