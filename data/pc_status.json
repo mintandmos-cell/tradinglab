@@ -7,10 +7,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-04T16:01:22.222301+00:00",
+ "time": "2026-11-04T16:45:56.458799+00:00",
  "account": "DEMO",
- "balance": 9860.52,
- "equity": 10005.5,
+ "balance": 9835.69,
+ "equity": 10051.58,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 91.208,
-   "profit": 109.0,
+   "price": 88.593,
+   "profit": 161.3,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34709,
-   "profit": -6.51,
+   "price": 1.34595,
+   "profit": -5.37,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.45,
-   "profit": 1.36,
+   "price": 158.421,
+   "profit": 1.55,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.121,
-   "profit": 44.75,
+   "price": 52.329,
+   "profit": 55.15,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -79,8 +79,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.39536,
-   "profit": 7.24,
+   "price": 1.39678,
+   "profit": 12.31,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -93,26 +93,25 @@
    "price_open": 28760.34,
    "sl": 28298.3,
    "tp": 29722.83,
-   "price": 28545.06,
-   "profit": -10.76,
+   "price": 28579.31,
+   "profit": -9.05,
    "time": "2026-11-04T15:00:57+00:00"
-  },
-  {
-   "ticket": 2799857095,
-   "symbol": "USOIL",
-   "system": "TL178-H4",
-   "signal_id": "USOIL-H4-mr_stoch_gold-1793793600",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 91.208,
-   "sl": 88.725,
-   "tp": 94.317,
-   "price": 91.198,
-   "profit": -0.1,
-   "time": "2026-11-04T16:01:06+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2799857095,
+   "signal_id": "USOIL-H4-mr_stoch_gold-1793793600",
+   "time": "2026-11-04T16:45:55.231309+00:00",
+   "symbol": "USOIL",
+   "system": "TL178-H4",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 91.208,
+   "price": 88.725,
+   "reason": "SL",
+   "profit": -24.83
+  },
   {
    "ticket": 2797417004,
    "signal_id": "USDCAD-H1-ichimoku_tk-1793779200",
@@ -294,19 +293,6 @@
    "price": 4051.74,
    "reason": "SL",
    "profit": -24.69
-  },
-  {
-   "ticket": 2760554425,
-   "signal_id": "BTCUSD-H1-vol_breakout-1793214000",
-   "time": "2026-10-28T20:29:01.925441+00:00",
-   "symbol": "BTCUSD",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 81625.02,
-   "price": 81000.9,
-   "reason": "SL",
-   "profit": -6.24
   }
  ],
  "fills": [
