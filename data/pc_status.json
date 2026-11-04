@@ -13,10 +13,10 @@
    "AAPL H1: newest closed bar is 6 h old (stale data)"
   ]
  },
- "time": "2026-11-04T03:00:18.460191+00:00",
+ "time": "2026-11-04T03:00:36.981065+00:00",
  "account": "DEMO",
  "balance": 9875.71,
- "equity": 10094.41,
+ "equity": 10095.19,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -29,8 +29,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.41,
-   "profit": 44.96,
+   "price": 94.418,
+   "profit": 44.8,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -43,8 +43,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34718,
-   "profit": -6.6,
+   "price": 1.34736,
+   "profit": -6.78,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -57,8 +57,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.678,
-   "profit": 6.27,
+   "price": 157.635,
+   "profit": 6.54,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -71,8 +71,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25587.6,
-   "profit": 31.56,
+   "price": 25589.6,
+   "profit": 31.11,
    "time": "2026-11-04T01:00:36+00:00"
   },
   {
@@ -83,11 +83,25 @@
    "side": "SELL",
    "lots": 12.7,
    "price_open": 62235.8,
-   "sl": 62213.0,
+   "sl": 61780.5,
    "tp": null,
-   "price": 60678.1,
-   "profit": 125.46,
+   "price": 60688.1,
+   "profit": 124.69,
    "time": "2026-11-04T01:00:37+00:00"
+  },
+  {
+   "ticket": 2794846787,
+   "symbol": "ETHUSD",
+   "system": "TL14-H1",
+   "signal_id": "ETHUSD-H1-ichimoku_tk-1793757600",
+   "side": "SELL",
+   "lots": 1.25,
+   "price_open": 2240.53,
+   "sl": 2280.53,
+   "tp": null,
+   "price": 2239.4,
+   "profit": 1.41,
+   "time": "2026-11-04T03:00:21+00:00"
   }
  ],
  "closed": [
@@ -272,6 +286,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-04T03:00:20.852212+00:00",
+   "signal": "ETHUSD-H1-ichimoku_tk-1793757600",
+   "symbol": "ETHUSD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 2241.05,
+   "fill": 2240.53,
+   "signal_entry": 2240.55,
+   "slip_pts": 52.0,
+   "drift_r": 0.001,
+   "delay_s": 21
+  },
   {
    "time": "2026-11-04T01:00:36.745644+00:00",
    "signal": "JP225-H1-ichimoku_tk-1793750400",
