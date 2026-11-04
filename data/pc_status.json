@@ -11,10 +11,10 @@
    "AAPL H1: newest closed bar is 7 h old (stale data)"
   ]
  },
- "time": "2026-11-04T04:00:23.968980+00:00",
+ "time": "2026-11-04T04:55:00.045528+00:00",
  "account": "DEMO",
- "balance": 9894.51,
- "equity": 10106.57,
+ "balance": 9844.51,
+ "equity": 9991.25,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.871,
-   "profit": 35.74,
+   "price": 94.795,
+   "profit": 37.26,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34657,
-   "profit": -5.99,
+   "price": 1.34626,
+   "profit": -5.68,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +55,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.67,
-   "profit": 6.32,
+   "price": 157.707,
+   "profit": 6.08,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,8 +69,8 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25593.6,
-   "profit": 30.18,
+   "price": 25697.6,
+   "profit": 6.79,
    "time": "2026-11-04T01:00:36+00:00"
   },
   {
@@ -81,28 +81,27 @@
    "side": "SELL",
    "lots": 12.7,
    "price_open": 62235.8,
-   "sl": 61780.5,
+   "sl": 61368.0,
    "tp": null,
-   "price": 60343.1,
-   "profit": 152.45,
+   "price": 60965.6,
+   "profit": 102.29,
    "time": "2026-11-04T01:00:37+00:00"
-  },
-  {
-   "ticket": 2794846787,
-   "symbol": "ETHUSD",
-   "system": "TL14-H1",
-   "signal_id": "ETHUSD-H1-ichimoku_tk-1793757600",
-   "side": "SELL",
-   "lots": 1.25,
-   "price_open": 2240.53,
-   "sl": 2280.53,
-   "tp": null,
-   "price": 2245.84,
-   "profit": -6.64,
-   "time": "2026-11-04T03:00:21+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2794846787,
+   "signal_id": "ETHUSD-H1-ichimoku_tk-1793757600",
+   "time": "2026-11-04T04:54:58.788951+00:00",
+   "symbol": "ETHUSD",
+   "system": "TL14-H1",
+   "side": "SELL",
+   "lots": 1.25,
+   "price_open": 2240.53,
+   "price": 2280.53,
+   "reason": "SL",
+   "profit": -50.0
+  },
   {
    "ticket": 2793590696,
    "signal_id": "EURUSD-H1-ichimoku_tk-1793746800",
