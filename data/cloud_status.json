@@ -1,15 +1,15 @@
 {
- "last_scan": "2026-11-04T03:27:54.312260+00:00",
+ "last_scan": "2026-11-04T04:27:25.833532+00:00",
  "last_error": "JP225 ichimoku_tk: no USD conversion for JP225",
  "new_signals": 0,
  "checked": 38,
  "errors": [
-  "NVDA H1: newest closed bar is 6 h old (stale data)",
-  "MSFT H1: newest closed bar is 6 h old (stale data)",
-  "AMZN H1: newest closed bar is 6 h old (stale data)",
-  "META H1: newest closed bar is 6 h old (stale data)",
-  "AAPL H1: newest closed bar is 6 h old (stale data)",
-  "DE30 H1: newest closed bar is 10 h old (stale data)",
+  "NVDA H1: newest closed bar is 7 h old (stale data)",
+  "MSFT H1: newest closed bar is 7 h old (stale data)",
+  "AMZN H1: newest closed bar is 7 h old (stale data)",
+  "META H1: newest closed bar is 7 h old (stale data)",
+  "AAPL H1: newest closed bar is 7 h old (stale data)",
+  "DE30 H1: newest closed bar is 11 h old (stale data)",
   "JP225 ichimoku_tk H1: ValueError('no USD conversion for JP225')"
  ]
 }

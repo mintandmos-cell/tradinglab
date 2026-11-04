@@ -105,7 +105,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1094.6,
-  "stop_now": 61917.49
+  "stop_now": 61345.97
  },
  {
   "id": "DE30-H1-ichimoku_tk-1793750400",
@@ -1463,12 +1463,15 @@
   "reverse_of": null,
   "price_source": "binance",
   "cost_r": 0.024,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 2.0,
+  "exit_time": "2026-11-04T03:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "cloud",
+  "stop_now": 79014.18,
+  "exit_reason": "TP",
+  "exit_price": 75947.31
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793314800",
