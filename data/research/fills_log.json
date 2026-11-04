@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T13:01:03.171223+00:00",
+   "signal": "USDCAD-D1-mr_edist_calm-1793577600",
+   "symbol": "USDCAD",
+   "tf": "D1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 1.39334,
+   "fill": 1.39334,
+   "signal_entry": 1.39831,
+   "slip_pts": 0.0,
+   "drift_r": -0.66,
+   "delay_s": 133263
+  },
+  {
    "time": "2026-11-04T09:01:30.310836+00:00",
    "signal": "USDCAD-H1-ichimoku_tk-1793779200",
    "symbol": "USDCAD",
@@ -141,5 +155,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T12:38:33.611859+00:00"
+ "updated": "2026-11-04T14:06:15.520263+00:00"
 }
