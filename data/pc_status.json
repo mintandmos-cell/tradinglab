@@ -1,20 +1,16 @@
 {
- "last_scan_hour": "2026-11-04 11:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-04 12:00:00+00:00",
+ "new_signals": [
+  "XAUUSD-H4-willr_trend-1793779200"
+ ],
  "scan": {
   "checked": 38,
-  "errors": [
-   "NVDA H1: newest closed bar is 14 h old (stale data)",
-   "MSFT H1: newest closed bar is 14 h old (stale data)",
-   "AMZN H1: newest closed bar is 14 h old (stale data)",
-   "META H1: newest closed bar is 14 h old (stale data)",
-   "AAPL H1: newest closed bar is 14 h old (stale data)"
-  ]
+  "errors": []
  },
- "time": "2026-11-04T11:00:32.908508+00:00",
+ "time": "2026-11-04T12:00:29.499810+00:00",
  "account": "DEMO",
  "balance": 9880.24,
- "equity": 9950.73,
+ "equity": 9952.47,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 94.628,
-   "profit": 40.6,
+   "price": 94.616,
+   "profit": 40.84,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +37,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34805,
-   "profit": -7.47,
+   "price": 1.34854,
+   "profit": -7.96,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +51,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.543,
-   "profit": 0.78,
+   "price": 158.422,
+   "profit": 1.54,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,8 +65,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.061,
-   "profit": 41.75,
+   "price": 51.993,
+   "profit": 38.35,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -81,10 +77,10 @@
    "side": "SELL",
    "lots": 0.19,
    "price_open": 1.39564,
-   "sl": 1.39903,
+   "sl": 1.39873,
    "tp": null,
-   "price": 1.39602,
-   "profit": -5.17,
+   "price": 1.39568,
+   "profit": -0.54,
    "time": "2026-11-04T09:01:31+00:00"
   }
  ],
@@ -434,7 +430,7 @@
   "examples": []
  },
  "bars_published": {
-  "time": "2026-11-04T10:01:38.032315+00:00",
+  "time": "2026-11-04T11:01:39.204077+00:00",
   "symbols": 20,
   "ok": false
  }
