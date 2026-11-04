@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T03:00:20.852212+00:00",
+   "signal": "ETHUSD-H1-ichimoku_tk-1793757600",
+   "symbol": "ETHUSD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 2241.05,
+   "fill": 2240.53,
+   "signal_entry": 2240.55,
+   "slip_pts": 52.0,
+   "drift_r": 0.001,
+   "delay_s": 21
+  },
+  {
    "time": "2026-11-04T01:00:36.745644+00:00",
    "signal": "JP225-H1-ichimoku_tk-1793750400",
    "symbol": "JP225",
@@ -99,5 +113,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T01:46:19.935828+00:00"
+ "updated": "2026-11-04T03:27:42.662316+00:00"
 }

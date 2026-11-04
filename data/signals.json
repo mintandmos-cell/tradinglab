@@ -105,7 +105,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1094.6,
-  "stop_now": 62171.04
+  "stop_now": 61917.49
  },
  {
   "id": "DE30-H1-ichimoku_tk-1793750400",
@@ -205,15 +205,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.037,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 0.882,
+  "exit_time": "2026-11-04T02:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00325,
-  "stop_now": 1.12306
+  "stop_now": 1.12306,
+  "exit_reason": "Trail",
+  "exit_price": 1.12306
  },
  {
   "id": "USOIL-H1-ichimoku_tk-1793739600",
@@ -267,7 +269,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 2.842,
-  "stop_now": 97.477
+  "stop_now": 97.054
  },
  {
   "id": "USDJPY-D1-mr_rsi2_slope-1793656800",
@@ -952,13 +954,16 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.087,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.729,
+  "exit_time": "2026-11-04T02:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
-  "note": "SL ตามที่โปรแกรมบนคอมวางใน MT5 (คอมเห็นสัญญาณก่อนคลาวด์)"
+  "note": "SL ตามที่โปรแกรมบนคอมวางใน MT5 (คอมเห็นสัญญาณก่อนคลาวด์)",
+  "stop_now": 157.631,
+  "exit_reason": "Rev",
+  "exit_price": 157.716
  },
  {
   "id": "EURUSD-H1-vol_breakout-1793606400",
