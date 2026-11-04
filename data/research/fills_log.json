@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T06:00:58.963602+00:00",
+   "signal": "XAGUSD-H1-ichimoku_tk-1793768400",
+   "symbol": "XAGUSD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "BUY",
+   "asked": 51.226,
+   "fill": 51.226,
+   "signal_entry": 51.047,
+   "slip_pts": 0.0,
+   "drift_r": 0.137,
+   "delay_s": 59
+  },
+  {
    "time": "2026-11-04T03:00:20.852212+00:00",
    "signal": "ETHUSD-H1-ichimoku_tk-1793757600",
    "symbol": "ETHUSD",
@@ -113,5 +127,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T03:27:42.662316+00:00"
+ "updated": "2026-11-04T06:31:20.129959+00:00"
 }
