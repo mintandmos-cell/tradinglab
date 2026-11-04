@@ -1,22 +1,22 @@
 {
- "last_scan_hour": "2026-11-04 08:00:00+00:00",
+ "last_scan_hour": "2026-11-04 09:00:00+00:00",
  "new_signals": [
-  "NAS100-H4-mr_nlow_year-1793750400"
+  "USDCAD-H1-ichimoku_tk-1793779200"
  ],
  "scan": {
   "checked": 38,
   "errors": [
-   "NVDA H1: newest closed bar is 11 h old (stale data)",
-   "MSFT H1: newest closed bar is 11 h old (stale data)",
-   "AMZN H1: newest closed bar is 11 h old (stale data)",
-   "META H1: newest closed bar is 11 h old (stale data)",
-   "AAPL H1: newest closed bar is 11 h old (stale data)"
+   "NVDA H1: newest closed bar is 12 h old (stale data)",
+   "MSFT H1: newest closed bar is 12 h old (stale data)",
+   "AMZN H1: newest closed bar is 12 h old (stale data)",
+   "META H1: newest closed bar is 12 h old (stale data)",
+   "AAPL H1: newest closed bar is 12 h old (stale data)"
   ]
  },
- "time": "2026-11-04T08:00:32.587135+00:00",
+ "time": "2026-11-04T09:00:51.881054+00:00",
  "account": "DEMO",
  "balance": 9880.24,
- "equity": 9921.17,
+ "equity": 9926.16,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -29,8 +29,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.431,
-   "profit": 24.54,
+   "price": 95.554,
+   "profit": 22.08,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -43,8 +43,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34792,
-   "profit": -7.34,
+   "price": 1.34843,
+   "profit": -7.85,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -57,8 +57,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.068,
-   "profit": 3.78,
+   "price": 158.224,
+   "profit": 2.79,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -71,8 +71,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.625,
-   "profit": 19.95,
+   "price": 51.804,
+   "profit": 28.9,
    "time": "2026-11-04T06:00:59+00:00"
   }
  ],
@@ -408,7 +408,7 @@
   "examples": []
  },
  "bars_published": {
-  "time": "2026-11-04T07:01:10.889355+00:00",
+  "time": "2026-11-04T08:01:09.474916+00:00",
   "symbols": 20,
   "ok": true
  }
