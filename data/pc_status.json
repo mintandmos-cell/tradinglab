@@ -11,10 +11,10 @@
    "AAPL H1: newest closed bar is 8 h old (stale data)"
   ]
  },
- "time": "2026-11-04T05:00:20.850859+00:00",
+ "time": "2026-11-04T05:04:03.069176+00:00",
  "account": "DEMO",
- "balance": 9844.51,
- "equity": 9975.37,
+ "balance": 9928.57,
+ "equity": 9950.79,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.151,
-   "profit": 30.14,
+   "price": 95.57,
+   "profit": 21.76,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34598,
-   "profit": -5.4,
+   "price": 1.34544,
+   "profit": -4.86,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +55,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.822,
-   "profit": 5.35,
+   "price": 157.94,
+   "profit": 4.6,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,26 +69,25 @@
    "price_open": 25727.8,
    "sl": 25942.8,
    "tp": 25440.3,
-   "price": 25705.6,
-   "profit": 4.99,
+   "price": 25724.6,
+   "profit": 0.72,
    "time": "2026-11-04T01:00:36+00:00"
-  },
-  {
-   "ticket": 2793911030,
-   "symbol": "JP225",
-   "system": "TL14-H1",
-   "signal_id": "JP225-H1-ichimoku_tk-1793750400",
-   "side": "SELL",
-   "lots": 12.7,
-   "price_open": 62235.8,
-   "sl": 61368.0,
-   "tp": null,
-   "price": 61045.6,
-   "profit": 95.78,
-   "time": "2026-11-04T01:00:37+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2793911030,
+   "signal_id": "JP225-H1-ichimoku_tk-1793750400",
+   "time": "2026-11-04T05:04:01.962705+00:00",
+   "symbol": "JP225",
+   "system": "TL14-H1",
+   "side": "SELL",
+   "lots": 12.7,
+   "price_open": 62235.8,
+   "price": 61190.6,
+   "reason": "SL",
+   "profit": 84.06
+  },
   {
    "ticket": 2794846787,
    "signal_id": "ETHUSD-H1-ichimoku_tk-1793757600",
@@ -270,16 +269,6 @@
    "price": 2356.92,
    "reason": "SL",
    "profit": -9.85
-  },
-  {
-   "ticket": 2754889530,
-   "signal_id": "USDJPY-H1-vol_breakout-1793149200",
-   "time": "2026-10-28T08:15:09.103006+00:00",
-   "symbol": "USDJPY",
-   "system": "[sl 157.73100]",
-   "price": 157.731,
-   "reason": "SL",
-   "profit": -9.05
   }
  ],
  "fills": [
