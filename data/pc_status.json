@@ -11,10 +11,10 @@
    "AAPL H1: newest closed bar is 10 h old (stale data)"
   ]
  },
- "time": "2026-11-04T07:00:33.346230+00:00",
+ "time": "2026-11-04T07:59:58.132819+00:00",
  "account": "DEMO",
- "balance": 9928.57,
- "equity": 9939.82,
+ "balance": 9880.24,
+ "equity": 9921.94,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.943,
-   "profit": 14.3,
+   "price": 95.399,
+   "profit": 25.18,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34623,
-   "profit": -5.65,
+   "price": 1.34772,
+   "profit": -7.14,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,23 +55,9 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.154,
-   "profit": 3.24,
+   "price": 158.095,
+   "profit": 3.61,
    "time": "2026-11-03T22:00:34+00:00"
-  },
-  {
-   "ticket": 2793910757,
-   "symbol": "DE30",
-   "system": "TL14-H1",
-   "signal_id": "DE30-H1-ichimoku_tk-1793750400",
-   "side": "SELL",
-   "lots": 0.2,
-   "price_open": 25727.8,
-   "sl": 25942.8,
-   "tp": 25440.3,
-   "price": 25853.1,
-   "profit": -28.14,
-   "time": "2026-11-04T01:00:36+00:00"
   },
   {
    "ticket": 2796204004,
@@ -83,12 +69,25 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.776,
-   "profit": 27.5,
+   "price": 51.627,
+   "profit": 20.05,
    "time": "2026-11-04T06:00:59+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2793910757,
+   "signal_id": "DE30-H1-ichimoku_tk-1793750400",
+   "time": "2026-11-04T07:59:56.679342+00:00",
+   "symbol": "DE30",
+   "system": "TL14-H1",
+   "side": "SELL",
+   "lots": 0.2,
+   "price_open": 25727.8,
+   "price": 25942.8,
+   "reason": "SL",
+   "profit": -48.33
+  },
   {
    "ticket": 2793911030,
    "signal_id": "JP225-H1-ichimoku_tk-1793750400",
@@ -270,19 +269,6 @@
    "price": 157.891,
    "reason": "SL",
    "profit": -9.25
-  },
-  {
-   "ticket": 2757748035,
-   "signal_id": "ETHUSD-H1-vol_breakout-1793188800",
-   "time": "2026-10-28T18:36:09.872335+00:00",
-   "symbol": "ETHUSD",
-   "system": "TL56-H1",
-   "side": "SELL",
-   "lots": 0.37,
-   "price_open": 2330.29,
-   "price": 2356.92,
-   "reason": "SL",
-   "profit": -9.85
   }
  ],
  "fills": [
@@ -419,5 +405,9 @@
   "charged": 0,
   "examples": []
  },
- "bars_published": null
+ "bars_published": {
+  "time": "2026-11-04T07:01:10.889355+00:00",
+  "symbols": 20,
+  "ok": true
+ }
 }
