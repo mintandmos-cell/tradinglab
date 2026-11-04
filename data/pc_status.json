@@ -14,10 +14,10 @@
    "AAPL H1: newest closed bar is 4 h old (stale data)"
   ]
  },
- "time": "2026-11-04T01:00:33.083077+00:00",
+ "time": "2026-11-04T01:00:52.953373+00:00",
  "account": "DEMO",
  "balance": 9896.39,
- "equity": 9919.98,
+ "equity": 9916.21,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -30,8 +30,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 158.463,
-   "profit": 16.41,
+   "price": 158.452,
+   "profit": 16.06,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -44,8 +44,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 96.023,
-   "profit": 12.7,
+   "price": 96.115,
+   "profit": 10.86,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -58,8 +58,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34386,
-   "profit": -3.28,
+   "price": 1.34396,
+   "profit": -3.38,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -72,8 +72,8 @@
    "price_open": 1.40089,
    "sl": 1.39785,
    "tp": null,
-   "price": 1.39938,
-   "profit": -23.74,
+   "price": 1.39927,
+   "profit": -25.47,
    "time": "2026-11-03T21:00:36+00:00"
   },
   {
@@ -86,8 +86,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.47,
-   "profit": 1.24,
+   "price": 158.459,
+   "profit": 1.31,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -98,11 +98,39 @@
    "side": "BUY",
    "lots": 0.17,
    "price_open": 1.12084,
-   "sl": 1.11796,
+   "sl": 1.11913,
    "tp": null,
-   "price": 1.12165,
-   "profit": 13.77,
+   "price": 1.1217,
+   "profit": 14.62,
    "time": "2026-11-04T00:00:30+00:00"
+  },
+  {
+   "ticket": 2793910757,
+   "symbol": "DE30",
+   "system": "TL14-H1",
+   "signal_id": "DE30-H1-ichimoku_tk-1793750400",
+   "side": "SELL",
+   "lots": 0.2,
+   "price_open": 25727.8,
+   "sl": 25942.8,
+   "tp": 25440.3,
+   "price": 25733.8,
+   "profit": -1.35,
+   "time": "2026-11-04T01:00:36+00:00"
+  },
+  {
+   "ticket": 2793911030,
+   "symbol": "JP225",
+   "system": "TL14-H1",
+   "signal_id": "JP225-H1-ichimoku_tk-1793750400",
+   "side": "SELL",
+   "lots": 12.7,
+   "price_open": 62235.8,
+   "sl": 62853.1,
+   "tp": null,
+   "price": 62233.2,
+   "profit": 0.21,
+   "time": "2026-11-04T01:00:37+00:00"
   }
  ],
  "closed": [
@@ -248,6 +276,34 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-04T01:00:36.745644+00:00",
+   "signal": "JP225-H1-ichimoku_tk-1793750400",
+   "symbol": "JP225",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 62235.8,
+   "fill": 62235.8,
+   "signal_entry": 62305.8,
+   "slip_pts": -0.0,
+   "drift_r": 0.128,
+   "delay_s": 37
+  },
+  {
+   "time": "2026-11-04T01:00:35.462545+00:00",
+   "signal": "DE30-H1-ichimoku_tk-1793750400",
+   "symbol": "DE30",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 25727.8,
+   "fill": 25727.8,
+   "signal_entry": 25741.8,
+   "slip_pts": -0.0,
+   "drift_r": 0.07,
+   "delay_s": 35
+  },
   {
    "time": "2026-11-04T00:00:29.405536+00:00",
    "signal": "EURUSD-H1-ichimoku_tk-1793746800",
