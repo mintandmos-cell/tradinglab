@@ -324,12 +324,12 @@ const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
 const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX",
   GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
 
-// Broker clock: MT5 "New York close" servers run New York time + 7 h (GMT+2 / GMT+3). H4 and D1 candles are cut on
-// that clock (same as the Python side), so their shapes match the user's MT5 chart.
+// Broker clock (settings.mt5_server_time): Exness MT5 runs GMT+0 ("utc", 4 Nov 2026); "ny_close" brokers run New York + 7 h.
+// H4 and D1 candles are cut on that clock (same as the Python side), so their shapes match the user's MT5 chart.
 const _nyOff = {};
 const NY_FMT = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit" });
 function brokerShift(t) {
-  const m = S.settings?.mt5_server_time ?? "ny_close";
+  const m = S.settings?.mt5_server_time ?? "utc";
   if (m === "utc") return 0;
   if (m !== "ny_close" && isFinite(+m)) return +m * 3600;
   const h = Math.floor(t / 3600);
@@ -349,7 +349,8 @@ function bucketStart(t, tfs) { if (tfs <= 3600) return t - (t % tfs); const sh =
 // A bar is kept only if it traded (high > low) and falls Monday–Friday on the broker clock (FX week = Mon 00:00 – Fri 24:00 server).
 function marketOpen(b) {
   if (!(b.high > b.low)) return false;
-  const wd = new Date((b.time + brokerShift(b.time)) * 1000).getUTCDay();
+  const sh = brokerShift(b.time), d = new Date((b.time + sh) * 1000), wd = d.getUTCDay();
+  if (sh === 0 && wd === 0) return d.getUTCHours() >= 20;      // Exness GMT+0: the FX week opens Sunday ~21-22 UTC
   return wd >= 1 && wd <= 5;
 }
 function aggregate(h1, tfs) {
@@ -363,27 +364,54 @@ function aggregate(h1, tfs) {
   if (out.length && out[0]._first !== out[0].time) out.shift();          // first bucket is only partly covered
   return out.map(({ _first, ...b }) => b);
 }
-// Recent real H1 candles from the same family of feed as the live price (display only): Binance for BTC/ETH (free),
-// Twelve Data for FX / gold (free key, optional). Replaces the tail of the chart so the shapes match the live market.
-async function recentBars(sym) {
-  const P = prefs.get(); if (!P.live) return null;
-  const c = (S.recent ||= {})[sym], ttl = BINANCE_LIVE[sym] ? 60000 : 300000;
-  if (c && Date.now() - c.at < ttl) return c.v;
-  let v = null;
+// Newest H1 candles for the chart (user, 4 Nov 2026: chart and MT5 must show the same candles):
+// 1. the PC robot's Exness MT5 bars (data/exness/recent/{SYM}_H1.csv on GitHub, pushed after every hourly scan) — the
+//    same prices the robot trades and the research tests on;
+// 2. only AFTER the last Exness bar (PC off): Binance for BTC/ETH, Twelve Data for FX / gold (free key, optional).
+// basis = Exness − live feed on the overlapping hours: the live tick is shifted by it so the forming candle sits on the
+// Exness price level (display only).
+async function exnessBars(sym) {
+  const repo = (STATIC && STATIC.repo) || "mintandmos-cell/tradinglab";
+  const r = await fetch(`https://raw.githubusercontent.com/${repo}/main/data/exness/recent/${sym}_H1.csv?t=${Math.floor(Date.now() / 120000)}`, { cache: "no-store" });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const rows = (await r.text()).trim().split("\n").slice(1);
+  return rows.map((ln) => { const [t, o, h, l, c] = ln.split(","); return { time: Math.round(Date.parse(t) / 1000), open: +o, high: +h, low: +l, close: +c }; })
+    .filter((b) => isFinite(b.time) && b.close > 0);
+}
+async function feedBars(sym) {
+  const P = prefs.get();
   const get = async (url) => { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
-  try {
-    if (BINANCE_LIVE[sym]) {
-      const q = `/api/v3/klines?symbol=${BINANCE_LIVE[sym].toUpperCase()}&interval=1h&limit=1000`;
-      const k = await get("https://api.binance.com" + q).catch(() => get("https://data-api.binance.vision" + q));
-      v = { src: "Binance", bars: k.map((x) => ({ time: Math.round(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4] })) };
-    } else if (P.twelve && TWELVE_SYM[sym]) {
-      const j = await get(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(TWELVE_SYM[sym])}&interval=1h&outputsize=1000&timezone=UTC&apikey=${encodeURIComponent(P.twelve)}`);
-      if (j.status === "error" || !j.values) v = { src: "Twelve Data", error: j.message || "ไม่มีข้อมูล", bars: [] };
-      else v = { src: "Twelve Data", bars: j.values.map((x) => ({ time: Math.round(Date.parse(x.datetime.replace(" ", "T") + "Z") / 1000),
-        open: +x.open, high: +x.high, low: +x.low, close: +x.close })).filter((b) => isFinite(b.time) && b.close > 0 && marketOpen(b))
-        .sort((a, b) => a.time - b.time) };
-    }
-  } catch (e) { v = { src: BINANCE_LIVE[sym] ? "Binance" : "Twelve Data", error: e.message, bars: [] }; }
+  if (BINANCE_LIVE[sym]) {
+    const q = `/api/v3/klines?symbol=${BINANCE_LIVE[sym].toUpperCase()}&interval=1h&limit=1000`;
+    const k = await get("https://api.binance.com" + q).catch(() => get("https://data-api.binance.vision" + q));
+    return { src: "Binance", bars: k.map((x) => ({ time: Math.round(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4] })) };
+  }
+  if (P.twelve && TWELVE_SYM[sym]) {
+    const j = await get(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(TWELVE_SYM[sym])}&interval=1h&outputsize=1000&timezone=UTC&apikey=${encodeURIComponent(P.twelve)}`);
+    if (j.status === "error" || !j.values) return { src: "Twelve Data", error: j.message || "ไม่มีข้อมูล", bars: [] };
+    return { src: "Twelve Data", bars: j.values.map((x) => ({ time: Math.round(Date.parse(x.datetime.replace(" ", "T") + "Z") / 1000),
+      open: +x.open, high: +x.high, low: +x.low, close: +x.close })).filter((b) => isFinite(b.time) && b.close > 0 && marketOpen(b))
+      .sort((a, b) => a.time - b.time) };
+  }
+  return null;
+}
+async function recentBars(sym) {
+  const P = prefs.get();
+  const c = (S.recent ||= {})[sym], ttl = 120000;
+  if (c && Date.now() - c.at < ttl) return c.v;
+  let ex = [], feed = null, err = "";
+  try { ex = await exnessBars(sym); } catch (e) { err = "Exness: " + e.message; }
+  // the live feed's own bars: needed when the PC is off (newer than the last Exness bar) and to measure the basis
+  if (P.live) { try { feed = await feedBars(sym); } catch (e) { feed = { src: BINANCE_LIVE[sym] ? "Binance" : "Twelve Data", error: e.message, bars: [] }; } }
+  const lastEx = ex.length ? ex[ex.length - 1].time : 0;
+  const fb = (feed && feed.bars) || [];
+  const exAt = new Map(ex.map((b) => [b.time, b.close]));
+  const diffs = fb.filter((b) => exAt.has(b.time)).slice(-48).map((b) => exAt.get(b.time) - b.close).sort((a, b) => a - b);
+  const basis = diffs.length ? diffs[diffs.length >> 1] : 0;
+  const after = fb.filter((b) => b.time > lastEx).map((b) => ({ time: b.time, open: b.open + basis, high: b.high + basis, low: b.low + basis, close: b.close + basis }));
+  const v = { bars: ex.concat(after), basis, exness: ex.length, src: ex.length ? "Exness MT5" + (after.length ? ` + ${feed.src} ${after.length} แท่ง` : "") : feed?.src || "",
+    lastExness: lastEx, error: ex.length ? "" : (feed?.error || err) };
+  (S.basis ||= {})[sym] = basis;
   S.recent[sym] = { at: Date.now(), v };
   return v;
 }
@@ -911,7 +939,7 @@ async function renderChart(view) {
     if (tail.length) {
       const from = tail[0].time;
       cd.candles = cd.candles.filter((c) => c.time < from).concat(tail);
-      cd.source = `${cd0.source || ""} · ${tail.length} แท่งล่าสุดจาก ${rec.src}`;
+      cd.source = `${cd0.source || ""} · แท่งล่าสุด: ${rec.src}${rec.lastExness ? ` (ถึง ${fdt(rec.lastExness)})` : ""}`;
       tailSrc = rec.src;
     } else if (rec?.error) cd.source = `${cd0.source || ""} · ${rec.src}: ${rec.error}`;
     const range0 = keepRange && ch ? ch.timeScale().getVisibleLogicalRange() : null;
@@ -993,7 +1021,8 @@ async function renderChart(view) {
   S.liveTimer = setInterval(() => {
     if (route() !== "chart" || S.chartToken !== token) return clearInterval(S.liveTimer);
     tag();
-    const p = Live.price; if (!p || !liveSeries || !liveBar) return;
+    const p0 = Live.price; if (!p0 || !liveSeries || !liveBar) return;
+    const p = p0 + ((S.basis || {})[sym] || 0);     // live feed moved onto the Exness price level
     const t = Math.floor((Live.ts || Date.now()) / 1000), start = bucketStart(t, TFS);
     if (start < liveBar.time) return;
     if (tickBucket === null && !tailSrc) {          // first tick: how far is the live feed from the chart's last candle?
@@ -1899,14 +1928,15 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 - **ไม่มีวิธีไหนพิสูจน์ได้ว่าจะกำไรในอนาคต** — การทดสอบนี้ทำได้แค่ “คัดระบบที่น่าจะเป็นโชคออก” ผลจริง (forward test) คือบทพิสูจน์สุดท้าย
 - เว็บนี้เป็นเครื่องมือวิจัย ไม่ใช่คำแนะนำการลงทุน`],
     ["price", "9. ราคามาจากไหน, ราคาสด และ MT5", `
-### ข้อมูลราคาแต่ละส่วนมาจากไหน
-- **ข้อมูลย้อนหลังหลายปี (ทุกสินทรัพย์):** โปรแกรมบนคอมดึงจาก MT5 Exness แล้วส่งขึ้น GitHub ให้เอง (\`data/history_exness\`)
-  - เวลาในไฟล์ MT5 เป็นเวลาเซิร์ฟเวอร์โบรก (GMT+2 / GMT+3) ระบบแปลงเป็นเวลาสากลให้อัตโนมัติ
-- **ราคาใหม่ (สแกนทุก 10 นาที):** ทอง + FX จาก **Twelve Data** (ราคา spot เดียวกับกราฟ เมื่อใส่ secret \`TWELVE_DATA_KEY\` ใน GitHub แล้ว ไม่งั้นใช้ Yahoo) · ดัชนีจาก Yahoo (futures ปรับระดับให้ต่อกับราคาโบรก) · BTC, ETH จาก Binance
-- **ราคาสดบนกราฟ (ขยับทุก 1 วินาที):** BTC/ETH จาก Binance ฟรี · FX/ทอง/ดัชนี ต้องใส่ Finnhub API key ฟรีในหน้า **ตั้งค่า**
-- **แท่งเทียนให้เหมือนของจริง:** BTC/ETH ดึงแท่งจริง ~40 วันล่าสุดจาก Binance ทุกครั้งที่เปิดกราฟ · FX/ทอง ใส่ **Twelve Data key** (ฟรี, ไม่บังคับ) ในหน้าตั้งค่าเพื่อดึงแท่งจริงล่าสุด · ดัชนียังใช้ Yahoo futures
-  - แท่ง H4 และ D1 ตัดตามเวลาเซิร์ฟเวอร์โบรก (H4 = 00/04/08… เวลา MT5, 1 วัน = ปิดตลาดนิวยอร์ก) จึงรูปร่างตรงกับ MT5
-  - แท่งที่สร้างจากราคาสดระหว่างเปิดหน้าไว้ เปิดที่ราคาแรกของแท่งนั้นจริง ๆ ไม่ลากจากราคาเก่า
+### ข้อมูลราคาแต่ละส่วนมาจากไหน (ปรับ 4 พ.ย. 2026: ให้ตรงกับ MT5 Exness ทุกที่)
+- **ทุกส่วนใช้แท่งเทียนชุดเดียวกัน = MT5 Exness ของคุณ** เหมือนทุกคนดูนาฬิกาเรือนเดียวกัน
+  - **ทดสอบระบบ:** แท่ง H1 ย้อนหลังหลายปีที่คอมดึงจาก MT5 Exness (\`data/history_exness\`)
+  - **โปรแกรมบนคอม (เทรดจริง):** อ่านแท่งจาก MT5 ที่เปิดอยู่โดยตรง
+  - **กราฟบนเว็บ + คลาวด์:** คอมส่งแท่ง H1 ที่ปิดแล้ว ~1,500 แท่งล่าสุดขึ้น GitHub ทุกชั่วโมง (\`data/exness/recent\`) แล้วกราฟและคลาวด์ใช้ชุดนี้
+- **เวลา:** เซิร์ฟเวอร์ Exness ใช้ GMT+0 (เวลาสากล) · แท่ง H4 = 00/04/08/12/16/20 น. GMT · 1 วัน = 00:00 GMT · มีแท่งสั้น ๆ คืนวันอาทิตย์ตอนตลาดเปิด — ตรงกับที่ MT5 Exness แสดง
+- **เมื่อคอมปิด:** แท่งหลังแท่ง Exness ล่าสุดมาจากแหล่งฟรี (BTC/ETH = Binance · FX/ทอง = Twelve Data ถ้าใส่ key · อื่น ๆ = Yahoo) ปรับระดับให้ต่อกับราคา Exness — อาจต่างจาก MT5 เล็กน้อยจนกว่าคอมจะเปิดอีกครั้ง
+- **แท่งที่กำลังก่อตัว (ขยับทุก 1 วินาที):** ราคาสดจาก Binance / Finnhub เลื่อนระดับให้ตรงกับ Exness (ใช้แสดงผลเท่านั้น ระบบตัดสินใจตอนแท่งปิดจากแท่ง Exness)
+- **จุดเข้า / SL / TP ของออเดอร์ที่เปิดอยู่บนกราฟ = ราคาที่โปรแกรมส่งเข้า MT5 จริง** (จากสัญญาณที่แจ้งเตือน)
 ### ระบบที่ทดสอบกับราคาโบรก ใช้กับราคาจากแหล่งอื่นได้ไหม
 - ได้ — ระบบดูรูปแบบของแท่ง H1/H4/D1 ซึ่งราคาจากแต่ละแหล่งต่างกันน้อยมาก (FX ไม่ถึง 1 pip) ส่วนทอง/ดัชนี futures ต่างระดับนิดหน่อยแต่ปรับให้แล้ว
 - สิ่งที่ต้องใช้ให้ตรงคือ **ระยะ** SL/TP (pips/จุด) — ใช้ปุ่ม **ปรับตามราคา MT5** บนการ์ดสัญญาณก่อนส่งออเดอร์

@@ -185,6 +185,35 @@ def put_file(path: str, content: bytes, message: str) -> bool:
     return False
 
 
+def put_files(files: dict[str, bytes], message: str) -> bool:
+    """Several files in ONE commit (git data API: blobs -> tree -> commit -> move main), e.g. the 20 symbols' recent
+    Exness bars every hour without 20 commits. Retries when main moved meanwhile."""
+    if not token() or not files:
+        _fail("no GitHub token: files not sent") if not token() else None
+        return False
+    base = f"https://api.github.com/repos/{REPO}/git/"
+    for _ in range(3):
+        try:
+            ref = requests.get(base + "ref/heads/main", headers=_hdr(), timeout=30).json()
+            head = ref["object"]["sha"]
+            tree0 = requests.get(base + f"commits/{head}", headers=_hdr(), timeout=30).json()["tree"]["sha"]
+            entries = []
+            for path, content in files.items():
+                b = requests.post(base + "blobs", headers=_hdr(), timeout=60,
+                                  json={"content": base64.b64encode(content).decode(), "encoding": "base64"}).json()
+                entries.append({"path": path, "mode": "100644", "type": "blob", "sha": b["sha"]})
+            tree = requests.post(base + "trees", headers=_hdr(), timeout=60, json={"base_tree": tree0, "tree": entries}).json()["sha"]
+            com = requests.post(base + "commits", headers=_hdr(), timeout=60,
+                                json={"message": message, "tree": tree, "parents": [head]}).json()["sha"]
+            r = requests.patch(base + "refs/heads/main", headers=_hdr(), timeout=30, json={"sha": com, "force": False})
+            if r.status_code == 200:
+                return True
+            _fail(f"put_files: HTTP {r.status_code} {r.text[:200]}")       # 422 = main moved: try again on the new head
+        except Exception as e:
+            _fail(f"put_files failed: {e!r}")
+    return False
+
+
 def get_json(path: str):
     try:
         text, _ = _get(path)

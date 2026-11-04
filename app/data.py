@@ -272,9 +272,31 @@ def _seed_exness(sym: str) -> pd.DataFrame | None:
             if len(hole):
                 d = d[d.index >= hole.index[-1]]
         d = d.iloc[:-1]                                  # the export's last bar was still forming
-        return _clean(d[["open", "high", "low", "close", "volume"]].astype(float))
+        d = d[["open", "high", "low", "close", "volume"]].astype(float)
+        rec = recent_exness(sym)                         # the PC's newest closed MT5 bars (published every hour)
+        if rec is not None and len(rec):
+            d = pd.concat([d, rec])
+        return _clean(d)
     except Exception as e:
         log.warning("Exness history %s unreadable: %s", sym, e)
+        return None
+
+
+EXNESS_RECENT = HISTORY_DIR.parent / "exness" / "recent"
+
+
+def recent_exness(sym: str) -> pd.DataFrame | None:
+    """data/exness/recent/{SYM}_H1.csv = the last ~1500 CLOSED H1 bars of the user's Exness MT5, in UTC, pushed by the PC
+    robot after every hourly scan (user, 4 Nov 2026: chart, cloud signals and MT5 must show the same candles)."""
+    f = EXNESS_RECENT / f"{sym}_H1.csv"
+    if not f.exists():
+        return None
+    try:
+        d = pd.read_csv(f)
+        d.index = pd.to_datetime(d.pop("time"), utc=True)
+        return d[["open", "high", "low", "close", "volume"]].astype(float)
+    except Exception as e:
+        log.warning("recent Exness bars %s unreadable: %s", sym, e)
         return None
 
 
@@ -285,7 +307,8 @@ def history_source(sym: str) -> str:
     ex = _seed_exness(sym)
     if ex is not None and len(ex) > 1000:
         # with the first month: cutting bad old data (tools/check_history, 3 Nov 2026) is a change of prices too
-        return f"exness@{ex.index[0]:%Y-%m}"
+        # + the broker clock H4 / D1 are cut on (4 Nov 2026: NY close -> Exness UTC changes every H4 / D1 candle)
+        return f"exness@{ex.index[0]:%Y-%m}/{_server_mode()}"
     return "mt5" if (HISTORY_DIR / f"{sym}_H1.csv.gz").exists() else "free"
 
 
@@ -299,7 +322,9 @@ def _seed(sym: str) -> pd.DataFrame | None:
         return None
     try:
         d = pd.read_csv(f)
-        d.index = server_to_utc(pd.to_datetime(d.pop("time"), unit="s"))     # exported from MT5 in broker server time
+        # exported from an older MT5 in ITS server time (New York close), whatever clock the live broker uses
+        d.index = server_to_utc(pd.to_datetime(d.pop("time"), unit="s"),
+                                {"mt5_server_time": load_settings().get("history_server_time", "ny_close")})
         d["volume"] = 0.0
         # brokers pad old history with DAILY bars stored as H1 (~22 a month, e.g. EURUSD 1971-1998, NAS100 2011-2020):
         # start at the first month that really has hourly bars (> 250 a month), otherwise ATR / signals mix daily and hourly
@@ -433,7 +458,10 @@ def market_hours(sym: str, df: pd.DataFrame, settings=None) -> pd.DataFrame:
     flat 'bars' on Saturday / Sunday: drop them so charts, indicators and backtests never see a fake weekend."""
     if SYMBOLS.get(sym, {}).get("group") == "Crypto" or df is None or df.empty:
         return df
-    wd = utc_to_server(df.index, settings).dayofweek
+    srv = utc_to_server(df.index, settings)
+    wd = srv.dayofweek
+    if _server_mode(settings) == "utc":   # Exness (GMT+0): the week opens Sunday ~21-22 UTC and MT5 shows those bars
+        return df[(wd < 5) | ((wd == 6) & (srv.hour >= 20))]
     return df[wd < 5]
 
 
@@ -510,7 +538,7 @@ def add_months(ts_utc, months: int, settings=None) -> pd.Timestamp:
 
 
 def resample(h1: pd.DataFrame, tf: str, settings=None) -> pd.DataFrame:
-    """H4 / D1 candles cut on the BROKER clock (like MT5: H4 = 00/04/08… server time, a day = New York close),
+    """H4 / D1 candles cut on the BROKER clock (like MT5: H4 = 00/04/08… server time; Exness = GMT+0, so a day = UTC day),
     so the shapes match the user's MT5 chart. Labels are returned in UTC."""
     if tf == "H1" or h1.empty:
         return h1

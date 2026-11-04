@@ -339,7 +339,8 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
               "balance": getattr(a, "balance", None), "equity": getattr(a, "equity", None),
               "start_balance": st.get("start_balance"),
               "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15],
-              "fills": st.get("fills", [])[:40], "swap_watch": st.get("swap_watch")}
+              "fills": st.get("fills", [])[:40], "swap_watch": st.get("swap_watch"),
+              "bars_published": st.get("bars_published")}
     st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)
 
@@ -406,7 +407,34 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
     if c.get("trail_stops", True):
         trail_positions(c, st)
     swap_watch(c, st)
+    publish_bars(c, st)
     return new
+
+
+RECENT_BARS = 1500
+
+
+def publish_bars(c: dict, st: dict) -> None:
+    """User, 4 Nov 2026: the website chart, the cloud's signals and MT5 must show the SAME candles. After each hourly scan
+    the last RECENT_BARS closed H1 bars of every symbol (straight from this MT5, in UTC) go to GitHub in one commit:
+    data/exness/recent/{SYM}_H1.csv. The cloud joins them to the Exness history (data._seed_exness) and the web chart
+    reads them for its newest candles; the free feeds only fill in when the PC has been off."""
+    from .config import SYMBOLS
+    files = {}
+    for sym in SYMBOLS:
+        try:
+            df = data.drop_unclosed(data.load_h1(sym, src="mt5"), "H1").tail(RECENT_BARS)
+            if f"mt5:{sym}" not in data._mem or len(df) < 50:     # MT5 had no data -> free-feed fallback: never label it Exness
+                continue
+            out = df[["open", "high", "low", "close", "volume"]].copy()
+            out.index = out.index.strftime("%Y-%m-%dT%H:%M:%SZ")
+            files[f"data/exness/recent/{sym}_H1.csv"] = out.to_csv(index_label="time", float_format="%.10g").encode()
+        except Exception as e:
+            log.warning("recent bars %s: %s", sym, e)
+    if files:
+        ok = ghsync.put_files(files, "pc: recent Exness bars [skip ci]")
+        st["bars_published"] = {"time": pd.Timestamp.now(tz="UTC").isoformat(), "symbols": len(files), "ok": ok}
+        _log("bars", symbols=len(files), ok=ok)
 
 
 def trail_positions(c: dict, st: dict) -> None:

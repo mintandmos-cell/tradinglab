@@ -18,7 +18,7 @@ from .strategies import STRATEGIES, public_list
 log = logging.getLogger("tradinglab.export")
 CLOUD_STATE = DATA_DIR / "cloud_status.json"   # committed by the bot (cloud_state.json was git-ignored on PCs)
 # settings the browser may show; never secrets or the account balance
-PUBLIC_SETTINGS = ("risk_per_trade_pct", "portfolio_risk_pct", "max_symbol_risk_pct", "cluster_risk_pct", "kill_dd_mult", "trials", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "research", "alerts", "force_off")
+PUBLIC_SETTINGS = ("risk_per_trade_pct", "portfolio_risk_pct", "max_symbol_risk_pct", "cluster_risk_pct", "kill_dd_mult", "trials", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "mt5_server_time", "research", "alerts", "force_off")
 
 
 def _dump(path, obj) -> None:

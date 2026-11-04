@@ -44,7 +44,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   keys in plain text). Browser `Sync` object reads it via the GitHub API and writes it back with a GitHub token kept inside the blob.
   The chart tail is replaced by real recent H1 candles from the live feed's family (Binance klines for BTC/ETH; Twelve Data with the
   user's optional free key for FX/gold) — `recentBars` / `aggregate` in `web/app.js`. H4/D1 are cut on the BROKER clock everywhere
-  (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time, a day = New York close.
+  (`data.resample` via `utc_to_server`, JS `bucketStart`), like MT5: H4 = 00/04/08… server time (Exness = GMT+0, a day = UTC day).
 - Auto-trader on the PC (user's requests 28 Oct 2026; DEMO 10,000 USD, maybe real later): `app/autotrader.py` + `autotrade.bat` drive MT5
   from outside through the MetaTrader5 package (no EA). ONE SIGNAL, THREE PLACES: each UTC hour + 5 s it `ghsync.pull`s latest.json +
   signals.json from GitHub, runs the cloud's own `scanner.scan_once` on MT5 candles (same ids, same alert text pushed at once), then
@@ -108,6 +108,13 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Run workflow -> research, variant = swap -> parts with TL_SWAP_MODE=charged -> `app.cloud compare` (`app/compare.py`) judges
   them in a temp research folder and writes only data/research/compare/swap_charged.json; Lab step 8 shows free vs swap.
   Run it AFTER the live run (it compares against latest.json at merge time; re-judge with mode merge + from_run + variant swap).
+- SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
+  GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
+  data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after
+  each hourly scan in ONE commit (`autotrader.publish_bars` -> `ghsync.put_files`, git data API) to data/exness/recent/{SYM}_H1.csv;
+  `data._seed_exness` appends them (cloud scan, charts, tracking use Exness bars); the web chart reads them from raw GitHub
+  (`exnessBars`/`recentBars`), free feeds only after the last Exness bar, shifted by the measured basis; live ticks shifted too.
+  `history_source` = "exness@YYYY-MM/<clock>".
 - DATA QUALITY (3 Nov 2026): `tools/check_history.py` -> data/research/data_quality.json (holes, snap-back spikes, flat, bad
   bars per year). `data._seed_exness` starts after the last thin month (<= 120 bars) and after the last 7-day hole
   (BTCUSD 2014-2017 was sparse -> starts Feb 2018); `history_source` = "exness@YYYY-MM" so a new start re-judges.
