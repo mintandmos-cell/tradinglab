@@ -104,7 +104,7 @@
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00416,
-  "stop_now": 1.3987
+  "stop_now": 1.39873
  },
  {
   "id": "NAS100-H4-mr_nlow_year-1793750400",
@@ -542,7 +542,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 2.842,
-  "stop_now": 96.756
+  "stop_now": 96.796
  },
  {
   "id": "USDJPY-D1-mr_rsi2_slope-1793656800",
