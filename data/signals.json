@@ -95,15 +95,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.013,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": null,
-  "stop_now": 88.725
+  "stop_now": 88.725,
+  "exit_reason": "SL",
+  "exit_price": 88.725
  },
  {
   "id": "NAS100-H1-bb_trend-1793800800",

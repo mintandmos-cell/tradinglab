@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T20:01:06.109686+00:00",
+   "signal": "AAPL-H4-keltner_breakout-1793793600",
+   "symbol": "AAPL",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 352.13,
+   "fill": 352.13,
+   "signal_entry": 353.68,
+   "slip_pts": 0.0,
+   "drift_r": -0.104,
+   "delay_s": 14466
+  },
+  {
    "time": "2026-11-04T16:01:05.971193+00:00",
    "signal": "USOIL-H4-mr_stoch_gold-1793793600",
    "symbol": "USOIL",
@@ -183,5 +197,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T16:16:22.266837+00:00"
+ "updated": "2026-11-04T20:30:13.991778+00:00"
 }
