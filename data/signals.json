@@ -315,15 +315,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.026,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T07:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": null,
-  "stop_now": 25942.83
+  "stop_now": 25942.83,
+  "exit_reason": "SL",
+  "exit_price": 25942.83
  },
  {
   "id": "EURUSD-H1-ichimoku_tk-1793746800",
