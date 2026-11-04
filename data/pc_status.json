@@ -1,22 +1,20 @@
 {
- "last_scan_hour": "2026-11-04 09:00:00+00:00",
- "new_signals": [
-  "USDCAD-H1-ichimoku_tk-1793779200"
- ],
+ "last_scan_hour": "2026-11-04 10:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 38,
   "errors": [
-   "NVDA H1: newest closed bar is 12 h old (stale data)",
-   "MSFT H1: newest closed bar is 12 h old (stale data)",
-   "AMZN H1: newest closed bar is 12 h old (stale data)",
-   "META H1: newest closed bar is 12 h old (stale data)",
-   "AAPL H1: newest closed bar is 12 h old (stale data)"
+   "NVDA H1: newest closed bar is 13 h old (stale data)",
+   "MSFT H1: newest closed bar is 13 h old (stale data)",
+   "AMZN H1: newest closed bar is 13 h old (stale data)",
+   "META H1: newest closed bar is 13 h old (stale data)",
+   "AAPL H1: newest closed bar is 13 h old (stale data)"
   ]
  },
- "time": "2026-11-04T09:01:50.662664+00:00",
+ "time": "2026-11-04T10:00:27.410284+00:00",
  "account": "DEMO",
  "balance": 9880.24,
- "equity": 9921.09,
+ "equity": 9947.52,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -29,8 +27,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.624,
-   "profit": 20.68,
+   "price": 95.186,
+   "profit": 29.44,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -43,8 +41,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.3484,
-   "profit": -7.82,
+   "price": 1.34911,
+   "profit": -8.53,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -57,8 +55,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.219,
-   "profit": 2.83,
+   "price": 158.411,
+   "profit": 1.61,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -71,8 +69,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.74,
-   "profit": 25.7,
+   "price": 51.966,
+   "profit": 37.0,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -85,8 +83,8 @@
    "price_open": 1.39564,
    "sl": 1.39925,
    "tp": null,
-   "price": 1.39568,
-   "profit": -0.54,
+   "price": 1.39507,
+   "profit": 7.76,
    "time": "2026-11-04T09:01:31+00:00"
   }
  ],
