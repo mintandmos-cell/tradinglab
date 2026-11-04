@@ -13,10 +13,10 @@
    "AAPL H1: newest closed bar is 3 h old (stale data)"
   ]
  },
- "time": "2026-11-04T00:00:26.296246+00:00",
+ "time": "2026-11-04T00:00:45.570793+00:00",
  "account": "DEMO",
  "balance": 9896.39,
- "equity": 9925.38,
+ "equity": 9921.61,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -29,8 +29,8 @@
    "price_open": 157.943,
    "sl": 157.631,
    "tp": null,
-   "price": 158.491,
-   "profit": 17.29,
+   "price": 158.47,
+   "profit": 16.63,
    "time": "2026-11-02T10:00:20+00:00"
   },
   {
@@ -43,8 +43,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.806,
-   "profit": 17.04,
+   "price": 95.845,
+   "profit": 16.26,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -57,8 +57,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.3435,
-   "profit": -2.92,
+   "price": 1.34345,
+   "profit": -2.87,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -69,10 +69,10 @@
    "side": "BUY",
    "lots": 0.22,
    "price_open": 1.40089,
-   "sl": 1.39781,
+   "sl": 1.39785,
    "tp": null,
-   "price": 1.40042,
-   "profit": -7.38,
+   "price": 1.40038,
+   "profit": -8.01,
    "time": "2026-11-03T21:00:36+00:00"
   },
   {
@@ -85,9 +85,23 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.498,
-   "profit": 1.06,
+   "price": 158.477,
+   "profit": 1.19,
    "time": "2026-11-03T22:00:34+00:00"
+  },
+  {
+   "ticket": 2793590696,
+   "symbol": "EURUSD",
+   "system": "TL14-H1",
+   "signal_id": "EURUSD-H1-ichimoku_tk-1793746800",
+   "side": "BUY",
+   "lots": 0.17,
+   "price_open": 1.12084,
+   "sl": 1.11796,
+   "tp": null,
+   "price": 1.12072,
+   "profit": -2.04,
+   "time": "2026-11-04T00:00:30+00:00"
   }
  ],
  "closed": [
@@ -234,6 +248,20 @@
  ],
  "fills": [
   {
+   "time": "2026-11-04T00:00:29.405536+00:00",
+   "signal": "EURUSD-H1-ichimoku_tk-1793746800",
+   "symbol": "EURUSD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "BUY",
+   "asked": 1.12084,
+   "fill": 1.12084,
+   "signal_entry": 1.12067,
+   "slip_pts": 0.0,
+   "drift_r": 0.063,
+   "delay_s": 29
+  },
+  {
    "time": "2026-11-03T22:00:33.620604+00:00",
    "signal": "USDJPY-D1-mr_rsi2_slope-1793656800",
    "symbol": "USDJPY",
@@ -291,8 +319,8 @@
   }
  ],
  "swap_watch": {
-  "day": "2026-11-03",
-  "checked": 21,
+  "day": "2026-11-04",
+  "checked": 23,
   "charged": 0,
   "examples": []
  }
