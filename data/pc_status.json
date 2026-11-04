@@ -13,10 +13,10 @@
    "AAPL H1: newest closed bar is 12 h old (stale data)"
   ]
  },
- "time": "2026-11-04T09:00:51.881054+00:00",
+ "time": "2026-11-04T09:01:50.662664+00:00",
  "account": "DEMO",
  "balance": 9880.24,
- "equity": 9926.16,
+ "equity": 9921.09,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -29,8 +29,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 95.554,
-   "profit": 22.08,
+   "price": 95.624,
+   "profit": 20.68,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -43,8 +43,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34843,
-   "profit": -7.85,
+   "price": 1.3484,
+   "profit": -7.82,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -57,8 +57,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.224,
-   "profit": 2.79,
+   "price": 158.219,
+   "profit": 2.83,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -71,9 +71,23 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.804,
-   "profit": 28.9,
+   "price": 51.74,
+   "profit": 25.7,
    "time": "2026-11-04T06:00:59+00:00"
+  },
+  {
+   "ticket": 2797417004,
+   "symbol": "USDCAD",
+   "system": "TL14-H1",
+   "signal_id": "USDCAD-H1-ichimoku_tk-1793779200",
+   "side": "SELL",
+   "lots": 0.19,
+   "price_open": 1.39564,
+   "sl": 1.39925,
+   "tp": null,
+   "price": 1.39568,
+   "profit": -0.54,
+   "time": "2026-11-04T09:01:31+00:00"
   }
  ],
  "closed": [
@@ -275,6 +289,20 @@
  ],
  "fills": [
   {
+   "time": "2026-11-04T09:01:30.310836+00:00",
+   "signal": "USDCAD-H1-ichimoku_tk-1793779200",
+   "symbol": "USDCAD",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 1.39564,
+   "fill": 1.39564,
+   "signal_entry": 1.39578,
+   "slip_pts": -0.0,
+   "drift_r": 0.04,
+   "delay_s": 90
+  },
+  {
    "time": "2026-11-04T06:00:58.963602+00:00",
    "signal": "XAGUSD-H1-ichimoku_tk-1793768400",
    "symbol": "XAGUSD",
@@ -408,7 +436,7 @@
   "examples": []
  },
  "bars_published": {
-  "time": "2026-11-04T08:01:09.474916+00:00",
+  "time": "2026-11-04T09:01:30.263967+00:00",
   "symbols": 20,
   "ok": true
  }
