@@ -43,15 +43,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.052,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T04:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": null,
-  "stop_now": 2280.53
+  "stop_now": 2280.53,
+  "exit_reason": "SL",
+  "exit_price": 2280.53
  },
  {
   "id": "JP225-H1-ichimoku_tk-1793750400",
@@ -105,7 +107,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1094.6,
-  "stop_now": 61345.97
+  "stop_now": 61148.18
  },
  {
   "id": "DE30-H1-ichimoku_tk-1793750400",
