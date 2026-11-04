@@ -1,6 +1,34 @@
 {
  "fills": [
   {
+   "time": "2026-11-04T01:00:36.745644+00:00",
+   "signal": "JP225-H1-ichimoku_tk-1793750400",
+   "symbol": "JP225",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 62235.8,
+   "fill": 62235.8,
+   "signal_entry": 62305.8,
+   "slip_pts": -0.0,
+   "drift_r": 0.128,
+   "delay_s": 37
+  },
+  {
+   "time": "2026-11-04T01:00:35.462545+00:00",
+   "signal": "DE30-H1-ichimoku_tk-1793750400",
+   "symbol": "DE30",
+   "tf": "H1",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 25727.8,
+   "fill": 25727.8,
+   "signal_entry": 25741.8,
+   "slip_pts": -0.0,
+   "drift_r": 0.07,
+   "delay_s": 35
+  },
+  {
    "time": "2026-11-04T00:00:29.405536+00:00",
    "signal": "EURUSD-H1-ichimoku_tk-1793746800",
    "symbol": "EURUSD",
@@ -71,5 +99,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T00:49:14.675064+00:00"
+ "updated": "2026-11-04T01:46:19.935828+00:00"
 }
