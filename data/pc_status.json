@@ -7,10 +7,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-04T15:01:17.492732+00:00",
+ "time": "2026-11-04T15:30:06.255781+00:00",
  "account": "DEMO",
- "balance": 9880.24,
- "equity": 10004.24,
+ "balance": 9860.52,
+ "equity": 9963.15,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 92.861,
-   "profit": 75.94,
+   "price": 93.318,
+   "profit": 66.8,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34744,
-   "profit": -6.86,
+   "price": 1.34659,
+   "profit": -6.01,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.524,
-   "profit": 0.9,
+   "price": 158.646,
+   "profit": 0.13,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -65,23 +65,9 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.103,
-   "profit": 43.85,
+   "price": 51.877,
+   "profit": 32.55,
    "time": "2026-11-04T06:00:59+00:00"
-  },
-  {
-   "ticket": 2797417004,
-   "symbol": "USDCAD",
-   "system": "TL14-H1",
-   "signal_id": "USDCAD-H1-ichimoku_tk-1793779200",
-   "side": "SELL",
-   "lots": 0.19,
-   "price_open": 1.39564,
-   "sl": 1.39709,
-   "tp": null,
-   "price": 1.39544,
-   "profit": 2.72,
-   "time": "2026-11-04T09:01:31+00:00"
   },
   {
    "ticket": 2798555441,
@@ -93,8 +79,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.39533,
-   "profit": 7.13,
+   "price": 1.39686,
+   "profit": 12.6,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -107,12 +93,25 @@
    "price_open": 28760.34,
    "sl": 28298.3,
    "tp": 29722.83,
-   "price": 28766.81,
-   "profit": 0.32,
+   "price": 28691.57,
+   "profit": -3.44,
    "time": "2026-11-04T15:00:57+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2797417004,
+   "signal_id": "USDCAD-H1-ichimoku_tk-1793779200",
+   "time": "2026-11-04T15:30:04.979517+00:00",
+   "symbol": "USDCAD",
+   "system": "TL14-H1",
+   "side": "SELL",
+   "lots": 0.19,
+   "price_open": 1.39564,
+   "price": 1.39709,
+   "reason": "SL",
+   "profit": -19.72
+  },
   {
    "ticket": 2793910757,
    "signal_id": "DE30-H1-ichimoku_tk-1793750400",
@@ -294,19 +293,6 @@
    "price": 81000.9,
    "reason": "SL",
    "profit": -6.24
-  },
-  {
-   "ticket": 2758119554,
-   "signal_id": "USDJPY-H1-vol_breakout-1793192400",
-   "time": "2026-10-28T18:43:57.505646+00:00",
-   "symbol": "USDJPY",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.05,
-   "price_open": 158.183,
-   "price": 157.891,
-   "reason": "SL",
-   "profit": -9.25
   }
  ],
  "fills": [
