@@ -51,7 +51,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1094.6,
-  "stop_now": 62853.1
+  "stop_now": 62171.04
  },
  {
   "id": "DE30-H1-ichimoku_tk-1793750400",
@@ -159,7 +159,7 @@
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00325,
-  "stop_now": 1.11913
+  "stop_now": 1.12306
  },
  {
   "id": "USOIL-H1-ichimoku_tk-1793739600",
@@ -312,15 +312,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.051,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.993,
+  "exit_time": "2026-11-04T01:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00353,
-  "stop_now": 1.39783
+  "stop_now": 1.39783,
+  "exit_reason": "Trail",
+  "exit_price": 1.39783
  },
  {
   "id": "USOIL-H4-mr_cci_m1-1793700000",
