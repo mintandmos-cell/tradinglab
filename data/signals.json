@@ -636,15 +636,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.006,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.5,
+  "exit_time": "2026-11-04T12:00:00+00:00",
   "user_status": "new",
   "late": true,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 27047.53
+  "stop_now": 27047.53,
+  "exit_reason": "TP",
+  "exit_price": 28815.13
  },
  {
   "id": "ETHUSD-H1-ichimoku_tk-1793757600",
@@ -922,7 +924,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 2.842,
-  "stop_now": 89.216
+  "stop_now": 89.001
  },
  {
   "id": "USDJPY-D1-mr_rsi2_slope-1793656800",
@@ -1076,15 +1078,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.008,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": null,
-  "stop_now": 89.322
+  "stop_now": 89.322,
+  "exit_reason": "SL",
+  "exit_price": 89.322
  },
  {
   "id": "USOIL-H4-mr_ibs_m1-1793685600",
@@ -1129,15 +1133,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.01,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": null,
-  "stop_now": 92.644
+  "stop_now": 92.644,
+  "exit_reason": "SL",
+  "exit_price": 92.644
  },
  {
   "id": "GBPUSD-D1-mr_dn_raw-1793570400",
@@ -1235,15 +1241,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.014,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.0,
+  "exit_time": "2026-11-03T04:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": null,
-  "stop_now": 64319.74
+  "stop_now": 64319.74,
+  "exit_reason": "TP",
+  "exit_price": 62254.06
  },
  {
   "id": "NAS100-H4-mr_stochf_adx-1793599200",
@@ -1344,15 +1352,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.002,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T04:00:00+00:00",
   "user_status": "new",
   "late": true,
   "origin": "pc",
   "cluster": "metals",
   "trail_dist": null,
-  "stop_now": 3993.57
+  "stop_now": 3993.57,
+  "exit_reason": "SL",
+  "exit_price": 3993.57
  },
  {
   "id": "DE30-H1-ny_open_breakout-1793631600",
@@ -1916,12 +1926,15 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.004,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T04:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "cloud",
+  "stop_now": 4028.23,
+  "exit_reason": "SL",
+  "exit_price": 4028.23
  },
  {
   "id": "XAUUSD-H4-weekly_breakout-1793350800",
@@ -1965,12 +1978,15 @@
   "reverse_of": null,
   "price_source": "twelve",
   "cost_r": 0.007,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-04T04:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "cloud"
+  "origin": "cloud",
+  "stop_now": 3998.91,
+  "exit_reason": "SL",
+  "exit_price": 3998.91
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793347200",
