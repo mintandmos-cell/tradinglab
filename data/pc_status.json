@@ -8,10 +8,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-05T00:03:52.116008+00:00",
+ "time": "2026-11-05T00:04:57.146928+00:00",
  "account": "DEMO",
  "balance": 9835.62,
- "equity": 10053.24,
+ "equity": 10055.7,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -24,8 +24,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 87.718,
-   "profit": 178.8,
+   "price": 87.693,
+   "profit": 179.3,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -38,8 +38,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34778,
-   "profit": -7.2,
+   "price": 1.34776,
+   "profit": -7.18,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -52,8 +52,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.411,
-   "profit": 1.61,
+   "price": 158.434,
+   "profit": 1.46,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -66,8 +66,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.211,
-   "profit": 49.25,
+   "price": 52.252,
+   "profit": 51.3,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -80,8 +80,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.3971,
-   "profit": 13.46,
+   "price": 1.39712,
+   "profit": 13.53,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -94,8 +94,8 @@
    "price_open": 28760.34,
    "sl": 28298.3,
    "tp": 29722.83,
-   "price": 28403.65,
-   "profit": -17.83,
+   "price": 28402.66,
+   "profit": -17.88,
    "time": "2026-11-04T15:00:57+00:00"
   },
   {
@@ -111,6 +111,20 @@
    "price": 351.73,
    "profit": -0.47,
    "time": "2026-11-04T20:01:07+00:00"
+  },
+  {
+   "ticket": 2801312847,
+   "symbol": "ETHUSD",
+   "system": "TL367-D1",
+   "signal_id": "ETHUSD-D1-mr_touch_adx-1793750400",
+   "side": "BUY",
+   "lots": 0.1,
+   "price_open": 2420.46,
+   "sl": 2283.34,
+   "tp": 2560.8,
+   "price": 2420.7,
+   "profit": 0.02,
+   "time": "2026-11-05T00:04:37+00:00"
   }
  ],
  "closed": [
@@ -312,6 +326,20 @@
  ],
  "fills": [
   {
+   "time": "2026-11-05T00:04:36.180513+00:00",
+   "signal": "ETHUSD-D1-mr_touch_adx-1793750400",
+   "symbol": "ETHUSD",
+   "tf": "D1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 2420.46,
+   "fill": 2420.46,
+   "signal_entry": 2422.07,
+   "slip_pts": 0.0,
+   "drift_r": -0.012,
+   "delay_s": 276
+  },
+  {
    "time": "2026-11-04T20:01:06.109686+00:00",
    "signal": "AAPL-H4-keltner_breakout-1793793600",
    "symbol": "AAPL",
@@ -509,13 +537,19 @@
   }
  ],
  "swap_watch": {
-  "day": "2026-11-04",
-  "checked": 23,
-  "charged": 0,
-  "examples": []
+  "day": "2026-11-05",
+  "checked": 34,
+  "charged": 1,
+  "examples": [
+   {
+    "symbol": "AAPL",
+    "swap": -0.07,
+    "type": "BUY"
+   }
+  ]
  },
  "bars_published": {
-  "time": "2026-11-04T23:01:04.291636+00:00",
+  "time": "2026-11-05T00:04:35.852533+00:00",
   "symbols": 20,
   "ok": true
  }
