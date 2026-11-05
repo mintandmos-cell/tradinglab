@@ -109,7 +109,16 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
     price feed moved the SL a little and closed signals the real order still held — user's report 28 Oct 2026.)"""
     bt = pd.Timestamp(sig["bar_time"])
     i = df.index.searchsorted(bt)
-    if i >= len(df) or df.index[i] != bt or i + 1 >= len(df):
+    if i >= len(df) or df.index[i] != bt:
+        # the candle grid changed under an open signal (4 Nov 2026: H4 / D1 moved from the New York-close clock to Exness
+        # GMT+0, so an old signal's bar time is no longer a candle start): carry on from the candle that holds the entry
+        # time, otherwise the signal would never be tracked again (no SL / TP / reverse exit, no trailing stop)
+        et = bt + pd.Timedelta(minutes=TIMEFRAMES[sig["tf"]])
+        j = df.index.searchsorted(et, side="right") - 1
+        if j < 1 or df.index[j] < bt:
+            return
+        i = j - 1
+    if i + 1 >= len(df):
         return
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     d, entry, sl, tp = int(sig["dir"]), float(sig["entry"]), float(sig["sl"]), sig.get("tp")
