@@ -241,9 +241,14 @@ def execute(c: dict, s: dict, balance: float) -> str:
     r = mt5.order_send(req)
     ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
     fill = getattr(r, "price", 0) or price
-    _log("open" if ok else "open_failed", symbol=sym, system=tag, signal=s["id"], side=side, lots=lots, price=fill, sl=sl,
-         tp=tp, risk_usd=round(risk_usd, 2), retcode=getattr(r, "retcode", None),
-         msg=getattr(r, "comment", None) or str(mt5.last_error()))
+    closed = r is not None and r.retcode == getattr(mt5, "TRADE_RETCODE_MARKET_CLOSED", 10018)
+    if not (closed and s.get("_closed_logged")):          # "market closed" is logged once per signal, not every 15 s
+        _log("open" if ok else "open_failed", symbol=sym, system=tag, signal=s["id"], side=side, lots=lots, price=fill, sl=sl,
+             tp=tp, risk_usd=round(risk_usd, 2), retcode=getattr(r, "retcode", None),
+             msg=getattr(r, "comment", None) or str(mt5.last_error()))
+    if closed:
+        s["_closed_logged"] = True
+        return "closed"
     if not ok:
         return "retry"
     _opened[str(getattr(r, "order", "") or "")] = s["id"]
@@ -697,9 +702,25 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
             _log("skip", symbol=s["symbol"], signal=s["id"], reason=f"guard {state} (ขาดทุนรวม {st['total_dd']}%)")
             _mark_done(st, s["id"])
             continue
+        if time.time() < job.get("next", 0):                # waiting for the market to open again
+            keep.append(job)
+            continue
         res = execute(c, s, float(a.balance))
         if res == "done":
             _mark_done(st, s["id"])
+        elif res == "closed":
+            # 5 Nov 2026: USOIL's signal came on the bar before the daily break; 10 min of retries ran out while the
+            # market was shut and the trade was lost. Wait for the reopen instead (check once a minute), as long as the
+            # signal is still fresh: up to 4 candles after the signal bar, like follow_alerts. The chase rule in
+            # execute() still skips it if price ran away meanwhile.
+            last = pd.Timestamp(s["bar_time"]) + 5 * pd.Timedelta(minutes=TIMEFRAMES[s["tf"]])
+            if pd.Timestamp.now(tz="UTC") < last:
+                job["next"] = time.time() + 60
+                job["until"] = max(job["until"], last.timestamp())
+                keep.append(job)
+            else:
+                _mark_done(st, s["id"])
+                _log("give_up", symbol=s["symbol"], signal=s["id"], reason="market closed until the signal went stale")
         else:
             if time.time() < job["until"]:
                 keep.append(job)
