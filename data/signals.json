@@ -257,15 +257,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.01,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-05T01:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 28298.3
+  "stop_now": 28298.3,
+  "exit_reason": "SL",
+  "exit_price": 28298.3
  },
  {
   "id": "USDCAD-D1-mr_edist_calm-1793577600",
@@ -920,7 +922,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 2.842,
-  "stop_now": 89.428
+  "stop_now": 89.216
  },
  {
   "id": "USDJPY-D1-mr_rsi2_slope-1793656800",
