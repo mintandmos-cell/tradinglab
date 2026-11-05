@@ -7,10 +7,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-05T15:01:18.426740+00:00",
+ "time": "2026-11-05T15:10:48.484161+00:00",
  "account": "DEMO",
- "balance": 9812.52,
- "equity": 10022.39,
+ "balance": 9798.8,
+ "equity": 10029.13,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 89.144,
-   "profit": 150.28,
+   "price": 88.995,
+   "profit": 153.26,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34603,
-   "profit": -5.45,
+   "price": 1.34621,
+   "profit": -5.63,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.062,
-   "profit": 3.82,
+   "price": 157.989,
+   "profit": 4.29,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.33,
-   "profit": 55.2,
+   "price": 52.422,
+   "profit": 59.8,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -79,8 +79,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.3985,
-   "profit": 18.45,
+   "price": 1.39886,
+   "profit": 19.73,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -93,23 +93,9 @@
    "price_open": 352.13,
    "sl": 338.81,
    "tp": 390.85,
-   "price": 350.81,
-   "profit": -1.39,
+   "price": 348.22,
+   "profit": -3.98,
    "time": "2026-11-04T20:01:07+00:00"
-  },
-  {
-   "ticket": 2801312847,
-   "symbol": "ETHUSD",
-   "system": "TL367-D1",
-   "signal_id": "ETHUSD-D1-mr_touch_adx-1793750400",
-   "side": "BUY",
-   "lots": 0.1,
-   "price_open": 2420.46,
-   "sl": 2283.34,
-   "tp": 2560.8,
-   "price": 2332.88,
-   "profit": -8.76,
-   "time": "2026-11-05T00:04:37+00:00"
   },
   {
    "ticket": 2805308761,
@@ -121,8 +107,8 @@
    "price_open": 1.39699,
    "sl": 1.40019,
    "tp": 1.39249,
-   "price": 1.3986,
-   "profit": -4.6,
+   "price": 1.39896,
+   "profit": -5.63,
    "time": "2026-11-05T13:01:02+00:00"
   },
   {
@@ -135,12 +121,25 @@
    "price_open": 27424.01,
    "sl": 27819.36,
    "tp": 26447.89,
-   "price": 27377.54,
-   "profit": 2.32,
+   "price": 27254.29,
+   "profit": 8.49,
    "time": "2026-11-05T15:01:03+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2801312847,
+   "signal_id": "ETHUSD-D1-mr_touch_adx-1793750400",
+   "time": "2026-11-05T15:10:47.279940+00:00",
+   "symbol": "ETHUSD",
+   "system": "TL367-D1",
+   "side": "BUY",
+   "lots": 0.1,
+   "price_open": 2420.46,
+   "price": 2283.34,
+   "reason": "SL",
+   "profit": -13.72
+  },
   {
    "ticket": 2799401725,
    "signal_id": "NAS100-H1-bb_trend-1793800800",
@@ -322,19 +321,6 @@
    "price": 80573.53,
    "reason": "SL",
    "profit": -7.33
-  },
-  {
-   "ticket": 2761696400,
-   "signal_id": "XAUUSD-H1-vol_breakout-1793235600",
-   "time": "2026-10-29T04:13:26.689219+00:00",
-   "symbol": "XAUUSD",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 4061.578,
-   "price": 4036.43,
-   "reason": "SL",
-   "profit": -25.15
   }
  ],
  "fills": [
