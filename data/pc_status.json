@@ -5,10 +5,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-05T23:00:21.150941+00:00",
+ "time": "2026-11-05T23:10:06.307331+00:00",
  "account": "DEMO",
- "balance": 9789.61,
- "equity": 10015.64,
+ "balance": 9838.51,
+ "equity": 10011.22,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 90.243,
-   "profit": 128.3,
+   "price": 90.361,
+   "profit": 125.94,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.3448,
-   "profit": -4.22,
+   "price": 1.3454,
+   "profit": -4.82,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.666,
-   "profit": 6.34,
+   "price": 157.479,
+   "profit": 7.54,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.811,
-   "profit": 29.25,
+   "price": 51.649,
+   "profit": 21.15,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.4016,
-   "profit": 29.46,
+   "price": 1.40168,
+   "profit": 29.75,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -94,23 +94,22 @@
    "price": 345.42,
    "profit": -6.85,
    "time": "2026-11-04T20:01:07+00:00"
-  },
-  {
-   "ticket": 2806376549,
-   "symbol": "USTEC",
-   "system": "TL75-H1",
-   "signal_id": "NAS100-H1-bb_trend-1793887200",
-   "side": "SELL",
-   "lots": 0.05,
-   "price_open": 27424.01,
-   "sl": 27819.36,
-   "tp": 26447.89,
-   "price": 26548.99,
-   "profit": 43.75,
-   "time": "2026-11-05T15:01:03+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2806376549,
+   "signal_id": "NAS100-H1-bb_trend-1793887200",
+   "time": "2026-11-05T23:10:04.945748+00:00",
+   "symbol": "USTEC",
+   "system": "TL75-H1",
+   "side": "SELL",
+   "lots": 0.05,
+   "price_open": 27424.01,
+   "price": 26446.059999999998,
+   "reason": "TP",
+   "profit": 48.9
+  },
   {
    "ticket": 2805308761,
    "signal_id": "USDCAD-H1-mr_z_t100-1793880000",
@@ -292,19 +291,6 @@
    "price": 2300.45,
    "reason": "TP",
    "profit": 29.54
-  },
-  {
-   "ticket": 2761696789,
-   "signal_id": "ETHUSD-H1-vol_breakout-1793235600",
-   "time": "2026-11-02T00:47:14.832000+00:00",
-   "symbol": "ETHUSD",
-   "system": "TL56-H1",
-   "side": "SELL",
-   "lots": 0.31,
-   "price_open": 2306.61,
-   "price": 2337.91,
-   "reason": "SL",
-   "profit": -9.7
   }
  ],
  "fills": [
@@ -560,7 +546,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-05T22:01:07.573248+00:00",
+  "time": "2026-11-05T23:00:59.588652+00:00",
   "symbols": 20,
   "ok": true
  }
