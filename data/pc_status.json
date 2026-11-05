@@ -5,10 +5,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-05T01:00:25.970895+00:00",
+ "time": "2026-11-05T01:08:26.260041+00:00",
  "account": "DEMO",
- "balance": 9835.62,
- "equity": 10086.63,
+ "balance": 9812.52,
+ "equity": 10067.09,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 87.128,
-   "profit": 190.6,
+   "price": 87.282,
+   "profit": 187.52,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34865,
-   "profit": -8.07,
+   "price": 1.34842,
+   "profit": -7.84,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.129,
-   "profit": 3.4,
+   "price": 158.071,
+   "profit": 3.76,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.771,
-   "profit": 77.25,
+   "price": 52.468,
+   "profit": 62.1,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -77,23 +77,9 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.39588,
-   "profit": 9.1,
+   "price": 1.39608,
+   "profit": 9.81,
    "time": "2026-11-04T13:01:03+00:00"
-  },
-  {
-   "ticket": 2799401725,
-   "symbol": "USTEC",
-   "system": "TL75-H1",
-   "signal_id": "NAS100-H1-bb_trend-1793800800",
-   "side": "BUY",
-   "lots": 0.05,
-   "price_open": 28760.34,
-   "sl": 28298.3,
-   "tp": 29722.83,
-   "price": 28346.91,
-   "profit": -20.67,
-   "time": "2026-11-04T15:00:57+00:00"
   },
   {
    "ticket": 2800868862,
@@ -119,12 +105,25 @@
    "price_open": 2420.46,
    "sl": 2283.34,
    "tp": 2560.8,
-   "price": 2419.17,
-   "profit": -0.13,
+   "price": 2417.36,
+   "profit": -0.31,
    "time": "2026-11-05T00:04:37+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2799401725,
+   "signal_id": "NAS100-H1-bb_trend-1793800800",
+   "time": "2026-11-05T01:08:25.007853+00:00",
+   "symbol": "USTEC",
+   "system": "TL75-H1",
+   "side": "BUY",
+   "lots": 0.05,
+   "price_open": 28760.34,
+   "price": 28298.3,
+   "reason": "SL",
+   "profit": -23.1
+  },
   {
    "ticket": 2799857095,
    "signal_id": "USOIL-H4-mr_stoch_gold-1793793600",
@@ -306,19 +305,6 @@
    "price": 4036.43,
    "reason": "SL",
    "profit": -25.15
-  },
-  {
-   "ticket": 2760562520,
-   "signal_id": "XAUUSD-H1-vol_breakout-1793214000",
-   "time": "2026-10-28T22:45:58.375111+00:00",
-   "symbol": "XAUUSD",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 4076.425,
-   "price": 4051.74,
-   "reason": "SL",
-   "profit": -24.69
   }
  ],
  "fills": [
@@ -546,7 +532,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-05T00:04:35.852533+00:00",
+  "time": "2026-11-05T01:01:03.146874+00:00",
   "symbols": 20,
   "ok": true
  }
