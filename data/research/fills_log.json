@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-05T00:04:36.180513+00:00",
+   "signal": "ETHUSD-D1-mr_touch_adx-1793750400",
+   "symbol": "ETHUSD",
+   "tf": "D1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 2420.46,
+   "fill": 2420.46,
+   "signal_entry": 2422.07,
+   "slip_pts": 0.0,
+   "drift_r": -0.012,
+   "delay_s": 276
+  },
+  {
    "time": "2026-11-04T20:01:06.109686+00:00",
    "signal": "AAPL-H4-keltner_breakout-1793793600",
    "symbol": "AAPL",
@@ -197,5 +211,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-04T20:30:13.991778+00:00"
+ "updated": "2026-11-05T00:29:50.976088+00:00"
 }
