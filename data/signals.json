@@ -1022,15 +1022,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.026,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 5.066,
+  "exit_time": "2026-11-05T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 2.842,
-  "stop_now": 88.857
+  "stop_now": 88.857,
+  "exit_reason": "Trail",
+  "exit_price": 88.857
  },
  {
   "id": "USDJPY-D1-mr_rsi2_slope-1793656800",
