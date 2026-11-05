@@ -1,0 +1,11 @@
+{
+ "since": "2026-11-05",
+ "account": "Exness-MT5Trial17",
+ "examples": [
+  {
+   "symbol": "AAPL",
+   "swap": -0.07,
+   "type": "BUY"
+  }
+ ]
+}
