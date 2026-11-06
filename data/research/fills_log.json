@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-06T12:01:05.979173+00:00",
+   "signal": "DE30-H4-mr_kelt_year-1793952000",
+   "symbol": "DE30",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 25685.4,
+   "fill": 25685.4,
+   "signal_entry": 25712.9,
+   "slip_pts": 0.0,
+   "drift_r": -0.082,
+   "delay_s": 66
+  },
+  {
    "time": "2026-11-06T00:02:36.729186+00:00",
    "signal": "GBPJPY-H4-er_kama-1793908800",
    "symbol": "GBPJPY",
@@ -253,5 +267,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-06T00:21:13.392220+00:00"
+ "updated": "2026-11-06T12:34:46.600772+00:00"
 }
