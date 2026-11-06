@@ -260,15 +260,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.006,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.467,
+  "exit_time": "2026-11-06T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 980.67,
-  "stop_now": 27248.09
+  "stop_now": 27248.09,
+  "exit_reason": "Trail",
+  "exit_price": 27248.09
  },
  {
   "id": "USOIL-H4-mr_stoch_gold-1793822400",
@@ -423,15 +425,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.011,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-06T12:00:00+00:00",
   "user_status": "new",
   "late": true,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 338.81
+  "stop_now": 338.81,
+  "exit_reason": "SL",
+  "exit_price": 338.81
  },
  {
   "id": "USOIL-H4-mr_stoch_gold-1793793600",
