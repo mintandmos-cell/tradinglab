@@ -5,10 +5,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-06T14:00:13.832409+00:00",
+ "time": "2026-11-06T14:28:06.019765+00:00",
  "account": "DEMO",
- "balance": 9882.96,
- "equity": 10052.18,
+ "balance": 9869.35,
+ "equity": 10029.14,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 89.566,
-   "profit": 141.84,
+   "price": 89.762,
+   "profit": 137.92,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.33603,
-   "profit": 4.55,
+   "price": 1.33496,
+   "profit": 5.62,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 158.437,
-   "profit": 1.45,
+   "price": 158.418,
+   "profit": 1.57,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -63,23 +63,9 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.826,
-   "profit": 30.0,
+   "price": 51.499,
+   "profit": 13.65,
    "time": "2026-11-04T06:00:59+00:00"
-  },
-  {
-   "ticket": 2800868862,
-   "symbol": "AAPL",
-   "system": "TL28-H4",
-   "signal_id": "AAPL-H4-keltner_breakout-1793793600",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 352.13,
-   "sl": 338.81,
-   "tp": 390.85,
-   "price": 340.38,
-   "profit": -11.89,
-   "time": "2026-11-04T20:01:07+00:00"
   },
   {
    "ticket": 2808831149,
@@ -91,8 +77,8 @@
    "price_open": 211.938,
    "sl": 212.979,
    "tp": 209.209,
-   "price": 211.674,
-   "profit": 1.67,
+   "price": 211.484,
+   "profit": 2.87,
    "time": "2026-11-06T00:02:36+00:00"
   },
   {
@@ -105,12 +91,25 @@
    "price_open": 25685.4,
    "sl": 25378.0,
    "tp": 26215.2,
-   "price": 25705.9,
-   "profit": 1.6,
+   "price": 25661.9,
+   "profit": -1.84,
    "time": "2026-11-06T12:01:06+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2800868862,
+   "signal_id": "AAPL-H4-keltner_breakout-1793793600",
+   "time": "2026-11-06T14:28:04.660422+00:00",
+   "symbol": "AAPL",
+   "system": "TL28-H4",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 352.13,
+   "price": 338.66,
+   "reason": "SL",
+   "profit": -13.61
+  },
   {
    "ticket": 2798555441,
    "signal_id": "USDCAD-D1-mr_edist_calm-1793577600",
@@ -292,19 +291,6 @@
    "price": 25806.0,
    "reason": "SL",
    "profit": -17.9
-  },
-  {
-   "ticket": 2782356317,
-   "signal_id": "EURUSD-H1-vol_breakout-1793606400",
-   "time": "2026-11-02T21:54:48.680492+00:00",
-   "symbol": "EURUSD",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 1.1235,
-   "price": 1.11885,
-   "reason": "SL",
-   "profit": -9.3
   }
  ],
  "fills": [
@@ -588,7 +574,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-06T13:01:08.979387+00:00",
+  "time": "2026-11-06T14:00:53.416630+00:00",
   "symbols": 20,
   "ok": true
  }
