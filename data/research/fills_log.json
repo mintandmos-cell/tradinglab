@@ -1,6 +1,34 @@
 {
  "fills": [
   {
+   "time": "2026-11-06T20:01:08.416879+00:00",
+   "signal": "USDJPY-H4-ppo_flip-1793980800",
+   "symbol": "USDJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 158.493,
+   "fill": 158.493,
+   "signal_entry": 158.491,
+   "slip_pts": 0.0,
+   "drift_r": 0.002,
+   "delay_s": 68
+  },
+  {
+   "time": "2026-11-06T20:01:07.057546+00:00",
+   "signal": "USDJPY-H4-macd_filtered-1793980800",
+   "symbol": "USDJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 158.493,
+   "fill": 158.493,
+   "signal_entry": 158.491,
+   "slip_pts": 0.0,
+   "drift_r": 0.002,
+   "delay_s": 67
+  },
+  {
    "time": "2026-11-06T12:01:05.979173+00:00",
    "signal": "DE30-H4-mr_kelt_year-1793952000",
    "symbol": "DE30",
@@ -267,5 +295,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-06T12:34:46.600772+00:00"
+ "updated": "2026-11-06T20:30:48.672303+00:00"
 }
