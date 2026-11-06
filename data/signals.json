@@ -97,15 +97,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.01,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 2.5,
+  "exit_time": "2026-11-05T23:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 27819.36
+  "stop_now": 27819.36,
+  "exit_reason": "TP",
+  "exit_price": 26447.89
  },
  {
   "id": "USDCAD-H1-mr_z_t100-1793880000",
@@ -213,7 +215,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 980.67,
-  "stop_now": 27608.68
+  "stop_now": 27248.09
  },
  {
   "id": "USOIL-H4-mr_stoch_gold-1793822400",
@@ -311,15 +313,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.015,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-05T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": null,
-  "stop_now": 2283.34
+  "stop_now": 2283.34,
+  "exit_reason": "SL",
+  "exit_price": 2283.34
  },
  {
   "id": "AAPL-H4-keltner_breakout-1793793600",

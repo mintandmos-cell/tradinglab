@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-06T00:02:36.729186+00:00",
+   "signal": "GBPJPY-H4-er_kama-1793908800",
+   "symbol": "GBPJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 211.938,
+   "fill": 211.938,
+   "signal_entry": 211.902,
+   "slip_pts": -0.0,
+   "drift_r": -0.033,
+   "delay_s": 157
+  },
+  {
    "time": "2026-11-05T15:01:02.171426+00:00",
    "signal": "NAS100-H1-bb_trend-1793887200",
    "symbol": "NAS100",
@@ -239,5 +253,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-05T15:54:27.508991+00:00"
+ "updated": "2026-11-06T00:21:13.392220+00:00"
 }
