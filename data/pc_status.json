@@ -7,10 +7,10 @@
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-06T00:01:59.150929+00:00",
+ "time": "2026-11-06T00:02:58.198122+00:00",
  "account": "DEMO",
  "balance": 9838.51,
- "equity": 10018.9,
+ "equity": 10022.52,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 90.12,
-   "profit": 130.76,
+   "price": 90.121,
+   "profit": 130.74,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34559,
-   "profit": -5.01,
+   "price": 1.34611,
+   "profit": -5.53,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.529,
-   "profit": 7.22,
+   "price": 157.44,
+   "profit": 7.79,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 51.715,
-   "profit": 24.45,
+   "price": 51.802,
+   "profit": 28.8,
    "time": "2026-11-04T06:00:59+00:00"
   },
   {
@@ -79,8 +79,8 @@
    "price_open": 1.39334,
    "sl": 1.39078,
    "tp": 1.40584,
-   "price": 1.4017,
-   "profit": 29.82,
+   "price": 1.40147,
+   "profit": 29.0,
    "time": "2026-11-04T13:01:03+00:00"
   },
   {
@@ -96,6 +96,20 @@
    "price": 345.42,
    "profit": -6.85,
    "time": "2026-11-04T20:01:07+00:00"
+  },
+  {
+   "ticket": 2808831149,
+   "symbol": "GBPJPY",
+   "system": "TL114-H4",
+   "signal_id": "GBPJPY-H4-er_kama-1793908800",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 211.938,
+   "sl": 212.979,
+   "tp": 209.209,
+   "price": 211.929,
+   "profit": 0.06,
+   "time": "2026-11-06T00:02:36+00:00"
   }
  ],
  "closed": [
@@ -296,6 +310,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-06T00:02:36.729186+00:00",
+   "signal": "GBPJPY-H4-er_kama-1793908800",
+   "symbol": "GBPJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 211.938,
+   "fill": 211.938,
+   "signal_entry": 211.902,
+   "slip_pts": -0.0,
+   "drift_r": -0.033,
+   "delay_s": 157
+  },
   {
    "time": "2026-11-05T15:01:02.171426+00:00",
    "signal": "NAS100-H1-bb_trend-1793887200",
@@ -536,19 +564,19 @@
   }
  ],
  "swap_watch": {
-  "day": "2026-11-05",
-  "checked": 34,
+  "day": "2026-11-06",
+  "checked": 37,
   "charged": 1,
   "examples": [
    {
     "symbol": "AAPL",
-    "swap": -0.07,
+    "swap": -0.14,
     "type": "BUY"
    }
   ]
  },
  "bars_published": {
-  "time": "2026-11-05T23:00:59.588652+00:00",
+  "time": "2026-11-06T00:02:36.666697+00:00",
   "symbols": 20,
   "ok": true
  }
