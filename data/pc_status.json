@@ -1,11 +1,13 @@
 {
- "last_scan_hour": "2026-11-08 14:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-08 15:00:00+00:00",
+ "new_signals": [
+  "AUDUSD-D1-mr_reclaim_st-1793836800"
+ ],
  "scan": {
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-08T14:00:18.651022+00:00",
+ "time": "2026-11-08T16:06:08.913976+00:00",
  "account": "DEMO",
  "balance": 9869.35,
  "equity": 10057.5,
@@ -126,6 +128,86 @@
  ],
  "closed": [
   {
+   "ticket": 2815255163,
+   "signal_id": "USDJPY-H4-ppo_flip-1793980800",
+   "time": "2026-11-08T15:01:43.994453+00:00",
+   "symbol": "USDJPY",
+   "system": "TL90-H4",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 158.493
+  },
+  {
+   "ticket": 2815255153,
+   "signal_id": "USDJPY-H4-macd_filtered-1793980800",
+   "time": "2026-11-08T15:01:43.994453+00:00",
+   "symbol": "USDJPY",
+   "system": "TL101-H4",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 158.493
+  },
+  {
+   "ticket": 2812529934,
+   "signal_id": "DE30-H4-mr_kelt_year-1793952000",
+   "time": "2026-11-08T15:01:43.994453+00:00",
+   "symbol": "DE30",
+   "system": "TL250-H4",
+   "side": "BUY",
+   "lots": 0.07,
+   "price_open": 25685.4
+  },
+  {
+   "ticket": 2808831149,
+   "signal_id": "GBPJPY-H4-er_kama-1793908800",
+   "time": "2026-11-08T15:01:43.978837+00:00",
+   "symbol": "GBPJPY",
+   "system": "TL114-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 211.938
+  },
+  {
+   "ticket": 2796204004,
+   "signal_id": "XAGUSD-H1-ichimoku_tk-1793768400",
+   "time": "2026-11-08T15:01:43.978837+00:00",
+   "symbol": "XAGUSD",
+   "system": "TL14-H1",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 51.226
+  },
+  {
+   "ticket": 2793293936,
+   "signal_id": "USDJPY-D1-mr_rsi2_slope-1793656800",
+   "time": "2026-11-08T15:01:43.978837+00:00",
+   "symbol": "USDJPY",
+   "system": "TL130-D1",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 158.666
+  },
+  {
+   "ticket": 2786124974,
+   "signal_id": "GBPUSD-D1-mr_dn_raw-1793570400",
+   "time": "2026-11-08T15:01:43.978837+00:00",
+   "symbol": "GBPUSD",
+   "system": "TL293-D1",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 1.34058
+  },
+  {
+   "ticket": 2784039462,
+   "signal_id": "USOIL-H1-vol_breakout-1793624400",
+   "time": "2026-11-08T15:01:43.978837+00:00",
+   "symbol": "USOIL",
+   "system": "TL56-H1",
+   "side": "SELL",
+   "lots": 0.02,
+   "price_open": 96.658
+  },
+  {
    "ticket": 2800868862,
    "signal_id": "AAPL-H4-keltner_breakout-1793793600",
    "time": "2026-11-06T14:28:04.660422+00:00",
@@ -215,110 +297,6 @@
    "price": 88.725,
    "reason": "SL",
    "profit": -24.83
-  },
-  {
-   "ticket": 2797417004,
-   "signal_id": "USDCAD-H1-ichimoku_tk-1793779200",
-   "time": "2026-11-04T15:30:04.979517+00:00",
-   "symbol": "USDCAD",
-   "system": "TL14-H1",
-   "side": "SELL",
-   "lots": 0.19,
-   "price_open": 1.39564,
-   "price": 1.39709,
-   "reason": "SL",
-   "profit": -19.72
-  },
-  {
-   "ticket": 2793910757,
-   "signal_id": "DE30-H1-ichimoku_tk-1793750400",
-   "time": "2026-11-04T07:59:56.679342+00:00",
-   "symbol": "DE30",
-   "system": "TL14-H1",
-   "side": "SELL",
-   "lots": 0.2,
-   "price_open": 25727.8,
-   "price": 25942.8,
-   "reason": "SL",
-   "profit": -48.33
-  },
-  {
-   "ticket": 2793911030,
-   "signal_id": "JP225-H1-ichimoku_tk-1793750400",
-   "time": "2026-11-04T05:04:01.962705+00:00",
-   "symbol": "JP225",
-   "system": "TL14-H1",
-   "side": "SELL",
-   "lots": 12.7,
-   "price_open": 62235.8,
-   "price": 61190.6,
-   "reason": "SL",
-   "profit": 84.06
-  },
-  {
-   "ticket": 2794846787,
-   "signal_id": "ETHUSD-H1-ichimoku_tk-1793757600",
-   "time": "2026-11-04T04:54:58.788951+00:00",
-   "symbol": "ETHUSD",
-   "system": "TL14-H1",
-   "side": "SELL",
-   "lots": 1.25,
-   "price_open": 2240.53,
-   "price": 2280.53,
-   "reason": "SL",
-   "profit": -50.0
-  },
-  {
-   "ticket": 2793590696,
-   "signal_id": "EURUSD-H1-ichimoku_tk-1793746800",
-   "time": "2026-11-04T02:07:04.249426+00:00",
-   "symbol": "EURUSD",
-   "system": "TL14-H1",
-   "side": "BUY",
-   "lots": 0.17,
-   "price_open": 1.12084,
-   "price": 1.12302,
-   "reason": "SL",
-   "profit": 37.06
-  },
-  {
-   "ticket": 2782537699,
-   "signal_id": "USDJPY-H1-vol_breakout-1793610000",
-   "time": "2026-11-04T02:00:01.166788+00:00",
-   "symbol": "USDJPY",
-   "system": "TL56-H1",
-   "side": "BUY",
-   "lots": 0.05,
-   "price_open": 157.943,
-   "price": 157.631,
-   "reason": "SL",
-   "profit": -9.9
-  },
-  {
-   "ticket": 2793203417,
-   "signal_id": "USDCAD-H1-ichimoku_tk-1793736000",
-   "time": "2026-11-04T01:12:21.566061+00:00",
-   "symbol": "USDCAD",
-   "system": "TL14-H1",
-   "side": "BUY",
-   "lots": 0.22,
-   "price_open": 1.40089,
-   "price": 1.39785,
-   "reason": "SL",
-   "profit": -47.84
-  },
-  {
-   "ticket": 2785283307,
-   "signal_id": "DE30-H1-ny_open_breakout-1793631600",
-   "time": "2026-11-03T04:40:39.702749+00:00",
-   "symbol": "DE30",
-   "system": "TL45-H1",
-   "side": "BUY",
-   "lots": 0.07,
-   "price_open": 26034.6,
-   "price": 25806.0,
-   "reason": "SL",
-   "profit": -17.9
   }
  ],
  "fills": [
@@ -630,7 +608,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-08T13:00:53.650822+00:00",
+  "time": "2026-11-08T14:01:17.166228+00:00",
   "symbols": 20,
   "ok": true
  }
