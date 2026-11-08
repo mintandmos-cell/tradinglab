@@ -1,13 +1,11 @@
 {
- "last_scan_hour": "2026-11-08 15:00:00+00:00",
- "new_signals": [
-  "AUDUSD-D1-mr_reclaim_st-1793836800"
- ],
+ "last_scan_hour": "2026-11-08 16:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 25,
   "errors": []
  },
- "time": "2026-11-08T16:06:08.913976+00:00",
+ "time": "2026-11-08T16:08:30.822912+00:00",
  "account": "DEMO",
  "balance": 9869.35,
  "equity": 10057.5,
