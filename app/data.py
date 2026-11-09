@@ -441,9 +441,15 @@ def with_twelve(sym: str, df: pd.DataFrame) -> pd.DataFrame:
 
 
 def price_source(sym: str, settings=None) -> str:
-    """Where the newest bars of a symbol come from (shown on signals / chart)."""
+    """Where the bars of a symbol come from (shown on signals / chart / Lab): the Exness MT5 history + the PC's recent
+    Exness bars, and the free feed only for bars after those (9 Nov 2026: the label said 'yahoo' for Exness data)."""
     src = source_for(sym, settings)
-    return PRICE_SOURCE.get(sym, src) if src == "yahoo" else src
+    if src == "mt5":
+        return "Exness MT5"
+    free = PRICE_SOURCE.get(sym, src) if src == "yahoo" else src
+    if (EXNESS_DIR / f"{sym}_H1.csv.gz").exists():
+        return f"Exness MT5 (แท่งที่ใหม่กว่านั้น: {free})"
+    return free
 
 
 

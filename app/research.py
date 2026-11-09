@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from . import data
-from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, symbol_spec, write_json
+from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, swap_mode, symbol_spec, write_json
 from .metrics import equity_points, summarize
 from .montecarlo import run_mc
 from .robustness import robustness
@@ -222,7 +222,7 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     df = df[df.index < cutoff]          # every candidate sits the same exam: data up to the start of the current quarter
     cfg = {**cfg, "cutoff": cutoff.isoformat()}
     h1 = data.load_h1(sym)
-    out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.source_for(sym, settings), "history_source": data.history_source(sym),
+    out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.price_source(sym, settings), "history_source": data.history_source(sym),
            "data_from": h1.index[0].isoformat() if len(h1) else None, "data_to": h1.index[-1].isoformat() if len(h1) else None,
            "bars_h1": int(len(h1)), "bars": int(len(df)), "cutoff": cutoff.isoformat(), "candidates": [], "heavy": {}}
     if len(df) < 500:
@@ -738,7 +738,7 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
                     "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False), "source": x.get("source", "single"),
                                  "risk_pct": x.get("risk_pct"), "exp": x.get("exp"), "t": x.get("t")} for x in live_systems(r)
                                 if x.get("status") == "ACTIVE"],
-                    "quarter": r.get("quarter")})
+                    "quarter": r.get("quarter"), "swap": swap_mode(s, k)})
     return out
 
 
