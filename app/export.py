@@ -18,7 +18,7 @@ from .strategies import STRATEGIES, public_list
 log = logging.getLogger("tradinglab.export")
 CLOUD_STATE = DATA_DIR / "cloud_status.json"   # committed by the bot (cloud_state.json was git-ignored on PCs)
 # settings the browser may show; never secrets or the account balance
-PUBLIC_SETTINGS = ("risk_per_trade_pct", "portfolio_risk_pct", "max_symbol_risk_pct", "cluster_risk_pct", "kill_dd_mult", "trials", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "mt5_server_time", "research", "alerts", "force_off")
+PUBLIC_SETTINGS = ("risk_per_trade_pct", "portfolio_risk_pct", "max_symbol_risk_pct", "cluster_risk_pct", "kill_dd_mult", "trials", "promotion", "default_risk_pct", "max_risk_pct", "target_max_dd_pct", "mt5_symbol_map", "mt5_server_time", "research", "alerts", "force_off")
 
 
 def _dump(path, obj) -> None:
@@ -144,7 +144,13 @@ def build(repo: str = "", chart_limit: int = 1200, full_sys: bool | None = None)
         _dump(d / "research" / f"{sym}.json", research.candidates(sym))
     _dump(d / "picks.json", research.picks(lat))
     from . import compare, fills
-    _dump(d / "compare.json", compare.load())                   # swap-charged comparison run (Lab page)
+    _dump(d / "compare.json", compare.load())
+    from . import promotion                                     # forward test of the TRIAL systems (promotion rule)
+    try:
+        _dump(d / "promotion.json", {"rule": promotion.cfg_of(settings), "systems": promotion.evaluate(
+            scanner.load_signals(), lat.get("symbols", {}), settings, set(scanner.auto_off()))})
+    except Exception as e:
+        log.warning("promotion summary failed: %s", e)                   # swap-charged comparison run (Lab page)
     _dump(d / "slippage.json", fills.calibration())             # real fills vs the tested slippage (พอร์ต MT5 page)
     _dump(d / "data_quality.json", read_json(research.RESEARCH_DIR / "data_quality.json", {}))
     _dump(d / "history.json", research.history())

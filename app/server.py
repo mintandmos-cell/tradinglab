@@ -219,6 +219,14 @@ def compare_runs():
     return ok(compare.load())
 
 
+@app.get("/api/promotion")
+def promotion_state():
+    from . import promotion
+    s = load_settings()
+    return ok({"rule": promotion.cfg_of(s), "systems": promotion.evaluate(scanner.load_signals(), research.latest().get("symbols", {}),
+                                                                       s, set(scanner.auto_off()))})
+
+
 @app.get("/api/slippage")
 def slippage():
     from . import fills

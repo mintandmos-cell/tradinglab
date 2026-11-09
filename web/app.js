@@ -103,6 +103,7 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/candles") return staticGet(`chart/${qp.symbol}_${qp.tf}.json`);
   if (p === "/api/picks") return staticGet("picks.json");
   if (p === "/api/compare") return staticGet("compare.json").catch(() => ({}));
+  if (p === "/api/promotion") return staticGet("promotion.json").catch(() => null);
   if (p === "/api/slippage") return staticGet("slippage.json").catch(() => ({}));
   if (p === "/api/data_quality") return staticGet("data_quality.json").catch(() => ({}));
   if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
@@ -1891,6 +1892,7 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 - **ข้อสอบปิดผนึก:** เกณฑ์ทั้งหมดตัดสินจากผล OOS **ก่อน** 12 เดือนล่าสุด แล้วใช้ 12 เดือนล่าสุดเป็นข้อสอบสุดท้ายแยกต่างหาก (ต้องไม่ขาดทุน) — เหมือนเก็บข้อสอบจริงไว้ในซองที่เปิดครั้งเดียว
 - **OFF:** ไม่พบ edge → ไม่เทรด
 - **TRIAL (ทดลองบน demo):** WATCH ที่ผ่านทุกด่าน **ยกเว้นด่านหักโชค** (สูงสุด ${S.settings?.trials?.max_per_symbol ?? 2} ระบบต่อสินทรัพย์ เน้น H4/D1) — โปรแกรมเปิดให้ **เฉพาะบัญชี demo** ที่ความเสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% ไม่แจ้งเตือน เพื่อเก็บหลักฐานจากตลาดจริง
+  - **สอบเลื่อนขั้นด้วยผลจริง (ตั้งกติกา 9 พ.ย. 2026 ก่อนเห็นผล):** ครบ ${S.settings?.promotion?.min_trades ?? 30} ไม้ (พารามิเตอร์เดิม) ในเวลา ≥ ${S.settings?.promotion?.min_months ?? 3} เดือน · กำไรเฉลี่ย ≥ ${S.settings?.promotion?.min_exp_r ?? 0.05}R · ค่า t ≥ เกณฑ์หักโชคของ "จำนวนระบบทดลองทั้งหมดที่เคยมี" (~30 ระบบ → t ≈ 3 แทน 3.7 ของการวิจัย เพราะผลจริงเป็นข้อมูลใหม่ที่ไม่ได้ใช้คัดเลือก) → เป็น **ACTIVE** เสี่ยงปกติ + แจ้งเตือน · ถ้าผลจริงแย่ลงจน t ต่ำกว่าเกณฑ์ 1 หน่วย หรือกำไรเฉลี่ยติดลบ จะกลับเป็น TRIAL · ดูความคืบหน้าที่หน้า **สัญญาณ**
 - หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF
 - **หยุดอัตโนมัติ (ตกลงกันไว้ล่วงหน้า):** ถ้าขาดทุนสะสมจริงของระบบใดเกิน ${S.settings?.kill_dd_mult ?? 2} เท่าของ drawdown ที่แย่ที่สุดใน OOS → หยุดเปิดออเดอร์ใหม่ทันทีและแจ้งเตือน (ไม่ต้องตัดสินใจตอนกำลังขาดทุน)
 - **คงไว้จนจบรอบปี** เฉพาะเมื่อตกแค่ด่านหักโชคและราคาที่ใช้ทดสอบยังเป็นชุดเดิม
@@ -2026,7 +2028,8 @@ function groupedTiles(list, sigs) {
     <div class="tiles">${symTiles(l, sigs)}</div>`).join("");
 }
 async function renderSignals(view) {
-  const [sigs, syms, fwd, pc] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null]);
+  const [sigs, syms, fwd, pc, promo] = await Promise.all([api("/api/signals"), api("/api/symbols"), api("/api/forward"), STATIC ? pcStatus() : null,
+    api("/api/promotion").catch(() => null)]);
   S.pc = pc;
   const pcAge = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null;
   const rpos = (pc && pc.positions) || [], rpnl = rpos.reduce((a, x) => a + (+x.profit || 0), 0);
@@ -2060,6 +2063,7 @@ async function renderSignals(view) {
       : `<div class="calm"><div class="big">🔕</div><div><b>ยังไม่มีสัญญาณใหม่</b><div class="muted small">ระบบกำลังเฝ้าตลาดให้ — เมื่อมีสัญญาณ มือถือจะเด้งแจ้งเตือนพร้อม Lot / SL / TP</div></div></div>`}
     ${STATIC && (rpos.length || rclosed.length) ? `<a class="banner ok link" href="#/port" style="margin-top:14px"><span class="ic">🤖</span><div><b>MT5 ถือ ${rpos.length} ออเดอร์</b> · กำไร/ขาดทุนตอนนี้ <span class="${cls(rpnl)}">${fusd(rpnl)}</span> — ดูพอร์ต ความเสี่ยงแยกกลุ่ม และออเดอร์ที่ปิดแล้วในหน้า <b>พอร์ต MT5 →</b></div></a>` : ""}
     ${trials.length ? `<div class="sec-h"><h2>🧪 ทดลองบนบัญชี DEMO</h2><span class="badge">${trials.length}</span><span class="muted small" style="margin-left:auto">ระบบที่เกือบผ่าน · เสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% · โปรแกรมเปิดเฉพาะบัญชี demo · ไม่แจ้งเตือน ไม่ต้องเปิดเอง</span></div><div class="sig-grid">${trials.map((s) => signalCard(s)).join("")}</div>` : ""}
+    ${promoHtml(promo)}
     ${tracking.length ? `<div class="sec-h"><h2>กำลังติดตาม</h2><span class="badge">${tracking.length}</span></div><div class="sig-grid">${tracking.map((s) => signalCard(s)).join("")}</div>` : ""}
     <div class="sec-h"><h2>ประวัติสัญญาณ</h2><span class="badge">${closed.length}</span>${fa ? `<span class="muted small" style="margin-left:auto">Expectancy ${fr(fa.expectancy, 3)} · PF ${fnum(fa.pf, 2)} · Max DD ${fnum(fa.max_dd_r, 1)}R</span>` : ""}</div>
     <div class="card"><div class="tbl-wrap tbl-scroll"><table class="tbl"><thead><tr><th>เวลา</th><th>สินทรัพย์</th><th>ฝั่ง</th><th>ระบบ</th><th class="num">Lot</th><th>ผล</th><th class="num">R</th><th>คุณ</th></tr></thead><tbody>
@@ -2072,6 +2076,23 @@ async function renderSignals(view) {
   $("#scanBtn").onclick = async (e) => { if (STATIC) { hardRefresh(); return; } e.currentTarget.disabled = true; const r = await api("/api/scan", { method: "POST" }); toast(r.new.length ? `พบ ${r.new.length} สัญญาณใหม่` : "สแกนแล้ว ไม่มีสัญญาณใหม่"); navigate(); };
 }
 
+// TRIAL -> ACTIVE by the forward test (app/promotion.py, rule fixed 9 Nov 2026 before any result)
+function promoHtml(p) {
+  const rows = Object.entries((p && p.systems) || {});
+  if (!rows.length) return "";
+  const R = p.rule || {}, any = rows[0][1];
+  rows.sort((a, b) => (b[1].promoted - a[1].promoted) || (b[1].n - a[1].n) || (b[1].t - a[1].t));
+  const bar = (v, need) => `<span class="meter" style="display:inline-block;width:60px;vertical-align:middle"><i style="width:${Math.max(0, Math.min(100, 100 * v / need))}%"></i></span>`;
+  return `<div class="sec-h"><h2>🎓 สอบเลื่อนขั้นด้วยผลเทรดจริง</h2><span class="badge">${rows.filter(([, x]) => x.promoted).length} / ${rows.length} ผ่าน</span></div>
+    <div class="card"><div class="hint pad-x" style="padding:10px 14px 4px">TRIAL จะเป็น <b>ACTIVE</b> เมื่อผลจริง (พารามิเตอร์เดิม) ครบ <b>${R.min_trades ?? 30} ไม้</b> ในเวลา ≥ <b>${R.min_months ?? 3} เดือน</b>,
+      กำไรเฉลี่ย ≥ <b>${R.min_exp_r ?? 0.05}R</b> และค่า t ≥ <b>${fnum(any.t_need, 2)}</b> (หักโชคตามจำนวนระบบทดลองทั้งหมด ${any.field} ระบบ) — กติกานี้ตั้งไว้ก่อนเห็นผล ห้ามแก้ภายหลัง</div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>ระบบ</th><th class="num">ไม้ที่จบ</th><th class="num">เดือน</th><th class="num">กำไรเฉลี่ย</th><th class="num">t / ต้องการ</th><th>สถานะ</th></tr></thead><tbody>
+    ${rows.map(([k, x]) => { const [sym, sid, tf] = k.split(":"); const st = stratById(sid);
+      return `<tr><td><b>${sym}</b> <span class="muted">${tf}</span> · ${st ? "#" + st.no + " " + esc(st.name) : esc(sid)}</td>
+        <td class="num">${x.n} ${bar(x.n, x.min_trades)}</td><td class="num">${fnum(x.months, 1)}</td><td class="num ${cls(x.exp)}">${x.exp == null ? "–" : fr(x.exp, 3)}</td>
+        <td class="num">${fnum(x.t, 2)} / ${fnum(x.t_need, 2)}</td><td>${x.promoted ? statusBadge("ACTIVE") + ' <span class="small pos">เลื่อนขั้นแล้ว</span>' : x.blocked ? '<span class="neg small">หยุดแล้ว</span>' : statusBadge("TRIAL")}</td></tr>`; }).join("")}
+    </tbody></table></div></div>`;
+}
 // ------------------------------------------------------------------ PORTFOLIO: what the PC robot holds in MT5, risk by asset class, systems per symbol
 // execution quality: how much the real fills cost compared with the quote and with the signal's entry
 function fillsHtml(f) {

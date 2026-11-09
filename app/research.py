@@ -598,6 +598,11 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
     elif prev.get("portfolio"):
         out["portfolio"] = prev["portfolio"]
     attach_portfolio(out, settings)
+    try:
+        from . import promotion                  # every trial ever listed counts in the forward-promotion field
+        promotion.register(out["symbols"])
+    except Exception:
+        log.exception("trial registry failed")
     for sym, r in out["symbols"].items():           # full records to cands/{SYM}.json.gz, a slim copy stays in latest.json
         if r.get("candidates"):
             save_candidates(sym, r["candidates"])

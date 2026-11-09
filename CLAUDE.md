@@ -114,6 +114,16 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   2026-10-01 keeps the Oct 2026 run as the cut-off until 1 Jan 2027. Workflow cron 1 Jan 09:30 BKK + Saturday "due"
   check (this year's run missing); settings research.schedule "yearly". "Quarter" fields in latest.json (`quarter`) now hold
   the yearly cut-off / until. Wherever this file still says quarterly / quarter, read "research period (1 year)".
+- FORWARD PROMOTION (user, 9 Nov 2026, rule fixed before results): `app/promotion.py` — a TRIAL becomes ACTIVE (normal risk,
+  push, source "forward") when its forward record with the SAME params has >= 30 closed trades over >= 3 months, expectancy
+  >= 0.05 R and trade t >= Sidak for every trial ever registered (`data/research/trial_registry.json`, filled at each merge,
+  + trial keys in signals.json); stays while t >= need - 1 and exp > 0; kill switch / force_off still apply. Stateless,
+  recomputed in `scanner.scan_once`; site `promotion.json`, Signals page table (`promoHtml`). settings `promotion`.
+- SWAP PER SYMBOL (9 Nov 2026): Exness books swap on US stocks (AAPL since 5 Nov) but not on FX / metals / crypto / DE30.
+  data/exness/swap_charged.json = {symbols, groups}; `config.swap_mode(settings, sym)` charges only those (a charged stock =
+  the Stocks group). Robot `swap_watch` adds new symbols daily and commits with "[research]" in the message, which makes the
+  workflow run the research (push events carry no file list for API commits, so the file-name check never fired).
+  Never write "[research]" in a commit message unless a research run is wanted.
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after

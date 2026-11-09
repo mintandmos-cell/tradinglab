@@ -121,6 +121,8 @@ DEFAULT_SETTINGS = {
     # near-miss systems traded on the DEMO account only at a small risk to collect live evidence
     "cluster_risk_pct": {"default": 1.5, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0},
     "kill_dd_mult": 2.0,
+    # TRIAL -> ACTIVE by the forward test (user, 9 Nov 2026; fixed before any result — app/promotion.py)
+    "promotion": {"enabled": True, "min_trades": 30, "min_months": 3, "min_exp_r": 0.05, "alpha": 0.05},
     "trials": {"enabled": True, "risk_pct": 0.1, "max_per_symbol": 2},
     "alerts": {"active": True, "watch": False},
     "force_off": [],                    # vetoed by the user / AI review: "XAUUSD" (whole symbol) or "XAUUSD:ichimoku_tk:H1" (one system)

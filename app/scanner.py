@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-from . import data, notify, research
+from . import data, notify, promotion, research
 from .config import CLOUD, SYMBOLS, SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
 from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
 from .strategies import STRATEGIES, signals as strat_signals
@@ -235,6 +235,8 @@ def scan_once() -> list[dict]:
         cap = float(settings.get("max_symbol_risk_pct", 0.75))
         ccaps = settings.get("cluster_risk_pct", {})
         stopped = auto_off()
+        # TRIAL systems that passed the pre-agreed forward test trade as ACTIVE (app/promotion.py, user 9 Nov 2026)
+        promo = promotion.evaluate(sigs, latest, settings, set(stopped))
         for sym, entry in latest.items():
             # every ACTIVE system of the quarter is traded (several per symbol / TF allowed)
             trials = list(entry.get("trial_systems") or []) if settings.get("trials", {}).get("enabled", True) else []
@@ -245,6 +247,8 @@ def scan_once() -> list[dict]:
                     continue
                 if f"{sym}:{cfg['strategy']}:{cfg['tf']}" in stopped:    # the pre-agreed drawdown stop fired
                     continue
+                if cfg.get("source") == "trial" and promo.get(f"{sym}:{cfg['strategy']}:{cfg['tf']}", {}).get("promoted"):
+                    cfg = promotion.promote(cfg, settings)
                 try:
                     key = (sym, cfg["tf"])
                     df = frames.get(key)
