@@ -1,7 +1,18 @@
 {
- "id": "2026-11-03-costs-3",
+ "id": "2026-11-09-new-markets",
  "list_symbols": false,
  "cost_stats": true,
- "export_history": {},
+ "export_history": {
+  "NZDUSD": "NZDUSD",
+  "USDCHF": "USDCHF",
+  "EURJPY": "EURJPY",
+  "AUDJPY": "AUDJPY",
+  "EURGBP": "EURGBP",
+  "EURAUD": "EURAUD",
+  "XPTUSD": "XPTUSD",
+  "XCUUSD": "XCUUSD",
+  "UKOIL": "UKOIL",
+  "XNGUSD": "XNGUSD"
+ },
  "bars": 200000
 }
