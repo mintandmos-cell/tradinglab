@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-09T15:01:43.729295+00:00",
+   "signal": "NAS100-H1-bb_trend-1794232800",
+   "symbol": "NAS100",
+   "tf": "H1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 27652.73,
+   "fill": 27652.73,
+   "signal_entry": 27689.46,
+   "slip_pts": 0.0,
+   "drift_r": -0.09,
+   "delay_s": 104
+  },
+  {
    "time": "2026-11-06T20:01:08.416879+00:00",
    "signal": "USDJPY-H4-ppo_flip-1793980800",
    "symbol": "USDJPY",
@@ -295,5 +309,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-06T20:30:48.672303+00:00"
+ "updated": "2026-11-09T15:14:03.924389+00:00"
 }
