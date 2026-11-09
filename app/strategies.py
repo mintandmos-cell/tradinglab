@@ -1113,6 +1113,9 @@ STRATEGIES.update(TREND_STRATEGIES)
 # 391 pullback / short-term mean-reversion systems (#127-#517, user's request 3 Nov 2026: 500 systems in total)
 from .strategies_mr import MR_STRATEGIES  # noqa: E402
 STRATEGIES.update(MR_STRATEGIES)
+# cross-sectional momentum + trend ensemble (#518-#520, user's request 9 Nov 2026: genuinely different ideas)
+from .strategies_xs import XS_STRATEGIES  # noqa: E402
+STRATEGIES.update(XS_STRATEGIES)
 
 # Stable system numbers: shown to the user and written into MT5 comments (TL{no}-{TF}) — never renumber.
 for _i, _k in enumerate(list(STRATEGIES)):

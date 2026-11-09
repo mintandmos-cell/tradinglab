@@ -84,6 +84,11 @@ def main(mode: str, *args: str) -> int:
         if parts:
             research.merge(parts)
             full = True
+            try:                 # every system that would trade, together, on its OOS trades (app/book.py)
+                from . import book
+                book.build()
+            except Exception:
+                log.exception("book simulation failed")
         mode = "scan"
     if mode == "test":   # Actions -> TradingLab -> Run workflow -> test: a push at the same priority as real ACTIVE signals
         from .notify import send
@@ -100,6 +105,12 @@ def main(mode: str, *args: str) -> int:
                                         "last_error": scanner.STATE.get("last_error"), "new_signals": len(new),
                                         "checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]})
         log.info("scan: %d new signal(s)", len(new))
+        try:                     # automatic self-check after every scan (app/health.py)
+            from . import health
+            h = health.run()
+            log.info("health: %d problem(s)", len(h["problems"]))
+        except Exception:
+            log.exception("health check failed")
     export.build(repo=repo, full_sys=full)
     return 0
 

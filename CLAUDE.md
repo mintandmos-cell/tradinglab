@@ -130,6 +130,12 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   scale differs > 5 % (`with_history`). Non-USD quotes are sized with the PC's tick values (costs.json) or the USD pair
   (`sizing.value_per_price_unit`; web uses symbols.json `usd_per_unit`). History of new symbols comes from a PC task
   (export_history + cost_stats) issued only after the PC has restarted on the new code.
+- NEW IDEAS + BOOK + HEALTH (user, 9 Nov 2026): `app/strategies_xs.py` #518 xs_mom (vol-adjusted momentum ranked vs the
+  other markets, peers via `data.get_bars`, own symbol from `df.attrs["symbol"]` set in get_bars), #519 xs_mom_group,
+  #520 ens_trend (5 classic rules vote). `app/book.py` simulates the live book and live+all-trials together on OOS trades
+  with caps + the -25/-30 % guard after every research merge -> data/research/book.json (พอร์ต MT5 page `bookHtml`).
+  `app/health.py` runs after every cloud scan -> data/research/health.json (+ push for new problems, 12 h re-push;
+  พอร์ต MT5 banner `healthHtml`).
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after

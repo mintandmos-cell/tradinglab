@@ -103,6 +103,8 @@ from .strategies_trend import TREND_DOCS  # noqa: E402
 D.update(TREND_DOCS)
 from .strategies_mr import MR_DOCS  # noqa: E402
 D.update(MR_DOCS)
+from .strategies_xs import XS_DOCS  # noqa: E402
+D.update(XS_DOCS)
 
 COMMON_EXITS = ("ทุกระบบออกด้วยกติกาเดียวกัน: SL = sl_atr × ATR14 จากราคาเข้า · TP = rr × ระยะ SL (rr = 0 คือไม่มี TP ถือจนชน SL หรือมีสัญญาณกลับทิศ) · "
                 "หรือมีสัญญาณตรงข้าม → ปิดที่ราคาเปิดแท่งถัดไปแล้วกลับทิศ · อ่านสัญญาณตอนแท่งปิด เข้าที่ราคาเปิดแท่งถัดไป")

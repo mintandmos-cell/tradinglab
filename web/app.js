@@ -105,6 +105,8 @@ async function staticApi(path, opts = {}) {
   if (p === "/api/picks") return staticGet("picks.json");
   if (p === "/api/compare") return staticGet("compare.json").catch(() => ({}));
   if (p === "/api/promotion") return staticGet("promotion.json").catch(() => null);
+  if (p === "/api/book") return staticGet("book.json").catch(() => null);
+  if (p === "/api/health") return ghLive("data/research/health.json").then((x) => x || staticGet("health.json")).catch(() => staticGet("health.json").catch(() => null));
   if (p === "/api/slippage") return staticGet("slippage.json").catch(() => ({}));
   if (p === "/api/data_quality") return staticGet("data_quality.json").catch(() => ({}));
   if (p === "/api/candles_year") return staticGet(`chart/${qp.symbol}_${qp.tf}/${qp.year}.json`);
@@ -1854,12 +1856,15 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 - **หักต้นทุนทุกไม้ด้วยตัวเลขจริงของ Exness:** spread **ตามชั่วโมงที่เข้าเทรด** (ค่ากลางค่อนแพงของแท่ง H1 ย้อนหลัง ~3 ปี แยก 24 ชั่วโมง — ช่วงเปลี่ยนวันตีสี่ถึงหกโมงเช้าเวลาไทยแพงกว่าหลายเท่า) + slippage × 2 + ค่าคอม
 - **ค่า swap (แยกตามสินทรัพย์ · ปรับ 9 พ.ย. 2026):** โปรแกรมตรวจ swap ที่ MT5 หักจริงทุกวัน — FX / โลหะ / น้ำมัน / ดัชนี / คริปโต **ไม่ถูกหัก** · **หุ้นสหรัฐถูกหัก** (เห็นใน AAPL ตั้งแต่ 5 พ.ย.) การทดสอบจึงหัก swap เฉพาะกลุ่มที่ถูกหักจริง (ถ้าหุ้นตัวหนึ่งถูกหัก ถือว่าทั้งกลุ่มหุ้นถูกหัก) · มี **รอบเทียบแบบหัก swap** ด้วยวิธีเดียวกันทุกอย่าง (ดูในหน้า Lab ข้อ 8) เพื่อให้เห็นว่าระบบไหนพึ่งการไม่มี swap
   - โปรแกรมบนคอมตรวจ swap ที่ถูกหักจริงทุกวัน **ถ้าวันไหนเริ่มถูกหัก จะแจ้งเตือน และสลับการวิจัยกลับไปหัก swap พร้อมเริ่มวิจัยใหม่ให้อัตโนมัติ**
+- **จำลองทั้งพอร์ตรวมกัน** (หน้า พอร์ต MT5): ทุกระบบที่จะเทรดจริงเปิดพร้อมกันบนไม้ OOS ด้วยกติกาจริง (0.5%/ไม้ · เพดานต่อสินทรัพย์/กลุ่ม · หยุดเปิดใหม่ที่ −25% · ปิดทั้งหมดที่ −30%) → ผลตอบแทน/ปี, DD รวม, โอกาสชนจุดหยุด · มีอีกชุด "ถ้า TRIAL ผ่านทั้งหมด" (ดูช่อง 12 เดือนล่าสุดเป็นหลัก เพราะ TRIAL ถูกเลือกจากผลดี)
+- **ตรวจสุขภาพระบบอัตโนมัติ** หลังสแกนทุกรอบ: คอมออฟไลน์เกิน 2 ชม. · แท่ง Exness บนเว็บเก่า · สัญญาณที่ติดตามผลไม่ได้ · ออเดอร์ MT5 ไม่ตรงกับสัญญาณ (ค้าง/SL ไม่ตรง/ไม่ได้เปิด) · swap ใหม่ · สแกนผิดพลาด · ผลวิจัยผิดปกติ → แจ้งเตือนเข้ามือถือเมื่อพบเรื่องใหม่ และแสดงที่หน้า พอร์ต MT5
 - **slippage:** ตอนนี้ใช้ค่าประมาณ · โปรแกรมบันทึกราคาที่ได้จริงทุกไม้ เมื่อครบ 50 ไม้ (สินทรัพย์ละ ≥ 10) การทดสอบจะใช้ค่าที่วัดได้จริงแทนอัตโนมัติ (หน้า พอร์ต MT5)
 - **ตรวจคุณภาพข้อมูลราคา** (\`tools/check_history.py\`): หาช่วงที่ข้อมูลขาด ราคากระโดดแล้วเด้งกลับ (ราคาผิด) แท่งแบน และแท่งผิดรูป ทุกปีทุกสินทรัพย์ — ผล 3 พ.ย. 2026: FX / ทอง / ดัชนี / หุ้น สะอาด · **BTCUSD ปี 2014–ต้น 2018 ข้อมูลขาดเป็นส่วนใหญ่** จึงเริ่มใช้ตั้งแต่ ก.พ. 2018 · กติกาทั่วไป: เริ่มหลังเดือนสุดท้ายที่ข้อมูลบาง และหลังช่วงที่หายเกิน 7 วัน
 - วัดผลเป็น **R** (1R = เงินที่เสี่ยงต่อไม้) จึงเทียบข้ามสินทรัพย์ได้
 ### ขั้นที่ 2 — Backtest ทุกชุดพารามิเตอร์ (ชุดเล็ก ๆ)
 - ${S.strategies.length || 50} กลยุทธ์ × ${(S.settings?.research?.timeframes || ["H1", "H4", "D1"]).join(" / ")} แต่ละกลยุทธ์มีพารามิเตอร์ให้เลือก 8–32 ชุด (ตัวแปรสัญญาณ 1–2 ตัว × ระยะ SL × TP)
 - **500 ระบบ (3 พ.ย. 2026):** ตามเทรนด์ / เบรกเอาต์ / โมเมนตัม 100 · อื่น ๆ 9 · **ย่อตัว / สวนสั้น 391** = ตัวจับการยืดตัว 24 แบบ (RSI 2, Connors RSI, Bollinger, IBS, ปิดลงติดกัน, Hammer ฯลฯ) × ตัวกรองสภาพตลาด 17 แบบ (เหนือ SMA200, ADX ต่ำ, ตลาดเงียบ ฯลฯ) — มีตัวกรองแนวโน้ม = ซื้อตอนย่อในขาขึ้น · ตัวกรองกรอบ = สวนเมื่อตลาดไม่มีเทรนด์
+- **แนวคิดใหม่ 3 ระบบ (9 พ.ย. 2026, ตั้งกติกาก่อนเห็นผล):** #518 **เทียบความแรงข้ามตลาด** (ซื้อตลาดที่โมเมนตัมอยู่ 1/3 บนของ 30 ตลาด ขายตลาดที่อยู่ 1/3 ล่าง) · #519 แบบเทียบในกลุ่มเดียวกัน · #520 **ensemble ตามเทรนด์** (5 กฎคลาสสิกลงคะแนน เข้าเมื่อเห็นตรงกัน k เสียง)
 - ⚠️ ทุกระบบที่เพิ่มถูกนับในด่านหักโชค (บัญชีการทดสอบถาวร) — ยิ่งเพิ่ม เกณฑ์ t ยิ่งสูง
 - ทุกกลยุทธ์ผ่านการตรวจโค้ดอัตโนมัติ (\`tests/check_strategies.py\`): เปลี่ยนราคาในอนาคตแล้วสัญญาณในอดีตต้องไม่เปลี่ยน และบนกราฟสุ่มต้องได้ผลใกล้ 0R
 - ตั้งใจให้ชุดเล็ก เพราะยิ่งลองมากชุด ยิ่งมีโอกาสเจอ “ชุดที่ดีเพราะโชค”
@@ -2129,8 +2134,8 @@ const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "U
   world_equity: ["ดัชนียุโรป/ญี่ปุ่น", ["DE30", "JP225"]], crypto: ["คริปโต", ["BTCUSD", "ETHUSD"]] };
 const clusterCap = (k) => { const c = S.settings?.cluster_risk_pct || {}; return +(c[k] ?? c.default ?? 1.5); };
 async function renderPort(view) {
-  const [sigs, syms, pc, killed, slip] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus(), ghLive("data/research/auto_off.json"),
-    api("/api/slippage").catch(() => ({}))]);
+  const [sigs, syms, pc, killed, slip, book, health] = await Promise.all([api("/api/signals"), api("/api/symbols"), pcStatus(), ghLive("data/research/auto_off.json"),
+    api("/api/slippage").catch(() => ({})), api("/api/book").catch(() => null), api("/api/health").catch(() => null)]);
   S.pc = pc || S.pc; S.sigs = sigs; S.symbols = sortSyms(syms);
   const age = pc && pc.time ? (Date.now() - new Date(pc.time)) / 60000 : null, online = age !== null && age < 70;
   const pos = (pc && pc.positions) || [], closed = (pc && pc.closed) || [];
@@ -2185,10 +2190,40 @@ async function renderPort(view) {
     </tbody></table></div></div>
     ${fillsHtml((pc && pc.fills) || [])}
     ${slipHtml(slip)}
+    ${bookHtml(book)}
     <div class="sec-h"><h2>ระบบของแต่ละสินทรัพย์</h2><a class="muted small" href="#/systems" style="margin-left:auto">รายละเอียดระบบ →</a></div>
     ${groupedTiles(S.symbols, sigs)}
   </div>`;
   $$("[data-href]", view).forEach((r) => r.onclick = () => go(r.dataset.href));
+  view.insertAdjacentHTML("afterbegin", healthHtml(health));
+  ["live", "candidates"].forEach((k) => { const el = $(`#book_${k}`), c = book && book[k] && book[k].curve;
+    if (el && c && c.length > 2) lineChart(el, [{ data: c.map(([d, v]) => ({ time: d, value: +(100 * (v - 1)).toFixed(1) })), color: k === "live" ? "#16c784" : "#60a5fa", last: true }], { height: 150 }); });
+}
+
+// whole book on the OOS trades (app/book.py): every system that would trade, together, with the caps and the guard
+function bookHtml(b) {
+  if (!b || (!b.live && !b.candidates)) return "";
+  const card = (k, title, note) => { const x = b[k] || {};
+    if (!x.trades) return `<div class="card pad"><b>${title}</b><div class="hint" style="margin-top:6px">ยังไม่มีระบบในชุดนี้</div></div>`;
+    const h = x.holdout_12m || {};
+    return `<div class="card pad"><b>${title}</b> <span class="muted small">${x.systems.length} ระบบ · ${x.trades} ไม้ · ${x.from} → ${x.to}</span>
+      <div class="kpis" style="margin-top:8px">${kpi("โต/ปี", fnum(x.cagr, 1) + "%", "", cls(x.cagr))}${kpi("DD สูงสุด", fnum(x.max_dd, 1) + "%", "", "neg")}
+      ${kpi("ปีที่แย่สุด", fnum(x.worst_year, 1) + "%", "", cls(x.worst_year))}${kpi("12 เดือนล่าสุด", h.ret != null ? fnum(h.ret, 1) + "%" : "–", "ข้อสอบปิดผนึก", cls(h.ret))}
+      ${kpi("โอกาสลง 25% ใน 1 ปี", fnum(x.p_dd25_1y, 0) + "%")}${kpi("เปิดพร้อมกันเฉลี่ย", fnum(x.avg_open_risk, 1) + "%", `สูงสุด ${fnum(x.max_open_risk, 1)}%`)}</div>
+      <div id="book_${k}" class="mini-chart" style="margin-top:8px"></div>
+      <div class="hint">${note} · ความสัมพันธ์เฉลี่ยระหว่างระบบ ${x.avg_corr ?? "–"} · ถูกเพดานความเสี่ยงตัดออก ${x.skipped_by_caps} ไม้${x.guard_pause ? ` · <b class="neg">ชนจุดหยุด −25% ครั้งแรก ${x.guard_pause}</b>` : " · ไม่เคยชนจุดหยุด −25%"}</div></div>`; };
+  return `<div class="sec-h"><h2>🧮 จำลองทั้งพอร์ตรวมกัน</h2><span class="muted small" style="margin-left:auto">ทุกระบบเทรดพร้อมกันบนไม้ OOS · เพดานต่อสินทรัพย์/กลุ่ม · จุดหยุด −25% / −30%</span></div>
+    <div class="gcards">${card("live", "ชุดที่ใช้จริง (ACTIVE)", "ระบบที่ผ่านเกณฑ์ ตามความเสี่ยงที่ตั้งไว้")}
+    ${card("candidates", "ถ้าระบบ TRIAL ผ่านทั้งหมด", `ACTIVE + TRIAL ทุกตัวที่ ${b.rules?.risk_pct ?? 0.5}% · ⚠️ TRIAL ถูกเลือกเพราะผลดี ตัวเลขนี้จึงดูดีเกินจริง — ดูช่อง "12 เดือนล่าสุด" ซึ่งไม่ได้ใช้คัดเลือก`)}</div>`;
+}
+
+// daily self-check (app/health.py): problems found by the cloud
+function healthHtml(h) {
+  const items = (h && h.problems) || [];
+  if (!h) return "";
+  if (!items.length) return `<div class="banner ok" style="margin:0 0 12px"><span class="ic">✅</span><div><b>ตรวจสุขภาพระบบอัตโนมัติ: ปกติ</b> <span class="muted small">· ${h.checked_at ? ago(h.checked_at) : ""} · ${(h.checks || []).length} รายการ</span></div></div>`;
+  return `<div class="banner" style="margin:0 0 12px"><span class="ic">⚠️</span><div><b>ตรวจสุขภาพระบบอัตโนมัติ: พบ ${items.length} เรื่อง</b> <span class="muted small">· ${h.checked_at ? ago(h.checked_at) : ""}</span>
+    <ul style="margin:6px 0 0 18px">${items.map((p) => `<li>${esc(p.text)}</li>`).join("")}</ul></div></div>`;
 }
 
 // ------------------------------------------------------------------ CALCULATOR

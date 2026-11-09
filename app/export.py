@@ -145,6 +145,8 @@ def build(repo: str = "", chart_limit: int = 1200, full_sys: bool | None = None)
     _dump(d / "picks.json", research.picks(lat))
     from . import compare, fills
     _dump(d / "compare.json", compare.load())
+    _dump(d / "book.json", read_json(research.RESEARCH_DIR / "book.json", {}))
+    _dump(d / "health.json", read_json(research.RESEARCH_DIR / "health.json", {}))
     from . import promotion                                     # forward test of the TRIAL systems (promotion rule)
     try:
         _dump(d / "promotion.json", {"rule": promotion.cfg_of(settings), "systems": promotion.evaluate(

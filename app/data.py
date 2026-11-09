@@ -576,7 +576,9 @@ def drop_unclosed(df: pd.DataFrame, tf: str, now: datetime | None = None) -> pd.
 
 def get_bars(sym: str, tf: str = "H1", refresh: bool = False, closed_only: bool = True) -> pd.DataFrame:
     df = resample(load_h1(sym, refresh), tf)
-    return drop_unclosed(df, tf) if closed_only else df
+    df = drop_unclosed(df, tf) if closed_only else df
+    df.attrs["symbol"] = sym          # cross-sectional strategies need to know which market this is
+    return df
 
 
 def years_of(df: pd.DataFrame) -> float:

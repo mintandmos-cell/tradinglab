@@ -227,6 +227,17 @@ def promotion_state():
                                                                        s, set(scanner.auto_off()))})
 
 
+@app.get("/api/book")
+def book_state():
+    return ok(read_json(research.RESEARCH_DIR / "book.json", {}))
+
+
+@app.get("/api/health")
+def health_state():
+    from . import health
+    return ok(health.run(notify_new=False))
+
+
 @app.get("/api/slippage")
 def slippage():
     from . import fills
