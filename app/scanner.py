@@ -388,7 +388,7 @@ def research_due(settings: dict, now: datetime | None = None) -> bool:
         return False
     if sched == "daily":
         return last.date() < now.date()
-    if sched == "quarterly":      # once per quarter, after its start (the research cut-off moved)
+    if sched in ("quarterly", "yearly"):      # once per research period, after its start (the research cut-off moved)
         cut = research.research_cutoff(settings)
         return datetime.fromisoformat(gen) < cut.to_pydatetime()
     if sched == "monthly":

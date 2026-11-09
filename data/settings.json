@@ -70,7 +70,7 @@
   "exit_opposite_signal": true,
   "exit_max_hold": false,
   "exit_friday_close": false,
-  "schedule": "quarterly",
+  "schedule": "yearly",
   "schedule_hour_bkk": 10,
   "gates": {
    "min_oos_trades": 30,

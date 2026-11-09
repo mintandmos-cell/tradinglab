@@ -102,7 +102,10 @@ DEFAULT_SETTINGS = {
         "exit_opposite_signal": True,    # user's rule (Oct 2026): exits = TP / SL / opposite signal only
         "exit_max_hold": False,
         "exit_friday_close": False,
-        "schedule": "quarterly",         # quarterly (start of each quarter, the research cut-off) | weekly | monthly | daily | off
+        "schedule": "yearly",            # yearly (1 Jan, the research cut-off; user 9 Nov 2026) | quarterly | weekly | monthly | daily | off
+        "period_months": 12,             # user, 9 Nov 2026: research + live parameter set ONCE A YEAR (1 Jan), locked 12 months —
+                                         # the same rhythm as the 12-month walk-forward OOS folds the systems are judged on
+        "cutoff_floor": "2026-10-01T00:00:00+00:00",   # switch-over: the Oct 2026 research stays the cut-off until 1 Jan 2027
         "schedule_hour_bkk": 10,
         "gates": {"min_oos_trades": 30, "min_expectancy": 0.05, "min_t": 2.0,
                   "min_mc_pf_p5": 1.0, "min_random_pct": 90.0, "min_plateau": 0.4,

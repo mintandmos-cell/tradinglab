@@ -108,6 +108,12 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   Run workflow -> research, variant = swap -> parts with TL_SWAP_MODE=charged -> `app.cloud compare` (`app/compare.py`) judges
   them in a temp research folder and writes only data/research/compare/swap_charged.json; Lab step 8 shows free vs swap.
   Run it AFTER the live run (it compares against latest.json at merge time; re-judge with mode merge + from_run + variant swap).
+- YEARLY RESEARCH (user, 9 Nov 2026 — replaces the quarterly rule): research + live parameter set once a year, cut-off
+  1 Jan 00:00 UTC (`research.period_months` 12, `research_cutoff`), live set locked 12 months (`walkforward` lock,
+  `merge_symbol` until = next 1 Jan) — same rhythm as the 12-month OOS folds. Switch-over: `research.cutoff_floor`
+  2026-10-01 keeps the Oct 2026 run as the cut-off until 1 Jan 2027. Workflow cron 1 Jan 09:30 BKK + Saturday "due"
+  check (this year's run missing); settings research.schedule "yearly". "Quarter" fields in latest.json (`quarter`) now hold
+  the yearly cut-off / until. Wherever this file still says quarterly / quarter, read "research period (1 year)".
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after

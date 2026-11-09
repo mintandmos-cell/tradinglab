@@ -400,13 +400,19 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
 
 
 def research_cutoff(settings: dict | None = None, now: datetime | None = None) -> pd.Timestamp:
-    """The research cut-off = start of the current quarter on the broker clock (1 Jan / 1 Apr / 1 Jul / 1 Oct).
-    A run in the middle of a quarter (new strategies, button) uses the same cut-off, so it sees exactly the same data.
-    settings.research.cutoff (ISO date) pins it for testing."""
+    """The research cut-off = start of the current research period on the broker clock: 1 Jan each year
+    (research.period_months 12, user 9 Nov 2026 — was the start of each quarter). A run in the middle of the period
+    (new strategies, button) uses the same cut-off, so it sees exactly the same data. research.cutoff_floor keeps the
+    last quarterly cut-off (1 Oct 2026) until the first yearly one. settings.research.cutoff (ISO date) pins it for testing."""
     cfg = (settings or load_settings())["research"]
+    pm = int(cfg.get("period_months") or 3)
     if cfg.get("cutoff"):
-        return data.period_start(pd.Timestamp(cfg["cutoff"]), cfg.get("oos_months", 3))
-    return data.period_start(pd.Timestamp(now or datetime.now(timezone.utc)), cfg.get("oos_months", 3))
+        return data.period_start(pd.Timestamp(cfg["cutoff"]), pm)
+    cut = data.period_start(pd.Timestamp(now or datetime.now(timezone.utc)), pm)
+    floor = cfg.get("cutoff_floor")
+    if floor and cut < pd.Timestamp(floor) <= pd.Timestamp(now or datetime.now(timezone.utc)):
+        cut = pd.Timestamp(floor)
+    return cut
 
 
 def _forced_off(settings: dict, sym: str, c: dict) -> bool:
@@ -440,7 +446,9 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     if not cands:
         return {"symbol": sym, "status": "OFF", "reason": "ข้อมูลไม่พอ", "candidates": [], "systems": []}
     cutoff = pd.Timestamp(parts[0].get("cutoff") or research_cutoff(settings))
-    until = data.add_months(cutoff, cfg.get("oos_months", 3))
+    # the set is traded until the next yearly cut-off (1 Jan); the switch-over set (cut 1 Oct 2026) until 1 Jan 2027
+    pm = int(cfg.get("period_months") or 3)
+    until = data.add_months(data.period_start(cutoff, pm), pm)
     # retired strategies stay in the count (user's rule): dropping losers must never lower the bar for the rest.
     # The count is the EFFECTIVE number of independent tests (correlated candidates count less), retired ones scaled alike.
     used = [c for c in cands if c["oos"]["trades"] >= 10]
