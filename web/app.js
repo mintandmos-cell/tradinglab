@@ -36,6 +36,7 @@ function valuePerUnit(sym, price) {  // USD P/L of 1.00 lot for a 1.0 price move
   const sp = specOf(sym);
   if (sp.quote === "USD") return +sp.contract;
   if (sym.startsWith("USD")) return +sp.contract / price;
+  if (+sp.usd_per_unit > 0) return +sp.usd_per_unit;        // crosses / EUR / JPY indices: computed by the server (9 Nov 2026)
   return +sp.contract;
 }
 function sizeLocal(sym, entry, sl, riskPct, balance, tp) {
@@ -320,10 +321,13 @@ const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขีย�
 const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
   NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD", GBPJPY: "OANDA:GBP_JPY", AUDUSD: "OANDA:AUD_USD", USDCAD: "OANDA:USD_CAD",
   USOIL: "OANDA:WTICO_USD", XAGUSD: "OANDA:XAG_USD", DE30: "OANDA:DE30_EUR", JP225: "OANDA:JP225_USD",
-  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
+  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  EURJPY: "OANDA:EUR_JPY", AUDJPY: "OANDA:AUD_JPY", EURGBP: "OANDA:EUR_GBP", EURAUD: "OANDA:EUR_AUD", NZDUSD: "OANDA:NZD_USD",
+  USDCHF: "OANDA:USD_CHF", XPTUSD: "OANDA:XPT_USD", XCUUSD: "OANDA:XCU_USD", UKOIL: "OANDA:BCO_USD", XNGUSD: "OANDA:NATGAS_USD" };
 const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
 const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX",
-  GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
+  GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  EURJPY: "EUR/JPY", AUDJPY: "AUD/JPY", EURGBP: "EUR/GBP", EURAUD: "EUR/AUD", NZDUSD: "NZD/USD", USDCHF: "USD/CHF", XPTUSD: "XPT/USD" };
 
 // Broker clock (settings.mt5_server_time): Exness MT5 runs GMT+0 ("utc", 4 Nov 2026); "ny_close" brokers run New York + 7 h.
 // H4 and D1 candles are cut on that clock (same as the Python side), so their shapes match the user's MT5 chart.
@@ -517,17 +521,19 @@ async function navigate() {
 // ------------------------------------------------------------------ workspace (chart / systems / lab): main area + right rail
 const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH",
   GBPJPY: "GJ", AUDUSD: "AU", USDCAD: "UC", USOIL: "OIL", XAGUSD: "XAG", DE30: "DAX", JP225: "NKY",
-  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL" };
+  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  EURJPY: "EJ", AUDJPY: "AJ", EURGBP: "EG", EURAUD: "EA", NZDUSD: "NU", USDCHF: "UCF", XPTUSD: "XPT", XCUUSD: "CU", UKOIL: "BRN", XNGUSD: "GAS" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
 // asset classes (user, 2 Nov 2026: 20 Exness symbols) — every symbol list in the app is shown in this order, grouped
 const ASSET_GROUPS = [
   { key: "fx", label: "ค่าเงิน (Forex)", short: "FX", icon: "💱", groups: ["Forex"] },
-  { key: "cmd", label: "ทองคำ · เงิน · น้ำมัน", short: "CMD", icon: "🥇", groups: ["Metals", "Energy"] },
+  { key: "cmd", label: "โลหะ · น้ำมัน · ก๊าซ", short: "CMD", icon: "🥇", groups: ["Metals", "Energy"] },
   { key: "idx", label: "ดัชนีหุ้น", short: "IDX", icon: "📊", groups: ["Indices"] },
   { key: "stk", label: "หุ้นสหรัฐ", short: "STK", icon: "🏢", groups: ["Stocks"] },
   { key: "cry", label: "คริปโต", short: "CRY", icon: "🪙", groups: ["Crypto"] },
 ];
-const SYM_ORDER = ["EURUSD", "GBPUSD", "USDJPY", "GBPJPY", "AUDUSD", "USDCAD", "XAUUSD", "XAGUSD", "USOIL",
+const SYM_ORDER = ["EURUSD", "GBPUSD", "USDJPY", "GBPJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF", "EURJPY", "AUDJPY", "EURGBP", "EURAUD",
+  "XAUUSD", "XAGUSD", "XPTUSD", "XCUUSD", "USOIL", "UKOIL", "XNGUSD",
   "NAS100", "US500", "DE30", "JP225", "NVDA", "MSFT", "AMZN", "META", "AAPL", "BTCUSD", "ETHUSD"];
 const groupIdx = (x) => { const i = ASSET_GROUPS.findIndex((g) => g.groups.includes(x.group)); return i < 0 ? ASSET_GROUPS.length : i; };
 const sortSyms = (a) => (a || []).slice().sort((x, y) => groupIdx(x) - groupIdx(y)
@@ -2116,8 +2122,10 @@ function slipHtml(c) {
     </tbody></table></div><div class="hint pad-x" style="padding:8px 14px 12px">ใช้ค่าเปอร์เซ็นไทล์ที่ 75 ของไม้จริง (นับเฉพาะฝั่งที่เสียเปรียบ) และไม่ต่ำกว่าครึ่งหนึ่งของค่าประมาณเดิม · ปรับให้อัตโนมัติในการวิจัยรอบถัดไป</div></div>`;
 }
 // markets that move together share one risk budget (same groups as app/scanner.py CLUSTERS)
-const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]], jpy_cross: ["คู่เงิน JPY", ["GBPJPY"]],
-  metals: ["โลหะ", ["XAUUSD", "XAGUSD"]], energy: ["พลังงาน", ["USOIL"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"]],
+const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF"]],
+  jpy_cross: ["คู่เงิน JPY", ["GBPJPY", "EURJPY", "AUDJPY"]], eur_cross: ["คู่เงิน EUR", ["EURGBP", "EURAUD"]],
+  metals: ["โลหะมีค่า", ["XAUUSD", "XAGUSD", "XPTUSD"]], industrial: ["ทองแดง", ["XCUUSD"]], energy: ["น้ำมัน", ["USOIL", "UKOIL"]],
+  natgas: ["ก๊าซธรรมชาติ", ["XNGUSD"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"]],
   world_equity: ["ดัชนียุโรป/ญี่ปุ่น", ["DE30", "JP225"]], crypto: ["คริปโต", ["BTCUSD", "ETHUSD"]] };
 const clusterCap = (k) => { const c = S.settings?.cluster_risk_pct || {}; return +(c[k] ?? c.default ?? 1.5); };
 async function renderPort(view) {

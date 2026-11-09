@@ -730,6 +730,16 @@ def picks(lat: dict | None = None) -> list[dict]:
     return keep + [x for x in out if x not in keep][:max(0, 300 - len(keep))]     # 500 systems: the best 300 WATCH
 
 
+def _usd_per_unit(sym: str, settings: dict) -> float | None:
+    """USD P/L of 1 lot per 1.0 price move (the web calculator / signal cards size non-USD-quoted symbols with it)."""
+    try:
+        from .sizing import _last_price, value_per_price_unit
+        px = _last_price(sym)
+        return round(value_per_price_unit(sym, px, None, settings), 6) if px else None
+    except Exception:
+        return None
+
+
 def symbol_table(settings: dict | None = None) -> list[dict]:
     s = settings or load_settings()
     lat = latest().get("symbols", {})
@@ -743,7 +753,7 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
                     "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False), "source": x.get("source", "single"),
                                  "risk_pct": x.get("risk_pct"), "exp": x.get("exp"), "t": x.get("t")} for x in live_systems(r)
                                 if x.get("status") == "ACTIVE"],
-                    "quarter": r.get("quarter"), "swap": swap_mode(s, k)})
+                    "quarter": r.get("quarter"), "swap": swap_mode(s, k), "usd_per_unit": _usd_per_unit(k, s)})
     return out
 
 

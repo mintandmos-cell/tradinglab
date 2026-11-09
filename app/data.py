@@ -356,8 +356,10 @@ def with_history(sym: str, live: pd.DataFrame) -> pd.DataFrame:
     else:
         prev = live.close[live.index <= seed.index[-1]]
         ratio = float(seed.close.iloc[-1] / prev.iloc[-1]) if len(prev) else 1.0
-    if not np.isfinite(ratio) or abs(ratio - 1) > 0.05:      # something is off: never distort prices by more than 5%
-        ratio = 1.0
+    if not np.isfinite(ratio) or abs(ratio - 1) > 0.05:
+        # the free feed is on another price scale (9 Nov 2026: e.g. copper per pound vs per tonne): never glue it on
+        log.warning("%s: free feed off by x%.3f vs the broker history - newest free bars not used", sym, ratio)
+        return seed
     tail = live[live.index > seed.index[-1]].copy()
     for k in ("open", "high", "low", "close"):
         tail[k] = tail[k] * ratio
@@ -496,6 +498,11 @@ def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataF
                 new = _fetch_binance(SYMBOLS[sym]["binance"], since)
             else:
                 new = _fetch_yahoo(SYMBOLS[sym]["yahoo"])
+                mult = float(SYMBOLS[sym].get("yahoo_mult") or 1)      # unit change, e.g. copper USD/lb -> USD/tonne
+                if new is not None and mult != 1:
+                    new = new.copy()
+                    for k in ("open", "high", "low", "close"):
+                        new[k] = new[k] * mult
             df = _clean(pd.concat([cached, new]) if cached is not None and new is not None else (new if new is not None else cached))
             df.to_pickle(path)
         except Exception as e:

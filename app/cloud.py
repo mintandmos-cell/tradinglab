@@ -53,13 +53,16 @@ def main(mode: str, *args: str) -> int:
                 log.warning("prefetch %s: %s", sym, e)
         return 0
     if mode == "part":       # research run, step 2 (one matrix job per symbol x TF): every strategy, every step
-        sym, tf = args[0], args[1]
+        sym, tf_arg = args[0], args[1]
         chunk = args[2] if len(args) > 2 else None
-        part = research.research_part(sym, tf, chunk=chunk)
+        # "ALL" = every research TF in one job (9 Nov 2026: 30 symbols x 3 TF x 4 chunks would pass the 256-job matrix limit)
+        tfs = research.load_settings()["research"]["timeframes"] if tf_arg.upper() == "ALL" else [tf_arg]
         research.PARTS_DIR.mkdir(parents=True, exist_ok=True)
         suffix = f"_{chunk.replace('/', 'of')}" if chunk else ""
-        with gzip.open(research.PARTS_DIR / f"{sym}_{tf}{suffix}.json.gz", "wt", encoding="utf-8") as f:
-            json.dump(part, f, separators=(",", ":"), default=str)
+        for tf in tfs:
+            part = research.research_part(sym, tf, chunk=chunk)
+            with gzip.open(research.PARTS_DIR / f"{sym}_{tf}{suffix}.json.gz", "wt", encoding="utf-8") as f:
+                json.dump(part, f, separators=(",", ":"), default=str)
         return 0
     if mode == "compare":    # comparison run (variant swap): judge the parts aside, live results untouched, no scan
         from . import compare

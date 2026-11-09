@@ -120,9 +120,11 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix:
-        symbol: [EURUSD, GBPUSD, USDJPY, GBPJPY, AUDUSD, USDCAD, XAUUSD, XAGUSD, USOIL, NAS100, US500, DE30, JP225, NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
-        tf: [H1, H4, D1]
-        chunk: ["0/4", "1/4", "2/4", "3/4"]   # 500 strategies over 4 jobs per symbol x TF = 240 jobs (matrix max 256, 6 h job limit)
+        symbol: [EURUSD, GBPUSD, USDJPY, GBPJPY, AUDUSD, USDCAD, NZDUSD, USDCHF, EURJPY, AUDJPY, EURGBP, EURAUD,
+                 XAUUSD, XAGUSD, XPTUSD, XCUUSD, USOIL, UKOIL, XNGUSD, NAS100, US500, DE30, JP225,
+                 NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
+        # 30 symbols x 8 strategy chunks, all 3 TF in each job = 240 jobs (matrix max 256, 6 h job limit)
+        chunk: ["0/8", "1/8", "2/8", "3/8", "4/8", "5/8", "6/8", "7/8"]
     env:
       PYTHONWARNINGS: ignore
       TL_OFFLINE: "1"
@@ -140,11 +142,11 @@ jobs:
           path: data/cache
           key: prices-${{ github.run_id }}-research
           restore-keys: prices-
-      - name: Research ${{ matrix.symbol }} ${{ matrix.tf }}
-        run: python -m app.cloud part ${{ matrix.symbol }} ${{ matrix.tf }} ${{ matrix.chunk }}
+      - name: Research ${{ matrix.symbol }} ${{ matrix.chunk }}
+        run: python -m app.cloud part ${{ matrix.symbol }} ALL ${{ matrix.chunk }}
       - uses: actions/upload-artifact@v4
         with:
-          name: part-${{ matrix.symbol }}-${{ matrix.tf }}-${{ strategy.job-index }}
+          name: part-${{ matrix.symbol }}-${{ strategy.job-index }}
           path: data/research/parts/
           retention-days: 3
 

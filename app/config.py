@@ -72,6 +72,29 @@ SYMBOLS: dict[str, dict] = {
               "contract": 1, "digits": 2, "pip": 1.0, "spread": 8.0, "slippage": 2.0, "commission": 0.0},
     "USOIL": {"name": "WTI Crude Oil", "group": "Energy", "yahoo": "CL=F", "quote": "USD",
               "contract": 1000, "digits": 3, "pip": 0.01, "spread": 0.03, "slippage": 0.01, "commission": 0.0},
+    # --- 10 more Exness markets (user, 9 Nov 2026: a wider basket for the trend-following PORTFOLIO test — CTAs earn from
+    # many weakly related markets). Contract / digits from data/exness/symbols.json; spreads are estimates until the PC's
+    # cost export (data/exness/costs.json) replaces them.
+    "EURJPY": {"name": "Euro / Japanese Yen", "group": "Forex", "yahoo": "EURJPY=X", "quote": "JPY",
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.020, "slippage": 0.004, "commission": 0.0},
+    "AUDJPY": {"name": "Australian Dollar / Japanese Yen", "group": "Forex", "yahoo": "AUDJPY=X", "quote": "JPY",
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.020, "slippage": 0.004, "commission": 0.0},
+    "EURGBP": {"name": "Euro / British Pound", "group": "Forex", "yahoo": "EURGBP=X", "quote": "GBP",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00012, "slippage": 0.00002, "commission": 0.0},
+    "EURAUD": {"name": "Euro / Australian Dollar", "group": "Forex", "yahoo": "EURAUD=X", "quote": "AUD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00022, "slippage": 0.00004, "commission": 0.0},
+    "NZDUSD": {"name": "New Zealand Dollar / US Dollar", "group": "Forex", "yahoo": "NZDUSD=X", "quote": "USD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00015, "slippage": 0.00002, "commission": 0.0},
+    "USDCHF": {"name": "US Dollar / Swiss Franc", "group": "Forex", "yahoo": "CHF=X", "quote": "CHF",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00015, "slippage": 0.00002, "commission": 0.0},
+    "XPTUSD": {"name": "Platinum / US Dollar", "group": "Metals", "yahoo": "PL=F", "quote": "USD",
+               "contract": 100, "digits": 2, "pip": 0.1, "spread": 2.5, "slippage": 0.5, "commission": 0.0},
+    "XCUUSD": {"name": "Copper / US Dollar", "group": "Metals", "yahoo": "HG=F", "yahoo_mult": 2204.62, "quote": "USD",
+               "contract": 1, "digits": 2, "pip": 1.0, "spread": 6.0, "slippage": 2.0, "commission": 0.0},
+    "UKOIL": {"name": "Brent Crude Oil", "group": "Energy", "yahoo": "BZ=F", "quote": "USD",
+              "contract": 1000, "digits": 3, "pip": 0.01, "spread": 0.04, "slippage": 0.01, "commission": 0.0},
+    "XNGUSD": {"name": "Natural Gas", "group": "Energy", "yahoo": "NG=F", "quote": "USD",
+               "contract": 10000, "digits": 4, "pip": 0.001, "spread": 0.006, "slippage": 0.002, "commission": 0.0},
 }
 
 DEFAULT_SETTINGS = {
@@ -119,7 +142,8 @@ DEFAULT_SETTINGS = {
     },
     # 2 Nov 2026 (user: "do everything"): risk shared by markets that move together, a pre-agreed drawdown stop, and
     # near-miss systems traded on the DEMO account only at a small risk to collect live evidence
-    "cluster_risk_pct": {"default": 1.5, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0},
+    "cluster_risk_pct": {"default": 1.5, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0, "eur_cross": 1.0,
+                         "industrial": 0.5, "natgas": 0.5},
     "kill_dd_mult": 2.0,
     # TRIAL -> ACTIVE by the forward test (user, 9 Nov 2026; fixed before any result — app/promotion.py)
     "promotion": {"enabled": True, "min_trades": 30, "min_months": 3, "min_exp_r": 0.05, "alpha": 0.05},
