@@ -556,22 +556,30 @@ def swap_watch(c: dict, st: dict) -> None:
     st["swap_day"] = day
     try:
         body = swap_check(_mt5())
+        back = {v: k for k, v in load_settings().get("mt5_symbol_map", {}).items()}
+        ours = lambda name: back.get(name) or (name if name in SYMBOLS else None)
         paid = {k: r for k, r in body["positions"].items() if abs(float(r.get("swap") or 0)) > 1e-9}
-        st["swap_watch"] = {"day": day, "checked": len(body["positions"]), "charged": len(paid),
+        charged = sorted({ours(r["symbol"]) for r in paid.values()} - {None})
+        st["swap_watch"] = {"day": day, "checked": len(body["positions"]), "charged": len(paid), "symbols": charged,
                             "examples": [{"symbol": r["symbol"], "swap": round(r["swap"], 2), "type": r.get("type")} for r in list(paid.values())[:5]]}
         _log("swap_watch", **st["swap_watch"])
-        if paid and not st.get("swap_warned"):
-            # user, 3 Nov 2026: from that day research charges swap again. The flag file is pushed WITHOUT [skip ci]:
-            # the workflow sees data/exness/swap_charged.json in the push and re-runs the research (config.swap_mode).
-            flag = {"since": day, "account": body["account"].get("server"), "examples": st["swap_watch"]["examples"]}
+        # 9 Nov 2026: the swap is PER SYMBOL (Exness books it on US stocks, not on FX / metals / crypto of this account).
+        # The flag file lists the symbols seen paying swap + their asset groups (one stock paying = the stock group pays);
+        # config.swap_mode(sym) charges swap only there. A NEW symbol/group -> file updated + push; the commit message
+        # carries [research] so the workflow re-runs the research with the new costs.
+        old = ghsync.get_json("data/exness/swap_charged.json") or {}
+        known = set(old.get("symbols") or [])
+        groups = sorted({SYMBOLS[s].get("group") for s in set(charged) | known if s in SYMBOLS} - {None})
+        if set(charged) - known:
+            flag = {"since": old.get("since") or day, "updated": day, "account": body["account"].get("server"),
+                    "symbols": sorted(known | set(charged)), "groups": groups, "examples": st["swap_watch"]["examples"]}
             sent = ghsync.put_file("data/exness/swap_charged.json",
                                    json.dumps(flag, ensure_ascii=False, indent=1).encode("utf-8"),
-                                   "pc: account started paying swap -> research with swap")
-            st["swap_warned"] = bool(sent)
-            _push(c, "⚠️ บัญชีเริ่มถูกหักค่า swap",
+                                   f"pc: swap booked on {', '.join(sorted(set(charged) - known))} [research]")
+            _push(c, "⚠️ เริ่มถูกหักค่า swap",
                   " · ".join(f"{r['symbol']} {r['swap']:+.2f}" for r in list(paid.values())[:4])
-                  + (" — สลับไปวิจัยแบบหัก swap แล้ว (เริ่มวิจัยใหม่อัตโนมัติ)" if sent else " — ส่งไฟล์แจ้ง GitHub ไม่สำเร็จ จะลองใหม่พรุ่งนี้"),
-                  priority=4)
+                  + (f" — กลุ่ม {', '.join(groups)} จะถูกทดสอบแบบหัก swap (เริ่มวิจัยใหม่อัตโนมัติ)" if sent
+                     else " — ส่งไฟล์แจ้ง GitHub ไม่สำเร็จ จะลองใหม่พรุ่งนี้"), priority=4)
     except Exception as e:
         log.warning("swap watch: %s", e)
 

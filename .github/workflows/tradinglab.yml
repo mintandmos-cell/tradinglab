@@ -41,7 +41,7 @@ permissions:
 # One queue for hourly scans / site builds (a newer queued one replaces an older queued one — fine for scans).
 # Research runs (button, Saturday, new history pushed) get their own group so a queued scan can never cancel them.
 concurrency:
-  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || github.event.schedule == '30 2 1 1 *' || contains(toJSON(github.event.commits), 'data/history/') || contains(toJSON(github.event.commits), 'swap_charged')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * 6' || github.event.schedule == '30 2 1 1 *' || contains(toJSON(github.event.commits), 'data/history/') || contains(toJSON(github.event.commits), 'swap_charged') || contains(github.event.head_commit.message, '[research]')) && format('tradinglab-research-{0}', github.run_id) || 'tradinglab' }}
   cancel-in-progress: false
 
 jobs:
@@ -65,6 +65,8 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'data/history/') }}" = "true" ]; then MODE="research"; fi
           # the PC saw the account pay swap (data/exness/swap_charged.json): research again, now charging swap
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(toJSON(github.event.commits), 'swap_charged') }}" = "true" ]; then MODE="research"; fi
+          # the PC asks for a research run in its commit message (9 Nov 2026: API commits carry no file list in the event)
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ contains(github.event.head_commit.message, '[research]') }}" = "true" ]; then MODE="research"; fi
           if [ "$MODE" = "due" ]; then
             # research runs once a year (cut-off = 1 Jan 00:00 broker time; Exness = GMT+0)
             curl -sfL "https://raw.githubusercontent.com/${{ github.repository }}/main/data/research/latest.json" -o latest.json || true

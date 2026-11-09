@@ -308,7 +308,8 @@ def history_source(sym: str) -> str:
     if ex is not None and len(ex) > 1000:
         # with the first month: cutting bad old data (tools/check_history, 3 Nov 2026) is a change of prices too
         # + the broker clock H4 / D1 are cut on (4 Nov 2026: NY close -> Exness UTC changes every H4 / D1 candle)
-        return f"exness@{ex.index[0]:%Y-%m}/{_server_mode()}"
+        from .config import swap_mode           # + whether this symbol's tests charge swap (a cost change re-judges too)
+        return f"exness@{ex.index[0]:%Y-%m}/{_server_mode()}" + ("/swap" if swap_mode(None, sym) == "charged" else "")
     return "mt5" if (HISTORY_DIR / f"{sym}_H1.csv.gz").exists() else "free"
 
 

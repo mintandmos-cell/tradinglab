@@ -7,5 +7,12 @@
    "swap": -0.07,
    "type": "BUY"
   }
- ]
+ ],
+ "symbols": [
+  "AAPL"
+ ],
+ "groups": [
+  "Stocks"
+ ],
+ "note": "9 Nov 2026: per symbol - MT5 booked swap on AAPL (US stock CFD) every day since 5 Nov; every other robot position checked showed 0 swap. One stock paying => the Stocks group is tested with swap."
 }
