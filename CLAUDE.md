@@ -124,6 +124,12 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   the Stocks group). Robot `swap_watch` adds new symbols daily and commits with "[research]" in the message, which makes the
   workflow run the research (push events carry no file list for API commits, so the file-name check never fired).
   Never write "[research]" in a commit message unless a research run is wanted.
+- 30 MARKETS (user, 9 Nov 2026, for the trend PORTFOLIO test): + NZDUSD USDCHF EURJPY AUDJPY EURGBP EURAUD · XPTUSD XCUUSD
+  (Yahoo HG=F x `yahoo_mult` 2204.62 lb->t) · UKOIL XNGUSD. Clusters eur_cross / industrial / natgas. Research matrix =
+  30 symbols x 8 strategy chunks, every TF in one job (`app.cloud part SYM ALL k/8`). Free tail is NOT glued when its price
+  scale differs > 5 % (`with_history`). Non-USD quotes are sized with the PC's tick values (costs.json) or the USD pair
+  (`sizing.value_per_price_unit`; web uses symbols.json `usd_per_unit`). History of new symbols comes from a PC task
+  (export_history + cost_stats) issued only after the PC has restarted on the new code.
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after
