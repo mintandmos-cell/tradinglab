@@ -273,6 +273,9 @@ def _seed_exness(sym: str) -> pd.DataFrame | None:
                 d = d[d.index >= hole.index[-1]]
         d = d.iloc[:-1]                                  # the export's last bar was still forming
         d = d[["open", "high", "low", "close", "volume"]].astype(float)
+        q0 = jumpy_until(d)                              # old years stitched from sparse quotes: start after them
+        if q0 is not None:
+            d = d[d.index >= q0]
         rec = recent_exness(sym)                         # the PC's newest closed MT5 bars (published every hour)
         if rec is not None and len(rec):
             d = pd.concat([d, rec])
@@ -280,6 +283,31 @@ def _seed_exness(sym: str) -> pd.DataFrame | None:
     except Exception as e:
         log.warning("Exness history %s unreadable: %s", sym, e)
         return None
+
+
+def gap_ratio_by_year(d: pd.DataFrame) -> pd.Series:
+    """Per year: mean |open - previous close| of back-to-back H1 bars, in % of the median bar range. A real feed opens a
+    bar where the last one closed (1-3 %). Old broker history built from sparse quotes does not (5-20 %): every bar starts
+    with a jump no order could have traded, which pays mean-reversion systems a fake 0.5 R a trade (10 Nov 2026 audit:
+    NZDUSD 2002-2007; every FX pair before 2009; XPTUSD before 2020). Years with < 1000 bars are left out."""
+    cont = (d.index.to_series().diff() == pd.Timedelta(hours=1)).to_numpy()
+    gap = (d["open"] - d["close"].shift()).abs()[cont]
+    rng = (d["high"] - d["low"])[cont]
+    y = gap.index.year
+    n = gap.groupby(y).size()
+    r = 100 * gap.groupby(y).mean() / rng.groupby(y).median().replace(0, np.nan)
+    return r[n >= 1000].dropna()
+
+
+def jumpy_until(d: pd.DataFrame) -> pd.Timestamp | None:
+    """1 Jan after the last "jumpy" year: gap ratio above max(4 %, 1.8 x the median of the newest 5 full years).
+    None = the whole history is fine. Rule fixed from the data's own quality, never from test results."""
+    r = gap_ratio_by_year(d)
+    if len(r) < 3:
+        return None
+    base = float(r.iloc[:-1].tail(5).median())           # the newest year may be partial
+    bad = r[r > max(4.0, 1.8 * base)]
+    return pd.Timestamp(year=int(bad.index.max()) + 1, month=1, day=1, tz="UTC") if len(bad) else None
 
 
 EXNESS_RECENT = HISTORY_DIR.parent / "exness" / "recent"

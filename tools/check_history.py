@@ -110,7 +110,10 @@ def check(sym: str) -> dict | None:
             pat = (int(su.iloc[0]) if len(su) else None, int(wi.iloc[0]) if len(wi) else None)
             clock[int(y)] = {"summer_open": pat[0], "winter_open": pat[1], "utc_ok": pat[0] in (21, None) and pat[1] in (22, None)}
     bad_clock = [y for y, v in clock.items() if not v["utc_ok"]]
+    gr = data.gap_ratio_by_year(df)          # bar-to-bar continuity (10 Nov 2026): old stitched history opens bars with a jump
+    ju = data.jumpy_until(df)
     return {"symbol": sym, "from": t[0].isoformat(), "to": t[-1].isoformat(), "bars": int(len(t)),
+            "gap_ratio": {int(k): round(float(v), 1) for k, v in gr.items()}, "jumpy_until": ju.year - 1 if ju is not None else None,
             "clock": clock, "clock_off_years": bad_clock, "clock_ok_from": max(bad_clock) + 1 if bad_clock else None,
             "source": data.history_source(sym), "years": years, "poor_years": poor, "spike_examples": examples,
             "suggest_start": f"{head + 1}-01-01" if head else None}
@@ -126,7 +129,8 @@ def main(argv: list[str]) -> int:
             continue
         out["symbols"][s] = r
         print(f"{s:8} {r['from'][:10]} {r['bars']:7d}  {r['poor_years'] or '-'}  {r['suggest_start'] or ''}"
-              + (f"  clock 1 h off until {r['clock_ok_from'] - 1}" if r.get("clock_ok_from") else ""))
+              + (f"  clock 1 h off until {r['clock_ok_from'] - 1}" if r.get("clock_ok_from") else "")
+              + (f"  JUMPY bars until {r['jumpy_until']}" if r.get("jumpy_until") else ""))
     write_json(OUT, out)
     return 0
 
