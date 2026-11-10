@@ -423,15 +423,17 @@
   "reverse_of": "SHORT",
   "price_source": "Exness MT5",
   "cost_r": 0.008,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.332,
+  "exit_time": "2026-11-10T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": null,
-  "stop_now": 70836.69
+  "stop_now": 70836.69,
+  "exit_reason": "Rev",
+  "exit_price": 73134.19
  },
  {
   "id": "BTCUSD-H4-faber_sma-1794196800",
