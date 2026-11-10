@@ -265,6 +265,9 @@ jobs:
         if: env.SKIP_SITE != '1'
         with:
           path: site
+      # GitHub Pages sometimes times out or refuses while another deploy is running (10 Nov 2026: 4 failure e-mails).
+      # The data is already committed above and the next hourly run deploys again, so a failed deploy is not a failed run.
       - id: deploy
         if: env.SKIP_SITE != '1'
+        continue-on-error: true
         uses: actions/deploy-pages@v4
