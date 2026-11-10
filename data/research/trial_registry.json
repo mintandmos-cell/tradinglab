@@ -77,7 +77,28 @@
   },
   "AUDUSD:mr_pll_calm:D1": {
    "first": "2026-11-09"
+  },
+  "EURAUD:mr_dn_range:H4": {
+   "first": "2026-11-10"
+  },
+  "EURAUD:mr_dn_calm:H4": {
+   "first": "2026-11-10"
+  },
+  "EURGBP:mr_rev_wild:D1": {
+   "first": "2026-11-10"
+  },
+  "EURGBP:mr_fib_calm:D1": {
+   "first": "2026-11-10"
+  },
+  "EURJPY:mr_dn_calm:D1": {
+   "first": "2026-11-10"
+  },
+  "NZDUSD:mr_nlow_adx:H4": {
+   "first": "2026-11-10"
+  },
+  "NZDUSD:mr_stoch_m1:H1": {
+   "first": "2026-11-10"
   }
  },
- "updated": "2026-11-09"
+ "updated": "2026-11-10"
 }
