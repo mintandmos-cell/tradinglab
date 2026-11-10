@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-10T02:14:20.722516+00:00",
+   "signal": "EURGBP-D1-mr_fib_calm-1794096000",
+   "symbol": "EURGBP",
+   "tf": "D1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 0.83477,
+   "fill": 0.83477,
+   "signal_entry": 0.83424,
+   "slip_pts": 0.0,
+   "drift_r": 0.091,
+   "delay_s": 94461
+  },
+  {
    "time": "2026-11-09T15:01:43.729295+00:00",
    "signal": "NAS100-H1-bb_trend-1794232800",
    "symbol": "NAS100",
@@ -309,5 +323,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-09T15:14:03.924389+00:00"
+ "updated": "2026-11-10T03:14:25.324077+00:00"
 }
