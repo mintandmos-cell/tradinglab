@@ -1,6 +1,34 @@
 {
  "fills": [
   {
+   "time": "2026-11-10T04:01:31.191129+00:00",
+   "signal": "USOIL-H4-mr_stoch_gold-1794268800",
+   "symbol": "USOIL",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 85.03,
+   "fill": 85.03,
+   "signal_entry": 84.907,
+   "slip_pts": 0.0,
+   "drift_r": 0.045,
+   "delay_s": 91
+  },
+  {
+   "time": "2026-11-10T04:01:30.034915+00:00",
+   "signal": "GBPJPY-H4-er_kama-1794268800",
+   "symbol": "GBPJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 212.357,
+   "fill": 212.357,
+   "signal_entry": 212.361,
+   "slip_pts": 0.0,
+   "drift_r": -0.004,
+   "delay_s": 90
+  },
+  {
    "time": "2026-11-10T02:14:20.722516+00:00",
    "signal": "EURGBP-D1-mr_fib_calm-1794096000",
    "symbol": "EURGBP",
@@ -323,5 +351,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-10T03:14:25.324077+00:00"
+ "updated": "2026-11-10T04:05:37.861955+00:00"
 }
