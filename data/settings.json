@@ -105,8 +105,7 @@
   "AAPL:vol_breakout:H1",
   "XAGUSD:vol_breakout:H1",
   "DE30:vol_breakout:H1",
-  "USOIL:vol_breakout:H1",
-  "NZDUSD"
+  "USOIL:vol_breakout:H1"
  ],
  "scan_interval_sec": 120
 }
