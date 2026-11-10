@@ -98,6 +98,18 @@
   },
   "NZDUSD:mr_stoch_m1:H1": {
    "first": "2026-11-10"
+  },
+  "GBPJPY:hma_trend:D1": {
+   "first": "2026-11-10"
+  },
+  "USDCAD:bb_breakout:H4": {
+   "first": "2026-11-10"
+  },
+  "USDCAD:mr_capit_adx:H4": {
+   "first": "2026-11-10"
+  },
+  "USDCHF:mr_bb_adx:H1": {
+   "first": "2026-11-10"
   }
  },
  "updated": "2026-11-10"

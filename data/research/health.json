@@ -1,5 +1,5 @@
 {
- "checked_at": "2026-11-10T10:07:04.888767+00:00",
+ "checked_at": "2026-11-10T10:53:48.142533+00:00",
  "checks": [
   "pc_offline",
   "bars_stale",
@@ -12,6 +12,14 @@
   "research_bad",
   "auto_off"
  ],
- "problems": [],
- "pushed": {}
+ "problems": [
+  {
+   "key": "bars_stale",
+   "text": "แท่ง Exness ที่คอมส่งขึ้นเว็บเก่า 6 ชม. ทั้งที่คอมออนไลน์ — กราฟ/คลาวด์ใช้แหล่งฟรีแทน",
+   "level": "warn"
+  }
+ ],
+ "pushed": {
+  "bars_stale": "2026-11-10T10:53:48.142533+00:00"
+ }
 }
