@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-10T08:01:29.396868+00:00",
+   "signal": "USDCAD-H1-mr_z_t100-1794294000",
+   "symbol": "USDCAD",
+   "tf": "H1",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 1.4111099999999999,
+   "fill": 1.4111099999999999,
+   "signal_entry": 1.41113,
+   "slip_pts": 0.0,
+   "drift_r": -0.009,
+   "delay_s": 89
+  },
+  {
    "time": "2026-11-10T04:01:31.191129+00:00",
    "signal": "USOIL-H4-mr_stoch_gold-1794268800",
    "symbol": "USOIL",
@@ -351,5 +365,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-10T04:05:37.861955+00:00"
+ "updated": "2026-11-10T08:22:33.828495+00:00"
 }
