@@ -112,14 +112,19 @@ def rollover_weights(times: pd.DatetimeIndex, spec: dict) -> np.ndarray | None:
     return cum[dn]
 
 
-def swap_r(W, e: int, k: int, d: int, sl_dist: float, spec: dict) -> float:
+def swap_r(W, e: int, k: int, d: int, sl_dist: float, spec: dict, entry: float | None = None) -> float:
     """Swap paid by a trade held from bar e to bar k, in R. Only charges (negative swaps) count — credits are ignored,
-    so the test never earns from the broker's carry (conservative)."""
+    so the test never earns from the broker's carry (conservative).
+    The broker quotes the swap in points at TODAY's price; it is financing interest, so it scales with the price: a share
+    that cost 75 USD in 2020 did not pay the swap of a 344 USD share (10 Nov 2026: old years were over-charged ~4x)."""
     if W is None or k <= e:
         return 0.0
     rate = float(spec.get("swap_long") or 0) if d > 0 else float(spec.get("swap_short") or 0)
     if rate >= 0:
         return 0.0
+    ref = float(spec.get("swap_ref_price") or 0)
+    if entry and ref > 0:
+        rate *= float(entry) / ref
     return float(-rate * (W[k] - W[e]) / sl_dist)
 
 
@@ -225,7 +230,7 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
                           "reverse_pending": bool(opp is not None and n and sig[-1] == -d and n - 1 >= e)}
             break
         k, px, reason, entry, sl, tp = res
-        sw = swap_r(W, e, k, d, sl_dist, spec)
+        sw = swap_r(W, e, k, d, sl_dist, spec, entry)
         trades.append({"signal_i": int(i), "entry_i": e, "exit_i": int(k), "entry_time": times[e], "exit_time": times[k],
                        "dir": d, "entry": entry, "sl": sl, "tp": tp, "exit": float(px), "reason": reason,
                        "r": d * (px - entry) / sl_dist - sw, "bars": int(k - e + (0 if reason == "Rev" else 1)),

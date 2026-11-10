@@ -44,6 +44,12 @@ def value_per_price_unit(sym: str, price: float, mt5_info: dict | None = None, s
     raise ValueError(f"no USD conversion for {sym}")
 
 
+def broker_min_lot(sym: str) -> float | None:
+    from .config import BROKER_COSTS, read_json
+    v = (read_json(BROKER_COSTS, {}).get("symbols", {}).get(sym) or {}).get("volume_min")
+    return float(v) if v else None
+
+
 def lots_for(sym: str, entry: float, sl: float, balance: float, risk_pct: float,
              mt5_info: dict | None = None, settings: dict | None = None, lot_step: float = 0.01, min_lot: float = 0.01) -> dict:
     dist = abs(entry - sl)
@@ -52,6 +58,8 @@ def lots_for(sym: str, entry: float, sl: float, balance: float, risk_pct: float,
     if mt5_info:
         lot_step = mt5_info.get("volume_step") or lot_step
         min_lot = mt5_info.get("volume_min") or min_lot
+    else:                              # cloud / web: the broker's minimum as the PC exported it (US500 0.14, JP225 3.0 …)
+        min_lot = broker_min_lot(sym) or min_lot
     vpu = value_per_price_unit(sym, entry, mt5_info, settings)
     risk_usd = balance * risk_pct / 100.0
     raw = risk_usd / (dist * vpu)
@@ -59,4 +67,4 @@ def lots_for(sym: str, entry: float, sl: float, balance: float, risk_pct: float,
     lots = round(lots, 6)
     return {"lots": lots if lots >= min_lot else 0.0, "raw_lots": round(raw, 4), "risk_usd": round(risk_usd, 2),
             "actual_risk_usd": round(lots * dist * vpu, 2), "value_per_point_per_lot": vpu,
-            "below_min_lot": lots < min_lot}
+            "below_min_lot": lots < min_lot, "min_lot": min_lot}

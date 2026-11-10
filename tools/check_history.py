@@ -55,7 +55,9 @@ def check(sym: str) -> dict | None:
     flat = (o == h) & (h == l) & (l == c)
     bad = (h < np.maximum(o, c) - 1e-12) | (l > np.minimum(o, c) + 1e-12) | (np.minimum.reduce([o, h, l, c]) <= 0)
     # holes: weekday gaps longer than normal (weekend = Fri 21 UTC .. Sun 21 UTC is skipped for non-crypto)
-    dt = np.diff(t.asi8) / 3.6e12            # hours
+    # hours between bars. NOT t.asi8 / 3.6e12: the index is datetime64[us] here, so that gave micro-hours and no hole
+    # was ever detected (bug found in the 10 Nov 2026 audit)
+    dt = np.asarray((t[1:] - t[:-1]) / pd.Timedelta(hours=1), float)
     allow = _expected_gap(sym) / pd.Timedelta(hours=1)
     crypto = SYMBOLS[sym].get("group") == "Crypto"
     hole_h = np.zeros(len(t))
@@ -78,7 +80,13 @@ def check(sym: str) -> dict | None:
                 "spikes": int(snap[m].sum()), "big_moves": int(big[m].sum()), "flat": int(flat[m].sum()), "bad": int(bad[m].sum())}
         longest = (dt[m[:-1]].max() if m[:-1].any() else 0)
         info["longest_gap_h"] = round(float(longest), 0)
-        info["poor"] = info["missing_pct"] > 5 or info["spikes"] > 3 or info["bad"] > 0
+        # markets keep different hours (stocks ~7 h a day, copper / Brent / DAX shorter sessions), so "missing hours" alone
+        # says little: a hole is a WEEK with far fewer bars than that year's normal week (holiday weeks keep ~80 %)
+        wk = pd.Series(1, index=t[m]).resample("W").sum()
+        wk = wk.iloc[1:-1] if len(wk) > 4 else wk
+        med = float(wk[wk > 0].median()) if (wk > 0).any() else 0.0
+        info["thin_weeks"] = int((wk < 0.6 * med).sum()) if med else 0
+        info["poor"] = info["thin_weeks"] > 4 or info["spikes"] > 3 or info["bad"] > 0
         years[int(y)] = info
     examples = [{"time": t[i].isoformat(), "close_before": round(c[i - 1], 6) if i else None, "close": round(c[i], 6),
                  "next_close": round(c[i + 1], 6) if i + 1 < len(c) else None} for i in np.nonzero(snap)[0][:8]]
@@ -91,7 +99,19 @@ def check(sym: str) -> dict | None:
             head = y
         elif y - first > 2:
             break
+    # clock test (10 Nov 2026): FX opens Sunday 17:00 New York = 21:00 UTC in summer, 22:00 UTC in winter. Years whose
+    # first bar of the week does not follow that pattern are on another clock (1 h off UTC for part of the year).
+    clock = {}
+    if SYMBOLS[sym].get("group") == "Forex":
+        first = t[np.r_[False, dt > 30]]
+        fd = pd.DataFrame({"h": first.hour, "y": first.year, "m": first.month})
+        for y, g_ in fd.groupby("y"):
+            su, wi = g_[g_.m.isin([5, 6, 7, 8, 9])].h.mode(), g_[g_.m.isin([12, 1, 2])].h.mode()
+            pat = (int(su.iloc[0]) if len(su) else None, int(wi.iloc[0]) if len(wi) else None)
+            clock[int(y)] = {"summer_open": pat[0], "winter_open": pat[1], "utc_ok": pat[0] in (21, None) and pat[1] in (22, None)}
+    bad_clock = [y for y, v in clock.items() if not v["utc_ok"]]
     return {"symbol": sym, "from": t[0].isoformat(), "to": t[-1].isoformat(), "bars": int(len(t)),
+            "clock": clock, "clock_off_years": bad_clock, "clock_ok_from": max(bad_clock) + 1 if bad_clock else None,
             "source": data.history_source(sym), "years": years, "poor_years": poor, "spike_examples": examples,
             "suggest_start": f"{head + 1}-01-01" if head else None}
 
@@ -105,7 +125,8 @@ def main(argv: list[str]) -> int:
         if not r:
             continue
         out["symbols"][s] = r
-        print(f"{s:8} {r['from'][:10]} {r['bars']:7d}  {r['poor_years'] or '-'}  {r['suggest_start'] or ''}")
+        print(f"{s:8} {r['from'][:10]} {r['bars']:7d}  {r['poor_years'] or '-'}  {r['suggest_start'] or ''}"
+              + (f"  clock 1 h off until {r['clock_ok_from'] - 1}" if r.get("clock_ok_from") else ""))
     write_json(OUT, out)
     return 0
 

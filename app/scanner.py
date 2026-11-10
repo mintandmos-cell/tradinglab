@@ -68,7 +68,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
                 or settings["default_risk_pct"] / 2)
     balance = float(settings["account_balance"])
     size = lots_for(sym, entry, sl, balance, risk_pct, info, settings)
-    min_lot_risk = round(0.01 * sl_dist * size.get("value_per_point_per_lot", 0), 2)  # what the broker's minimum lot would risk
+    min_lot = float(size.get("min_lot") or 0.01)
+    min_lot_risk = round(min_lot * sl_dist * size.get("value_per_point_per_lot", 0), 2)  # what the broker's minimum lot would risk
     bar_t = df.index[i]
     tfm = TIMEFRAMES[cfg["tf"]]
     entry_t = bar_t + pd.Timedelta(minutes=tfm)
@@ -91,7 +92,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "sl_pips": round(sl_dist / spec["pip"], 1), "tp_pips": round(sl_dist * rr / spec["pip"], 1) if tp is not None else None,
         "rr": rr, "risk_pct": risk_pct, "lots": size["lots"], "risk_usd": size["actual_risk_usd"],
         "reward_usd": round(size["actual_risk_usd"] * rr, 2) if tp is not None else None, "below_min_lot": size["below_min_lot"],
-        "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk,
+        "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk, "min_lot": min_lot,
         "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
         "max_hold_h": p["max_hold_h"], "close_by": close_by.isoformat() if close_by is not None else None,
         "reverse_of": ("SHORT" if d > 0 else "LONG") if rev else None,
@@ -344,13 +345,14 @@ def alert_text(s: dict, d: int) -> tuple[str, str]:
     tag = f"TL{no}-{s['tf']}"
 
     if s["below_min_lot"]:
-        title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — lot ต่ำกว่า 0.01"
-        lot_line = (f"⚠️ Lot ที่คำนวณได้ {s['raw_lots']} ต่ำกว่าขั้นต่ำ 0.01 · ถ้าเปิด 0.01 lot จะเสี่ยง "
+        ml = f"{float(s.get('min_lot') or 0.01):g}"
+        title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — lot ต่ำกว่า {ml}"
+        lot_line = (f"⚠️ Lot ที่คำนวณได้ {s['raw_lots']} ต่ำกว่าขั้นต่ำ {ml} · ถ้าเปิด {ml} lot จะเสี่ยง "
                     f"${s['min_lot_risk_usd']} ({s['min_lot_risk_pct']}% ของทุน) มากกว่าที่ตั้งไว้ {s['risk_pct']}%")
     else:
         title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — เปิด {s['lots']:.2f} lot"
         lot_line = f"📦 LOT {s['lots']:.2f} · เสี่ยง ${s['risk_usd']} ({s['risk_pct']}% ของทุน ${s['balance']:,.0f})"
-    reward = f"${s['reward_usd']}" if not s["below_min_lot"] else f"${round(s['min_lot_risk_usd'] * s['rr'], 2)} (ที่ 0.01 lot)"
+    reward = f"${s['reward_usd']}" if not s["below_min_lot"] else f"${round(s['min_lot_risk_usd'] * s['rr'], 2)} (ที่ {float(s.get('min_lot') or 0.01):g} lot)"
     tp_line = (f"TP {_fmt(s['tp'], d)} ({s['tp_pips']} pips) · R:R 1:{s['rr']} · กำไรเป้า {reward}" if s.get("tp") is not None
                else "TP: ไม่ตั้ง — ระบบตามเทรนด์ ปล่อยกำไรวิ่ง ออกเมื่อชน SL หรือมีสัญญาณกลับทิศ")
     close_by = (f"ปิดภายใน {datetime.fromisoformat(s['close_by']).astimezone(BKK).strftime('%d/%m %H:%M')} น." if s.get("close_by")

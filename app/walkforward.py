@@ -207,7 +207,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
                                int(wlast[i + 1]) if wlast is not None else None, opp,
                                float(f["p"].get("trail_atr") or 0) * a[i])
                 if res:
-                    rs.append(d * (res[1] - res[3]) / sl_dist - swap_r(W, i + 1, res[0], d, sl_dist, spec))
+                    rs.append(d * (res[1] - res[3]) / sl_dist - swap_r(W, i + 1, res[0], d, sl_dist, spec, res[3]))
         means[s] = np.mean(rs) if rs else 0.0
     actual = float(np.mean([t["r"] for t in trades]))
     return {"sims": sims, "actual_exp": round(actual, 4), "random_mean": round(float(means.mean()), 4),

@@ -1,0 +1,42 @@
+name: Ticker
+
+# Hourly scan keep-alive (10 Nov 2026). GitHub's cron for the main workflow fired 4 times in 32 hours on 8-9 Nov, so the
+# cloud's backup scan and the health check (which runs inside it) could be silent for half a day. This workflow waits
+# until 3 minutes past the next hour, starts the main workflow in mode "scan" and then starts itself again — a chain
+# that does not depend on the cron. The cron below only restarts the chain if it ever breaks (one run at a time:
+# a second one waits in the queue and is replaced by the chain's own next link).
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: ticker
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Wait for the next candle close (hh:03 UTC)
+        run: |
+          now=$(date -u +%s)
+          target=$(( (now / 3600 + 1) * 3600 + 180 ))
+          # started within the first 3 minutes of an hour: this hour's scan has not been asked for yet
+          if [ $(( now % 3600 )) -lt 170 ]; then target=$(( now / 3600 * 3600 + 180 )); fi
+          echo "sleep $(( target - now )) s"
+          sleep $(( target - now ))
+      - name: Start the cloud scan
+        run: gh workflow run tradinglab.yml --repo "$REPO" --ref main -f mode=scan
+      - name: Next link of the chain
+        if: always()
+        run: sleep 20; gh workflow run ticker.yml --repo "$REPO" --ref main

@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from . import data
-from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, load_settings, read_json, swap_mode, symbol_spec, write_json
+from .config import LATEST_RESEARCH, RESEARCH_DIR, SYMBOLS, clock_ok_from, load_settings, read_json, swap_mode, symbol_spec, write_json
 from .metrics import equity_points, summarize
 from .montecarlo import run_mc
 from .robustness import robustness
@@ -234,8 +234,15 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     for sid in ids:
         STATE["progress"] = f"{sym} {tf} {sid}"
         t0 = time.time()
-        wf = walk_forward(df, sid, spec, tf, cfg)
-        summary, heavy = evaluate(df, wf, spec, tf, cfg, settings)
+        dfx, clock_from = df, None
+        if STRATEGIES[sid].get("clock_sensitive"):      # hour-of-day systems: only the years with a verified UTC clock
+            clock_from = clock_ok_from(sym)
+            dfx = df[df.index >= pd.Timestamp(clock_from, tz="UTC")]
+            dfx.attrs.update(df.attrs)
+        wf = walk_forward(dfx, sid, spec, tf, cfg)
+        summary, heavy = evaluate(dfx, wf, spec, tf, cfg, settings)
+        if clock_from:
+            summary["clock_from"] = clock_from
         out["candidates"].append(summary)
         out["heavy"][sid] = heavy
         log.info("%s %s %-20s n=%4d t=%5.2f robust=%s (%.0fs)", sym, tf, sid, summary["oos"]["trades"], summary["oos"]["t_stat"],
@@ -434,7 +441,8 @@ def trial_systems(sym: str, cands: list[dict], settings: dict) -> list[dict]:
     if not tcfg.get("enabled", True):
         return []
     near = [c for c in cands if c["status"] == "WATCH" and c.get("current_params") and only_mt_failed(c["gates"])
-            and not _forced_off(settings, sym, c)]
+            and not _forced_off(settings, sym, c)
+            and not (STRATEGIES.get(c["strategy"], {}).get("clock_sensitive") and not c.get("clock_from"))]
     near.sort(key=lambda c: (c["tf"] != "H1", t_of(sel_oos(c))), reverse=True)
     return [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
              "params": c["current_params"], "status": "TRIAL", "source": "trial",
@@ -470,6 +478,9 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
         c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
         c["status"] = _status(sel_oos(c), c["gates"], bool(c["current_params"]))
         c.pop("kept", None)
+        if STRATEGIES.get(c["strategy"], {}).get("clock_sensitive") and not c.get("clock_from") and c["status"] == "ACTIVE":
+            # tested before the clock fix (old years 1 h off): not traded until the next research re-tests it
+            c["status"], c["clock_untested"] = "WATCH", True
     # carry-over (user, 27 Oct 2026; narrowed 2 Nov 2026): in the SAME quarter, on the SAME price history, a system that was
     # ACTIVE stays ACTIVE when the ONLY gate it now fails is the multiple-testing one (that bar rises whenever strategies are
     # added). Different prices (e.g. the switch to the broker's own history) or any other failed gate = judged afresh.
@@ -771,6 +782,11 @@ def picks(lat: dict | None = None) -> list[dict]:
     return keep + [x for x in out if x not in keep][:max(0, 300 - len(keep))]     # 500 systems: the best 300 WATCH
 
 
+def sizing_min_lot(sym: str) -> float:
+    from .sizing import broker_min_lot
+    return broker_min_lot(sym) or 0.01
+
+
 def _usd_per_unit(sym: str, settings: dict) -> float | None:
     """USD P/L of 1 lot per 1.0 price move (the web calculator / signal cards size non-USD-quoted symbols with it)."""
     try:
@@ -794,7 +810,8 @@ def symbol_table(settings: dict | None = None) -> list[dict]:
                     "systems": [{"strategy": x["strategy"], "tf": x["tf"], "kept": x.get("kept", False), "source": x.get("source", "single"),
                                  "risk_pct": x.get("risk_pct"), "exp": x.get("exp"), "t": x.get("t")} for x in live_systems(r)
                                 if x.get("status") == "ACTIVE"],
-                    "quarter": r.get("quarter"), "swap": swap_mode(s, k), "usd_per_unit": _usd_per_unit(k, s)})
+                    "quarter": r.get("quarter"), "swap": swap_mode(s, k), "usd_per_unit": _usd_per_unit(k, s),
+                    "min_lot": sizing_min_lot(k)})
     return out
 
 

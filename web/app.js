@@ -42,10 +42,10 @@ function valuePerUnit(sym, price) {  // USD P/L of 1.00 lot for a 1.0 price move
 function sizeLocal(sym, entry, sl, riskPct, balance, tp) {
   const dist = Math.abs(entry - sl), vpu = valuePerUnit(sym, entry), sp = specOf(sym);
   const riskUsd = balance * riskPct / 100, raw = dist > 0 ? riskUsd / (dist * vpu) : 0;
-  const lots = Math.floor(raw / 0.01 + 1e-9) * 0.01;
-  const out = { lots: lots >= 0.01 ? +lots.toFixed(2) : 0, raw_lots: +raw.toFixed(4), risk_usd: +riskUsd.toFixed(2),
-    actual_risk_usd: +(lots * dist * vpu).toFixed(2), value_per_point_per_lot: vpu, below_min_lot: lots < 0.01,
-    sl_pips: +(dist / sp.pip).toFixed(1), min_lot_risk_usd: +(0.01 * dist * vpu).toFixed(2), mt5: null };
+  const lots = Math.floor(raw / 0.01 + 1e-9) * 0.01, minLot = +sp.min_lot || 0.01;   // broker minimum (US500 0.14, JP225 3 …)
+  const out = { lots: lots >= minLot - 1e-9 ? +lots.toFixed(2) : 0, raw_lots: +raw.toFixed(4), risk_usd: +riskUsd.toFixed(2),
+    actual_risk_usd: +(lots * dist * vpu).toFixed(2), value_per_point_per_lot: vpu, below_min_lot: lots < minLot - 1e-9, min_lot: minLot,
+    sl_pips: +(dist / sp.pip).toFixed(1), min_lot_risk_usd: +(minLot * dist * vpu).toFixed(2), mt5: null };
   if (tp) Object.assign(out, { rr: dist ? +(Math.abs(tp - entry) / dist).toFixed(2) : null, tp_pips: +(Math.abs(tp - entry) / sp.pip).toFixed(1),
     reward_usd: +(out.lots * Math.abs(tp - entry) * vpu).toFixed(2) });
   return out;
@@ -55,7 +55,7 @@ const effRisk = (r) => +((STATIC && local.get().risk_pct) || S.settings?.risk_pe
 const myBalance = () => +(STATIC ? local.get().account_balance : S.settings?.account_balance) || 0;
 function lotLabel(sym, entry, sl, sysRisk, fixed = false) {  // lots for an open position on the chart, same maths as the signal cards
   const z = sizeLocal(sym, entry, sl, fixed ? sysRisk : effRisk(sysRisk), myBalance());
-  return z.below_min_lot ? "<0.01 lot" : `${z.lots.toFixed(2)} lot`;
+  return z.below_min_lot ? `<${z.min_lot} lot` : `${z.lots.toFixed(2)} lot`;
 }
 
 const LOAD_T = Date.now();  // every page load (and the 🔄 button) fetches fresh data
@@ -127,7 +127,7 @@ async function staticApi(path, opts = {}) {
       const risk = s.source === "portfolio" ? s.risk_pct : effRisk(s.risk_pct), z = sizeLocal(s.symbol, s.entry, s.sl, risk, P.account_balance, s.tp);
       return { ...s, ...(marks[s.id] || {}), mt5_symbol: P.mt5_symbol_map[s.symbol] || s.mt5_symbol, risk_pct: risk,
         lots: z.lots, raw_lots: z.raw_lots, risk_usd: z.actual_risk_usd, reward_usd: z.reward_usd, below_min_lot: z.below_min_lot,
-        balance: P.account_balance, min_lot_risk_usd: z.min_lot_risk_usd, min_lot_risk_pct: +(100 * z.min_lot_risk_usd / P.account_balance).toFixed(2) };
+        balance: P.account_balance, min_lot_risk_usd: z.min_lot_risk_usd, min_lot: z.min_lot, min_lot_risk_pct: +(100 * z.min_lot_risk_usd / P.account_balance).toFixed(2) };
     });
   }
   throw new Error("ฟังก์ชันนี้ใช้ได้เมื่อรันบนคอม (start_server.bat) เท่านั้น");
@@ -728,8 +728,8 @@ function signalCard(s, compact = false) {
     ${s.system_status === "TRIAL" ? `<div class="banner info" style="margin:0 16px 12px 18px"><span class="ic">🧪</span><div><b>ทดลองบน DEMO</b> — ระบบนี้ยังไม่ผ่านด่านหักโชค โปรแกรมเปิดให้เฉพาะบัญชี demo ที่ความเสี่ยงต่ำ เพื่อเก็บผลจริง · ไม่ต้องเปิดในบัญชีจริง</div></div>` : ""}
     ${s.trail_dist ? `<div class="banner info" style="margin:0 16px 12px 18px"><span class="ic">📐</span><div><b>SL เลื่อนตาม (trailing)</b> ห่างจากราคาดีที่สุด ${fpx(s.trail_dist, d)} · SL ตอนนี้ <b>${fpx(s.stop_now ?? s.sl, d)}</b> — ขยับเฉพาะทางที่ล็อกกำไร หลังแท่งปิด (ถ้าเทรดเอง ให้เลื่อน SL ใน MT5 ตามนี้)</div></div>` : ""}
     ${s.capped ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⛔</span><div>${esc(s.note || "ข้าม: เกินเพดานความเสี่ยงรวมของสินทรัพย์นี้")} — ไม่ได้ส่งแจ้งเตือน (ระบบยังติดตามผลไม้นี้เพื่อวัดผลของระบบ)</div></div>` : ""}
-    ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ 0.01 —
-      ถ้าเปิด 0.01 lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
+    ${s.below_min_lot ? `<div class="banner" style="margin:0 16px 12px 18px"><span class="ic">⚠️</span><div>Lot ที่คำนวณได้ ${s.raw_lots ?? "–"} ต่ำกว่าขั้นต่ำ ${s.min_lot || 0.01} —
+      ถ้าเปิด ${s.min_lot || 0.01} lot จะเสี่ยง <b>$${fnum(s.min_lot_risk_usd, 2)}${s.min_lot_risk_pct ? ` (${s.min_lot_risk_pct}%)` : ""}</b> มากกว่าที่ตั้งไว้ ${s.risk_pct}% · ข้ามไม้นี้ หรือยอมรับความเสี่ยงที่สูงขึ้นเอง</div></div>` : ""}
     <div class="adj">
       <label class="f" style="flex:1">ราคาจริงใน MT5 ตอนเข้า<input class="inp num" type="number" step="any" placeholder="${fpx(s.entry, d)}"></label>
       <button class="btn sm primary" data-a="recalc">คำนวณใหม่</button>
@@ -2264,7 +2264,7 @@ async function renderCalc(view) {
       ${tp ? `<div class="ladder"><div class="bar"><i class="sl" style="width:${pos(e)}%"></i><i class="tp" style="left:${pos(e)}%;width:${100 - pos(e)}%"></i></div>
         <div class="lbls"><span class="neg">SL ${fpx(sl, sp.digits)}</span><span>Entry ${fpx(e, sp.digits)}</span><span class="pos">TP ${fpx(tp, sp.digits)}</span></div></div>` : ""}
       <div class="kpis">${kpi("Stop Loss", fnum(r.sl_pips, 1) + " pips", "-$" + fnum(r.actual_risk_usd, 2), "neg")}${kpi("Take Profit", r.tp_pips ? fnum(r.tp_pips, 1) + " pips" : "–", r.reward_usd ? "+$" + fnum(r.reward_usd, 2) : "", "pos")}${kpi("R:R", r.rr ? "1 : " + fnum(r.rr, 2) : "–")}${kpi("$ ต่อจุดต่อ 1 lot", fnum(r.value_per_point_per_lot, 2), r.mt5 ? "จาก MT5" : "ค่ามาตรฐาน")}</div>
-      ${r.below_min_lot ? `<div class="banner" style="margin-top:12px"><span class="ic">⚠️</span><div>ต่ำกว่า 0.01 lot — ถ้าเปิด 0.01 lot จะเสี่ยง $${fnum(r.min_lot_risk_usd, 2)} · เพิ่มทุน/ความเสี่ยง หรือขยับ SL ให้ใกล้ขึ้น</div></div>` : ""}
+      ${r.below_min_lot ? `<div class="banner" style="margin-top:12px"><span class="ic">⚠️</span><div>ต่ำกว่า ${r.min_lot || 0.01} lot — ถ้าเปิด ${r.min_lot || 0.01} lot จะเสี่ยง $${fnum(r.min_lot_risk_usd, 2)} · เพิ่มทุน/ความเสี่ยง หรือขยับ SL ให้ใกล้ขึ้น</div></div>` : ""}
       <div class="hint" style="margin-top:12px">สูตร: Lot = (ทุน × ความเสี่ยง%) ÷ (ระยะ SL × มูลค่าต่อ 1 หน่วยราคาต่อ 1 lot) แล้วปัดลงทีละ 0.01${s.endsWith("JPY") ? " · คู่ JPY แปลงเป็น USD ด้วยการหารราคา USDJPY" : ""}</div>`;
   }, 250);
   $$("#view input, #view select").forEach((i) => i.addEventListener("input", calc));

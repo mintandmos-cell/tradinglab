@@ -44,22 +44,28 @@ def _zscore(close: pd.Series, n: int) -> pd.Series:
     return r / sd
 
 
-def _peer_z(tf: str, n: int) -> pd.DataFrame:
-    """z-scores of every universe market on its own bars (cached per process)."""
+def _peer_z(tf: str, n: int, newest=None) -> dict:
+    """z-scores of every universe market on its own bars. Cached per process, and rebuilt as soon as the caller's own
+    bars are newer than the cached peers (10 Nov 2026: the PC robot runs for days — a cache filled once would rank
+    today's market against last week's peers)."""
     key = (tf, n)
-    if key not in _CACHE:
+    hit = _CACHE.get(key)
+    if hit is None or (newest is not None and newest > hit[0]):
         from . import data
         from .config import SYMBOLS
-        cols = {}
+        cols, last = {}, pd.Timestamp(0, tz="UTC")
         for sym in SYMBOLS:
             try:
                 bars = data.get_bars(sym, tf)
                 if len(bars) > n + 50:
                     cols[sym] = _zscore(bars["close"], n)
+                    last = max(last, bars.index[-1])
             except Exception as e:  # a market without data simply does not take part
                 log.debug("peer %s %s: %s", sym, tf, e)
-        _CACHE[key] = cols
-    return _CACHE[key]
+        if newest is not None and newest > last:
+            last = newest             # nothing newer to load: do not rebuild again for this bar
+        hit = _CACHE[key] = (last, cols)
+    return hit[1]
 
 
 def _rank(df: pd.DataFrame, n: int, group: bool) -> tuple[np.ndarray, np.ndarray]:
@@ -68,7 +74,7 @@ def _rank(df: pd.DataFrame, n: int, group: bool) -> tuple[np.ndarray, np.ndarray
     tf = _tf_of(df)
     own_sym = df.attrs.get("symbol")
     own = _zscore(df["close"], n)
-    peers = _peer_z(tf, n)
+    peers = _peer_z(tf, n, df.index[-1] if len(df) else None)
     if group and own_sym in SYMBOLS:
         g = SYMBOLS[own_sym].get("group")
         grp = {"Stocks": ("Stocks", "Indices"), "Indices": ("Stocks", "Indices"), "Metals": ("Metals", "Energy"),

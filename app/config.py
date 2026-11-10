@@ -257,6 +257,8 @@ def broker_costs(sym: str) -> dict:
         out["spread"] = float(sp) * pt
     mode = int(x.get("swap_mode") or 1)
     price = float(x.get("price") or 0)
+    if price > 0:
+        out["swap_ref_price"] = price        # the price the quoted swap points belong to (engine.swap_r scales with price)
     tv, ts = float(x.get("tick_value") or 0), float(x.get("tick_size") or 0)
     money_per_price = tv / ts if tv and ts else 0.0                 # account money of a 1.0 price move for 1 lot
     for side in ("long", "short"):
@@ -292,6 +294,15 @@ def symbol_spec(sym: str, settings: dict | None = None) -> dict:
         spec["slippage"] = slip
         spec["slippage_source"] = "fills"
     return spec
+
+
+CLOCK_OK = {"default": "2020-01-01", "GBPJPY": "2021-01-01"}     # first date the Exness H1 history is verified UTC
+
+
+def clock_ok_from(sym: str) -> str:
+    """tools/check_history clock test (week-open hour + US payroll hour by season): before this date the symbol's history
+    is 1 h off UTC in part of the year."""
+    return CLOCK_OK.get(sym, CLOCK_OK["default"])
 
 
 SWAP_FLAG = DATA_DIR / "exness" / "swap_charged.json"   # written by the PC robot the first day MT5 books a swap

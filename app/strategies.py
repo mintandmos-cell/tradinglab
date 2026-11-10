@@ -1117,6 +1117,13 @@ STRATEGIES.update(MR_STRATEGIES)
 from .strategies_xs import XS_STRATEGIES  # noqa: E402
 STRATEGIES.update(XS_STRATEGIES)
 
+# Hour-of-day systems (10 Nov 2026 audit): Exness' H1 history before ~2020 is not on one clock — in part of each year
+# its bars sit 1 h off UTC (New-York-anchored server time; GBPJPY until 2020). Systems that read the hour are tested only
+# on the years whose clock is verified (config.clock_ok_from); every other system is indifferent to a 1 h shift.
+for _k in ("session_breakout", "ny_open_breakout"):
+    if _k in STRATEGIES:
+        STRATEGIES[_k]["clock_sensitive"] = True
+
 # Stable system numbers: shown to the user and written into MT5 comments (TL{no}-{TF}) — never renumber.
 for _i, _k in enumerate(list(STRATEGIES)):
     STRATEGIES[_k]["no"] = _i + 1
