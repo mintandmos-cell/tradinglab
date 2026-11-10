@@ -136,6 +136,17 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   with caps + the -25/-30 % guard after every research merge -> data/research/book.json (พอร์ต MT5 page `bookHtml`).
   `app/health.py` runs after every cloud scan -> data/research/health.json (+ push for new problems, 12 h re-push;
   พอร์ต MT5 banner `healthHtml`).
+- AUDIT 10 Nov 2026 (user: check everything): (1) `data.jumpy_until` / `gap_ratio_by_year` — Exness FX history before 2009
+  (XPTUSD before 2020) opens bars away from the previous close (gap ratio 5-20 % of the bar range vs 1-3 % normal) and paid
+  mean-reversion systems a fake edge (NZDUSD: 9 "ACTIVE" MR systems, +0.5 R/trade 2002-2007, ~0 after); `_seed_exness` now
+  starts after the last jumpy year (max(4 %, 1.8 x median of the newest 5 years)); NZDUSD is in `force_off` until the re-run
+  is reviewed — remove it then. (2) swap scales with price (`swap_ref_price`, `engine.swap_r(entry=)`). (3) hour-of-day
+  systems (`clock_sensitive`: session_breakout, ny_open_breakout) are tested only from `config.clock_ok_from` (history is 1 h
+  off UTC in part of each year before 2020). (4) `tools/check_history` hole detector had a unit bug (never fired) — fixed.
+  (5) xs peer cache refreshes with new bars. (6) cloud/web sizing uses the broker's minimum lot (costs.json volume_min ->
+  symbols.json `min_lot`). (7) `.github/workflows/ticker.yml`: self-chaining hourly dispatch of the scan at hh:03 UTC (GitHub
+  cron fired 4 times in 32 h); a dispatched scan shares the `tradinglab` concurrency group. (8) research merge streams per
+  symbol and refuses incomplete / cancelled parts. Pages deploy sometimes fails when two runs deploy at once (harmless).
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after
