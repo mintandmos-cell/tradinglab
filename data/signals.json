@@ -149,15 +149,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.009,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.144,
+  "exit_time": "2026-11-09T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": null,
-  "stop_now": 77163.76
+  "stop_now": 77163.76,
+  "exit_reason": "Rev",
+  "exit_price": 74276.99
  },
  {
   "id": "XAUUSD-H4-rsi_momentum-1794182400",
@@ -210,7 +212,7 @@
   "origin": "pc",
   "cluster": "metals",
   "trail_dist": 114.28,
-  "stop_now": 4020.44
+  "stop_now": 4034.41
  },
  {
   "id": "USDJPY-H4-ppo_flip-1793980800",
@@ -361,15 +363,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.016,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.5,
+  "exit_time": "2026-11-09T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": null,
-  "stop_now": 25378.0
+  "stop_now": 25378.0,
+  "exit_reason": "TP",
+  "exit_price": 26215.25
  },
  {
   "id": "GBPJPY-H4-er_kama-1793908800",
