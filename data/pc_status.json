@@ -8,10 +8,10 @@
   "checked": 39,
   "errors": []
  },
- "time": "2026-11-10T04:00:32.597493+00:00",
+ "time": "2026-11-10T04:01:54.920265+00:00",
  "account": "DEMO",
- "balance": 9910.91,
- "equity": 10231.67,
+ "balance": 9908.26,
+ "equity": 10232.76,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -24,8 +24,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 84.977,
-   "profit": 233.62,
+   "price": 85.035,
+   "profit": 232.46,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -38,8 +38,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.34437,
-   "profit": -3.79,
+   "price": 1.34434,
+   "profit": -3.76,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -52,8 +52,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 157.97,
-   "profit": 4.41,
+   "price": 157.974,
+   "profit": 4.38,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -66,23 +66,9 @@
    "price_open": 51.226,
    "sl": 49.736,
    "tp": null,
-   "price": 52.977,
-   "profit": 87.55,
+   "price": 53.017,
+   "profit": 89.55,
    "time": "2026-11-04T06:00:59+00:00"
-  },
-  {
-   "ticket": 2808831149,
-   "symbol": "GBPJPY",
-   "system": "TL114-H4",
-   "signal_id": "GBPJPY-H4-er_kama-1793908800",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 211.938,
-   "sl": 212.979,
-   "tp": 209.209,
-   "price": 212.368,
-   "profit": -2.72,
-   "time": "2026-11-06T00:02:36+00:00"
   },
   {
    "ticket": 2815255153,
@@ -94,8 +80,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 157.963,
-   "profit": -3.36,
+   "price": 157.967,
+   "profit": -3.33,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -108,8 +94,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 157.963,
-   "profit": -3.36,
+   "price": 157.967,
+   "profit": -3.33,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -122,8 +108,8 @@
    "price_open": 27652.73,
    "sl": 27279.17,
    "tp": 28715.19,
-   "price": 27821.71,
-   "profit": 8.45,
+   "price": 27825.71,
+   "profit": 8.65,
    "time": "2026-11-09T15:01:43+00:00"
   },
   {
@@ -139,9 +125,50 @@
    "price": 0.83474,
    "profit": -0.04,
    "time": "2026-11-10T02:14:20+00:00"
+  },
+  {
+   "ticket": 2826373274,
+   "symbol": "GBPJPY",
+   "system": "TL114-H4",
+   "signal_id": "GBPJPY-H4-er_kama-1794268800",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 212.357,
+   "sl": 211.392,
+   "tp": 214.784,
+   "price": 212.352,
+   "profit": -0.03,
+   "time": "2026-11-10T04:01:30+00:00"
+  },
+  {
+   "ticket": 2826373308,
+   "symbol": "USOIL",
+   "system": "TL178-H4",
+   "signal_id": "USOIL-H4-mr_stoch_gold-1794268800",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 85.03,
+   "sl": 82.184,
+   "tp": 87.63,
+   "price": 85.025,
+   "profit": -0.05,
+   "time": "2026-11-10T04:01:31+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2808831149,
+   "signal_id": "GBPJPY-H4-er_kama-1793908800",
+   "time": "2026-11-10T04:01:53.826547+00:00",
+   "symbol": "GBPJPY",
+   "system": "TL114-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 211.938,
+   "price": 212.357,
+   "reason": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1b\u0e34\u0e14",
+   "profit": -2.65
+  },
   {
    "ticket": 2812529934,
    "signal_id": "DE30-H4-mr_kelt_year-1793952000",
@@ -299,22 +326,37 @@
    "price": 2283.34,
    "reason": "SL",
    "profit": -13.72
-  },
-  {
-   "ticket": 2799401725,
-   "signal_id": "NAS100-H1-bb_trend-1793800800",
-   "time": "2026-11-05T01:08:25.007853+00:00",
-   "symbol": "USTEC",
-   "system": "TL75-H1",
-   "side": "BUY",
-   "lots": 0.05,
-   "price_open": 28760.34,
-   "price": 28298.3,
-   "reason": "SL",
-   "profit": -23.1
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-10T04:01:31.191129+00:00",
+   "signal": "USOIL-H4-mr_stoch_gold-1794268800",
+   "symbol": "USOIL",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 85.03,
+   "fill": 85.03,
+   "signal_entry": 84.907,
+   "slip_pts": 0.0,
+   "drift_r": 0.045,
+   "delay_s": 91
+  },
+  {
+   "time": "2026-11-10T04:01:30.034915+00:00",
+   "signal": "GBPJPY-H4-er_kama-1794268800",
+   "symbol": "GBPJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 212.357,
+   "fill": 212.357,
+   "signal_entry": 212.361,
+   "slip_pts": 0.0,
+   "drift_r": -0.004,
+   "delay_s": 90
+  },
   {
    "time": "2026-11-10T02:14:20.722516+00:00",
    "signal": "EURGBP-D1-mr_fib_calm-1794096000",
@@ -654,7 +696,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-10T03:01:20.772981+00:00",
+  "time": "2026-11-10T04:01:28.691214+00:00",
   "symbols": 29,
   "ok": true
  }
