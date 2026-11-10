@@ -50,7 +50,7 @@ def _groups(rows: list[dict]) -> dict:
     return out
 
 
-def judge_parts(parts: list[dict]) -> dict:
+def judge_parts(parts) -> dict:
     """research.merge into a temporary research folder; returns {key: row} of the comparison run."""
     tmp = Path(tempfile.mkdtemp(prefix="tl_cmp_"))
     (tmp / "history").mkdir()
@@ -63,7 +63,12 @@ def judge_parts(parts: list[dict]) -> dict:
         research.OOS_DIR = tmp / "oos"
         research.CANDS_DIR = tmp / "cands"
         research.LEDGER_FILE = tmp / "trial_ledger.json"
-        out = research.merge(parts)
+        from . import promotion
+        keep_reg, promotion.REGISTRY = promotion.REGISTRY, tmp / "trial_registry.json"     # a comparison never registers trials
+        try:
+            out = research.merge(parts)
+        finally:
+            promotion.REGISTRY = keep_reg
         rows = {}
         for sym in out.get("symbols", {}):
             for c in _cands(tmp / "cands", sym):
@@ -80,7 +85,7 @@ def judge_parts(parts: list[dict]) -> dict:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def compare(parts: list[dict]) -> dict:
+def compare(parts) -> dict:
     cmp = judge_parts(parts)
     live = research.latest()
     live_rows = {}

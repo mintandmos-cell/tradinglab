@@ -41,8 +41,44 @@ def _sync_remote() -> None:
         log.warning("sync with origin/main skipped: %s", e)
 
 
+def _part_files() -> tuple[dict, str]:
+    """Research part files grouped by symbol + a completeness check (every symbol, every strategy x TF exactly once)."""
+    from .config import SYMBOLS
+    by_sym: dict[str, list] = {}
+    for f in sorted(research.PARTS_DIR.glob("*.json.gz")):
+        by_sym.setdefault(f.name.split("_")[0], []).append(f)
+    if not by_sym:
+        return {}, "no research parts found"
+    missing = [s for s in SYMBOLS if s not in by_sym]
+    if missing:
+        return by_sym, f"parts missing for {len(missing)} symbol(s): {', '.join(missing[:8])}"
+    need = research.expected_candidates()
+    for sym, fs in by_sym.items():
+        if sym not in SYMBOLS:
+            continue
+        seen = set()
+        for f in fs:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                p = json.load(fh)
+            seen |= {(c["strategy"], p["tf"]) for c in p["candidates"]}
+        if len(seen) != need:
+            return by_sym, f"{sym}: {len(seen)} of {need} candidates (a research job is missing or failed)"
+    return by_sym, ""
+
+
+def _stream_parts(by_sym: dict):
+    """(symbol, [its parts]) one symbol at a time — the whole research does not fit in memory at once."""
+    for sym, fs in by_sym.items():
+        parts = []
+        for f in fs:
+            with gzip.open(f, "rt", encoding="utf-8") as fh:
+                parts.append(json.load(fh))
+        yield sym, parts
+
+
 def main(mode: str, *args: str) -> int:
     repo = os.environ.get("GITHUB_REPOSITORY", "")
+    research_error = ""
     if mode == "prefetch":   # research run, step 1: fresh prices for every symbol into data/cache (shared with the part jobs)
         from . import data
         from .config import SYMBOLS
@@ -66,23 +102,24 @@ def main(mode: str, *args: str) -> int:
         return 0
     if mode == "compare":    # comparison run (variant swap): judge the parts aside, live results untouched, no scan
         from . import compare
-        parts = []
-        for f in sorted(research.PARTS_DIR.glob("*.json.gz")):
-            with gzip.open(f, "rt", encoding="utf-8") as fh:
-                parts.append(json.load(fh))
-        log.info("comparison: %d research parts", len(parts))
-        if parts:
-            compare.compare(parts)
+        files, problem = _part_files()
+        log.info("comparison: %d research part files", len(files))
+        if problem:
+            log.error("comparison skipped: %s", problem)
+            return 1
+        compare.compare(_stream_parts(files))
         return 0
     full = None              # system payloads: full rebuild after a research merge, else export decides (once a day)
     if mode == "merge":      # research run, step 3: judge all candidates, write latest.json, then scan + build below
-        parts = []
-        for f in sorted(research.PARTS_DIR.glob("*.json.gz")):
-            with gzip.open(f, "rt", encoding="utf-8") as fh:
-                parts.append(json.load(fh))
-        log.info("merging %d research parts", len(parts))
-        if parts:
-            research.merge(parts)
+        files, problem = _part_files()
+        log.info("merging %d research part files", len(files))
+        if problem:
+            # 10 Nov 2026: a CANCELLED research run still merged the parts that had finished and overwrote the results with
+            # a partial mix. Incomplete parts are never merged: the last complete research stays in force.
+            log.error("research NOT merged: %s", problem)
+            research_error = problem
+        elif files:
+            research.merge(_stream_parts(files))
             full = True
             try:                 # every system that would trade, together, on its OOS trades (app/book.py)
                 from . import book
@@ -101,7 +138,7 @@ def main(mode: str, *args: str) -> int:
     if mode in ("scan", "research"):
         _sync_remote()
         new = scanner.scan_once()
-        write_json(export.CLOUD_STATE, {"last_scan": datetime.now(timezone.utc).isoformat(),
+        write_json(export.CLOUD_STATE, {"last_scan": datetime.now(timezone.utc).isoformat(), "research_error": research_error,
                                         "last_error": scanner.STATE.get("last_error"), "new_signals": len(new),
                                         "checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]})
         log.info("scan: %d new signal(s)", len(new))

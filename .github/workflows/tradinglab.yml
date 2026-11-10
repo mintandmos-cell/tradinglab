@@ -153,7 +153,8 @@ jobs:
   # ---------------------------------------------------------------- merge (research) · scan · build site · commit · deploy
   run:
     needs: [plan, part]
-    if: ${{ always() && needs.plan.result == 'success' }}
+    # a cancelled or failed research matrix never reaches the merge (10 Nov 2026: a cancelled run merged partial parts)
+    if: ${{ always() && needs.plan.result == 'success' && needs.part.result != 'cancelled' && needs.part.result != 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 150
     environment:

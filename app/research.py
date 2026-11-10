@@ -286,6 +286,13 @@ PORT_MIN_MONTHS = 36
 PORT_MIN_BREADTH = 0.6        # share of symbols (with >= 10 OOS trades) whose own OOS expectancy is positive
 
 
+def _cand_index(part: dict) -> dict:
+    ix = part.get("_ix")
+    if ix is None:
+        ix = part["_ix"] = {c["strategy"]: c for c in part.get("candidates", [])}
+    return ix
+
+
 def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict | None = None) -> dict:
     """Fund-style test (user's request, 27 Oct 2026): one strategy x TF traded on ALL symbols at the same risk per trade,
     judged on the pooled walk-forward OOS of the whole basket. Monthly portfolio R (sum over symbols) -> t-stat, so
@@ -307,7 +314,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
             pooled_m = []            # month of each pooled trade (sealed holdout split)
             for sym, parts in by_sym.items():
                 part = next((p for p in parts if p["tf"] == tf), None)
-                c = next((x for x in (part or {}).get("candidates", []) if x["strategy"] == sid), None)
+                c = _cand_index(part).get(sid) if part else None
                 if not c:
                     continue
                 eq = part["heavy"].get(sid, {}).get("oos_eq", [])
@@ -315,7 +322,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
                 if folds:
                     f0 = pd.Timestamp(folds[0]["oos_start"])
                     first = f0 if first is None else min(first, f0)
-                if eq:      # vectorised: 500 systems x 20 symbols x 3 TF (a per-trade Timestamp loop took ~40 min)
+                if len(eq):      # vectorised: 500 systems x 20 symbols x 3 TF (a per-trade Timestamp loop took ~40 min)
                     arr = np.asarray(eq, float)
                     ms = pd.to_datetime(arr[:, 0].astype("int64"), unit="s", utc=True).strftime("%Y-%m")
                     for m, r in pd.Series(arr[:, 1]).groupby(np.asarray(ms)).sum().items():
@@ -556,12 +563,8 @@ def attach_portfolio(out: dict, settings: dict) -> None:
                 r["risk_pct"] = risk
 
 
-def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
-    """Write latest.json (+ history snapshot) from research parts; heavy OOS data goes to data/research/oos/*.json.gz."""
-    settings = load_settings()
-    prev = read_json(LATEST_RESEARCH, {"symbols": {}})
-    out = {"generated": None, "settings": settings["research"], "symbols": dict(prev.get("symbols", {}))}
-    # parts split by strategy chunks: one part per symbol x TF again (candidates + heavy data joined)
+def _join_chunks(parts: list[dict]) -> list[dict]:
+    """Parts split by strategy chunks -> one part per symbol x TF again (candidates + heavy data joined)."""
     joined: dict[tuple, dict] = {}
     for p in parts:
         key = (p["symbol"], p["tf"])
@@ -570,17 +573,51 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
         else:
             joined[key]["candidates"] += p["candidates"]
             joined[key]["heavy"].update(p["heavy"])
-    parts = list(joined.values())
-    by_sym: dict[str, list[dict]] = {}
-    for p in parts:
-        by_sym.setdefault(p["symbol"], []).append(p)
-        save_heavy(p)
-    record_tests(by_sym)                 # the permanent test ledger first: deleted systems keep counting
-    for sym in symbols or list(SYMBOLS):
-        if sym not in by_sym:
+    return list(joined.values())
+
+
+def _compact(part: dict) -> dict:
+    """What the portfolio test needs from a part, small: slim candidates by strategy + OOS trades as arrays.
+    (10 Nov 2026: 30 symbols x 503 systems x 3 TF as Python lists ran the 16 GB cloud runner out of memory.)"""
+    heavy = {}
+    for sid, h in part["heavy"].items():
+        eq = h.get("oos_eq") or []
+        folds = h.get("folds") or []
+        heavy[sid] = {"oos_eq": np.asarray(eq, dtype=np.float64).reshape(-1, 2) if len(eq) else np.empty((0, 2)),
+                      "folds": [{"oos_start": folds[0]["oos_start"]}] if folds else []}
+    return {k: part.get(k) for k in ("symbol", "tf", "cutoff", "history_source")} | {
+        "candidates": [slim(c) | {"current_params": c.get("current_params")} for c in part["candidates"]], "heavy": heavy}
+
+
+def expected_candidates(settings: dict | None = None) -> int:
+    settings = settings or load_settings()
+    return len(STRATEGIES) * len(settings["research"].get("timeframes", ["H1", "H4", "D1"]))
+
+
+def merge(parts, symbols: list[str] | None = None) -> dict:
+    """Write latest.json (+ history snapshot) from research parts; heavy OOS data goes to data/research/oos/*.json.gz.
+    `parts` = a list of part dicts, or an iterator of (symbol, [parts of that symbol]) — the cloud streams one symbol at a
+    time so memory stays flat."""
+    settings = load_settings()
+    prev = read_json(LATEST_RESEARCH, {"symbols": {}})
+    out = {"generated": None, "settings": settings["research"], "symbols": dict(prev.get("symbols", {}))}
+    if isinstance(parts, list):
+        groups: dict[str, list[dict]] = {}
+        for p in parts:
+            groups.setdefault(p["symbol"], []).append(p)
+        stream = iter(groups.items())
+    else:
+        stream = parts
+    by_sym: dict[str, list[dict]] = {}          # compact copies for the portfolio test
+    for sym, sym_parts in stream:
+        if (symbols and sym not in symbols) or sym not in SYMBOLS:
             continue
+        sym_parts = _join_chunks(sym_parts)
+        for p in sym_parts:
+            save_heavy(p)
+        record_tests({sym: sym_parts})       # the permanent test ledger first: deleted systems keep counting
         try:
-            res = merge_symbol(sym, by_sym[sym], settings, prev.get("symbols", {}).get(sym))
+            res = merge_symbol(sym, sym_parts, settings, prev.get("symbols", {}).get(sym))
         except Exception as e:
             log.exception("merge %s failed", sym)
             res = {"symbol": sym, "status": "OFF", "reason": f"error: {e}", "candidates": []}
@@ -588,7 +625,15 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
         if old:
             res["previous"] = {k: old.get(k) for k in ("status", "strategy", "tf", "params", "risk_pct", "quarter")} | {
                 "generated": prev.get("generated"), "systems": [(x["strategy"], x["tf"]) for x in old.get("systems", [])]}
+        by_sym[sym] = [_compact(p) for p in sym_parts]
+        if res.get("candidates"):            # full records to cands/{SYM}.json.gz, a slim copy stays in latest.json
+            save_candidates(sym, res["candidates"])
+            res["candidates"] = [slim(c) for c in res["candidates"]]
         out["symbols"][sym] = res
+        log.info("merged %s: %s, %d candidates", sym, res.get("status"), len(res.get("candidates", [])))
+        del sym_parts
+    # symbols no longer in the universe never stay in latest.json
+    out["symbols"] = {k: v for k, v in out["symbols"].items() if k in SYMBOLS}
     # fund-style basket test; its ACTIVE systems trade on every symbol (marked source = "portfolio")
     if len(by_sym) >= 4:
         try:
@@ -603,10 +648,6 @@ def merge(parts: list[dict], symbols: list[str] | None = None) -> dict:
         promotion.register(out["symbols"])
     except Exception:
         log.exception("trial registry failed")
-    for sym, r in out["symbols"].items():           # full records to cands/{SYM}.json.gz, a slim copy stays in latest.json
-        if r.get("candidates"):
-            save_candidates(sym, r["candidates"])
-            r["candidates"] = [slim(c) for c in r["candidates"]]
     out["generated"] = datetime.now(timezone.utc).isoformat()
     write_json(LATEST_RESEARCH, out)
     write_json(RESEARCH_DIR / "history" / f"{datetime.now(timezone.utc):%Y%m%d_%H%M}.json",
