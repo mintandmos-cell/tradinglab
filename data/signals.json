@@ -43,15 +43,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.065,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.502,
+  "exit_time": "2026-11-10T13:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": null,
-  "stop_now": 1.40884
+  "stop_now": 1.40884,
+  "exit_reason": "TP",
+  "exit_price": 1.41457
  },
  {
   "id": "USOIL-H4-mr_stoch_gold-1794268800",
