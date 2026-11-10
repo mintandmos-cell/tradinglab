@@ -531,15 +531,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.002,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.853,
+  "exit_time": "2026-11-10T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "metals",
   "trail_dist": 114.28,
-  "stop_now": 4034.41
+  "stop_now": 4034.41,
+  "exit_reason": "Trail",
+  "exit_price": 4034.41
  },
  {
   "id": "USDJPY-H4-ppo_flip-1793980800",
