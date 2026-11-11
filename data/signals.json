@@ -262,15 +262,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.014,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.0,
+  "exit_time": "2026-11-11T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": null,
-  "stop_now": 82.184
+  "stop_now": 82.184,
+  "exit_reason": "TP",
+  "exit_price": 87.63
  },
  {
   "id": "GBPJPY-H4-er_kama-1794268800",
