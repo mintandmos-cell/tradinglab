@@ -586,7 +586,8 @@ const isLiveSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === 
 // positions the systems hold right now = alerted signals still being tracked (outcome "open", not skipped by the risk cap)
 const heldOf = (sym, sid, tf) => (S.sigs || []).filter((x) => x.outcome === "open" && !x.capped && (!sym || x.symbol === sym)
   && (!sid || x.strategy === sid) && (!tf || x.tf === tf));
-const heldBadge = (list, short = false) => list.length ? list.map((x) => `<span class="held ${x.dir > 0 ? "long" : "short"}" data-tip="ถืออยู่: ${x.side} @ ${x.entry} · ${x.user_status === "taken" ? "คุณกดเปิดแล้ว" : "ยังไม่ได้กดยืนยันว่าเปิด"}">${x.dir > 0 ? "▲" : "▼"}${short ? " ถือ" : " ถือ " + x.side}</span>`).join("") : "";
+const heldBadge = (list, short = false) => list.length ? list.map((x) => { const miss = typeof robotMissing === "function" && robotMissing(x);
+  return `<span class="held ${x.dir > 0 ? "long" : "short"}${miss ? " ghost" : ""}" data-tip="${miss ? "ระบบถือในการติดตามผล (forward test) แต่ MT5 ไม่ได้เปิด: " + esc(skipTh(miss)) : "ระบบถืออยู่: " + x.side + " @ " + x.entry}">${x.dir > 0 ? "▲" : "▼"}${short ? " ถือ" : " ถือ " + x.side}${miss ? " (ไม่ได้เปิดใน MT5)" : ""}</span>`; }).join("") : "";
 async function loadHeld() { try { S.sigs = await api("/api/signals"); } catch { S.sigs = S.sigs || []; } }
 const isPortfolioSys = (sym, sid, tf) => liveSystems(sym).some((x) => x.strategy === sid && x.tf === tf && x.source === "portfolio");
 const stratLabel = (id) => { const s = stratById(id); return s ? `#${s.no} ${s.name}` : id; };
@@ -696,7 +697,21 @@ function robotOf(s) {
   const c = (pc.closed || []).find((x) => x.signal_id === s.id);
   return c ? { open: false, ...c } : null;
 }
+// the PC is online but MT5 does not hold this open signal: say why (robot skip list, 11 Nov 2026) — the signal is still
+// followed as a forward test, so the website keeps it "open", but it is NOT an MT5 position
+function robotMissing(s) {
+  const pc = S.pc; if (!pc || !pc.time || !s || s.outcome !== "open" || s.capped) return null;
+  if ((pc.positions || []).some((x) => x.signal_id === s.id)) return null;
+  const sk = (pc.skipped || []).find((x) => x.signal_id === s.id);
+  if (sk) return sk.reason || "โปรแกรมเลือกไม่เปิด";
+  return (Date.now() - new Date(s.created)) / 36e5 > 2 && (Date.now() - new Date(pc.time)) / 36e5 < 2 ? "ไม่มีออเดอร์ใน MT5 (ดูเหตุผลใน log ของคอม)" : null;
+}
+const skipTh = (r) => String(r).replace(/^lot ([\d.]+) < min ([\d.]+) \(([\d.]+) lot would risk ([\d.]+)%\)/, "lot ที่คำนวณได้ $1 ต่ำกว่าขั้นต่ำ $2 — ถ้าเปิด $3 lot จะเสี่ยง $4% เกินงบของระบบทดลอง")
+  .replace(/price moved ([+-][\d.]+) R.*/, "ราคาวิ่งไปแล้ว $1 R ก่อนโปรแกรมจะเข้า").replace("already holding this direction", "ถือทิศเดียวกันอยู่แล้ว")
+  .replace(/symbol risk cap .*/, "ความเสี่ยงรวมของสินทรัพย์นี้ถึงเพดานแล้ว").replace("capped like the alert (per-symbol risk cap)", "ข้ามตามแจ้งเตือน (เกินเพดานความเสี่ยง)");
 function robotLine(s) {
+  const miss = robotMissing(s);
+  if (miss) return `<div class="banner warn" style="margin:0 16px 12px 18px"><span class="ic">🤖</span><div><b>MT5 ไม่ได้เปิดไม้นี้</b> — ${esc(skipTh(miss))} · ระบบยังติดตามผลไม้นี้เป็น forward test ต่อไป</div></div>`;
   const r = robotOf(s); if (!r) return "";
   const dg = specOf(s.symbol).digits;
   return r.open

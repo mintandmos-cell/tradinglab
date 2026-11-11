@@ -515,3 +515,4 @@ a.banner.link { color: inherit; text-decoration: none; } a.banner.link:hover { f
 tr.click { cursor: pointer; }
 @media (max-width: 760px) { .rg-l { font-size: 7.5px; padding-top: 4px; } .gcards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .cat-f { padding: 4px 16px 0; }
+.held.ghost { background: transparent; opacity: .75; box-shadow: inset 0 0 0 1px currentColor; border-style: dashed; }

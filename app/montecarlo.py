@@ -45,6 +45,9 @@ def run_mc(r, risk_pct: float = 1.0, n_trades: int | None = None, sims: int = 50
         conf.append({"confidence": q, "return_pct": round(float(np.percentile(final, lo)), 2),
                      "max_dd_pct": round(float(np.percentile(dd, q)), 2), "pf": round(float(np.percentile(pf, lo)), 3),
                      "expectancy": round(float(np.percentile(exp, lo)), 4)})
+    # 11 Nov 2026: every path with (almost) the same drawdown made numpy refuse 30 bins -> give the histogram a range
+    lo_dd, hi_dd = float(np.min(dd)), float(np.max(dd))
+    hist, edges = np.histogram(dd, bins=30, range=(lo_dd, hi_dd) if hi_dd - lo_dd > 1e-6 * max(1.0, abs(hi_dd)) else (lo_dd, lo_dd + 1.0))
     dd1 = dd / risk_pct if risk_pct > 0 else dd  # drawdown scales ~linearly with risk for small risk
     dd95_per_1pct = float(np.percentile(dd1, 95))
     return {
@@ -59,6 +62,6 @@ def run_mc(r, risk_pct: float = 1.0, n_trades: int | None = None, sims: int = 50
         "dd_limit_pct": dd_limit_pct, "ruin_pct": ruin_pct,
         "confidence": conf,
         "fan_step": step, "fan": fan,
-        "dd_hist": np.histogram(dd, bins=30)[0].tolist(), "dd_edges": [round(float(x), 2) for x in np.histogram(dd, bins=30)[1]],
+        "dd_hist": hist.tolist(), "dd_edges": [round(float(x), 2) for x in edges],
         "suggested_risk_pct": round(float(dd_limit_pct / dd95_per_1pct), 2) if dd95_per_1pct > 0 else None,
     }

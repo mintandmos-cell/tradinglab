@@ -82,6 +82,18 @@ def _log(event: str, **kw) -> None:
         pass
 
 
+_SKIPS: dict = {}     # signal id -> why the robot did NOT open it (published in pc_status "skipped", 11 Nov 2026)
+
+
+def _skip(s: dict, **kw) -> None:
+    """Log a deliberate skip and remember it, so the website can say "not opened in MT5: <reason>" instead of
+    showing the signal's forward-test position as if MT5 held it (user's report 11 Nov 2026: XAUUSD)."""
+    _log("skip", signal=s.get("id"), **kw)
+    if s.get("id"):
+        _SKIPS[s["id"]] = {"signal_id": s["id"], "symbol": s.get("symbol"), "time": datetime.now(timezone.utc).isoformat(),
+                           "reason": str(kw.get("reason", ""))[:160]}
+
+
 def _mt5():
     import MetaTrader5 as mt5
     return mt5
@@ -164,7 +176,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     tag = _tag(s["strategy"], s["tf"])
     name = data.mt5_resolve(load_settings()["mt5_symbol_map"].get(sym, sym))
     if name is None:
-        _log("skip", symbol=sym, system=tag, reason="broker has no such symbol — set mt5_symbol_map in data/local.json")
+        _skip(s, symbol=sym, system=tag, reason="broker has no such symbol — set mt5_symbol_map in data/local.json")
         return "done"
     mt5.symbol_select(name, True)
     if s.get("capped") and c.get("follow_cap", True):
@@ -172,11 +184,11 @@ def execute(c: dict, s: dict, balance: float) -> str:
         for q in [q for q in _positions(c) if q.symbol == name and q.comment == tag]:
             if (q.type == mt5.POSITION_TYPE_BUY) != (d > 0) and not _close(c, q, "สัญญาณกลับทิศ"):
                 return "retry"
-        _log("skip", symbol=sym, system=tag, reason="capped like the alert (per-symbol risk cap)")
+        _skip(s, symbol=sym, system=tag, reason="capped like the alert (per-symbol risk cap)")
         return "done"
     mine = [q for q in _positions(c) if q.symbol == name and q.comment == tag]
     if any((q.type == mt5.POSITION_TYPE_BUY) == (d > 0) for q in mine):
-        _log("skip", symbol=sym, system=tag, reason="already holding this direction")
+        _skip(s, symbol=sym, system=tag, reason="already holding this direction")
         return "done"
     for q in mine:                                                     # opposite position -> stop-and-reverse
         if not _close(c, q, "สัญญาณกลับทิศ"):
@@ -188,7 +200,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     sl_dist, rr = float(s["sl_dist"]), float(s["rr"])
     moved = d * (price - float(s["entry"])) / sl_dist if sl_dist > 0 else 0.0     # in R, + = in the trade's favour
     if moved > float(c["max_chase_r"]) or moved < -0.9:
-        _log("skip", symbol=sym, system=tag, signal=s["id"],
+        _skip(s, symbol=sym, system=tag,
              reason=f"price moved {moved:+.2f} R from the signal's entry {s['entry']} - too late to enter")
         _push(c, f"ไม่เข้า {name} {tag} — ราคาวิ่งไปแล้ว",
               f"สัญญาณ {s['side']} ที่ ~{s['entry']} · ตอนนี้ {price} ({moved:+.2f} R) · เข้าตอนนี้ความเสี่ยง/ผลตอบแทนไม่เหมือนที่ทดสอบไว้")
@@ -200,7 +212,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     if c.get("alert_levels", True) and s.get("sl") is not None:
         sl_dist = abs(price - float(s["sl"]))
     if vpu <= 0 or sl_dist <= 0:
-        _log("skip", symbol=sym, system=tag, reason="bad tick value / SL distance")
+        _skip(s, symbol=sym, system=tag, reason="bad tick value / SL distance")
         return "done"
     raw = balance * risk_pct / 100 / (sl_dist * vpu)
     step, vmin, vmax = info.volume_step or 0.01, info.volume_min or 0.01, info.volume_max or 100
@@ -212,7 +224,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     if lots < vmin:
         min_risk_pct = vmin * sl_dist * vpu / balance * 100
         if not forced and min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
-            _log("skip", symbol=sym, system=tag, reason=f"lot {raw:.4f} < min {vmin} ({vmin} lot would risk {min_risk_pct:.2f}%)")
+            _skip(s, symbol=sym, system=tag, reason=f"lot {raw:.4f} < min {vmin} ({vmin} lot would risk {min_risk_pct:.2f}%)")
             return "done"
         lots = vmin
     risk_usd = lots * sl_dist * vpu
@@ -221,7 +233,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
         open_risk = sum(abs(q.price_open - q.sl) * _value_per_unit(mt5.symbol_info(q.symbol)) * q.volume
                         for q in _positions(c) if q.symbol == name and q.sl)
         if open_risk + risk_usd > cap_usd + 1e-6:
-            _log("skip", symbol=sym, system=tag, reason=f"symbol risk cap {cap_usd:.2f} USD reached")
+            _skip(s, symbol=sym, system=tag, reason=f"symbol risk cap {cap_usd:.2f} USD reached")
             return "done"
     digits = info.digits
     if c.get("alert_levels", True) and s.get("sl") is not None:
@@ -346,6 +358,11 @@ def publish_status(c: dict, st: dict, **extra) -> bool:
               "positions": [_pos_row(st, p) for p in _positions(c)], "closed": st.get("closed", [])[:15],
               "fills": st.get("fills", [])[:40], "swap_watch": st.get("swap_watch"),
               "bars_published": st.get("bars_published")}
+    if _SKIPS:                                   # keep the last 40 deliberate skips, also across restarts
+        old = {x["signal_id"]: x for x in st.get("skipped", [])}
+        old.update(_SKIPS)
+        st["skipped"] = sorted(old.values(), key=lambda x: x["time"], reverse=True)[:40]
+    status["skipped"] = st.get("skipped", [])
     st["status"] = {k: status[k] for k in ("last_scan_hour", "new_signals", "scan") if k in status}
     return ghsync.put_status(status)
 
@@ -707,7 +724,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
     for job in st.get("pending", []):
         s = job["signal"]
         if state != "ok":
-            _log("skip", symbol=s["symbol"], signal=s["id"], reason=f"guard {state} (ขาดทุนรวม {st['total_dd']}%)")
+            _skip(s, symbol=s["symbol"], reason=f"guard {state} (ขาดทุนรวม {st['total_dd']}%)")
             _mark_done(st, s["id"])
             continue
         if time.time() < job.get("next", 0):                # waiting for the market to open again
