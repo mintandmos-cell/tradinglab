@@ -134,7 +134,8 @@ def walk_forward(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, cfg: d
     cur, cur_t = pick(first if mode == "expanding" else add_months(end, -is_m), end, last_pick)
     # live set: chosen at the cut-off with the same rule and traded unchanged until the next yearly research run —
     # exactly like each 12-month OOS fold (user, 9 Nov 2026; was 3 months)
-    lock = {"start": end.isoformat(), "end": add_months(end, int(cfg.get("period_months") or 3)).isoformat()}
+    _pm = int(cfg.get("period_months") or 3)   # until the NEXT period start (11 Nov 2026: the switch-over cut of 1 Oct 2026
+    lock = {"start": end.isoformat(), "end": add_months(period_start(end, _pm), _pm).isoformat()}   # ends 1 Jan 2027, not Oct 2027)
     end_eff = end
     oos_trades.sort(key=lambda x: x["entry_time"])
     oos_r = np.array([x["r"] for x in oos_trades], float)
