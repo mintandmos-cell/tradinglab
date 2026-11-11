@@ -37,7 +37,8 @@
    "first": "2026-11-09"
   },
   "ETHUSD:mr_touch_adx:D1": {
-   "first": "2026-11-09"
+   "first": "2026-11-09",
+   "last": "2026-11-11"
   },
   "GBPJPY:tsmom_vol:H4": {
    "first": "2026-11-09"
@@ -73,7 +74,8 @@
    "first": "2026-11-09"
   },
   "USOIL:mr_dn_wild:D1": {
-   "first": "2026-11-09"
+   "first": "2026-11-09",
+   "last": "2026-11-11"
   },
   "AUDUSD:mr_pll_calm:D1": {
    "first": "2026-11-09"
@@ -103,14 +105,143 @@
    "first": "2026-11-10"
   },
   "USDCAD:bb_breakout:H4": {
-   "first": "2026-11-10"
+   "first": "2026-11-10",
+   "last": "2026-11-11"
   },
   "USDCAD:mr_capit_adx:H4": {
    "first": "2026-11-10"
   },
   "USDCHF:mr_bb_adx:H1": {
    "first": "2026-11-10"
+  },
+  "EURUSD:tsi_cross:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "EURUSD:mr_rsi3_range:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "GBPUSD:mo_st50_don:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "GBPUSD:t3_trend:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USDJPY:vb_nr_m3:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USDJPY:vb_sqz_m3:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "XAUUSD:pa_sold_m3:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "XAUUSD:pa_sold_wild:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "NAS100:se_pwk_year:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "NAS100:pa_maru_range:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "US500:pa_ins_year:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "US500:mr_rsi2_m3:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "BTCUSD:vb_atrb_r50:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "BTCUSD:mr_rsi2_chop:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "ETHUSD:pa_out_calm:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "GBPJPY:vb_rx_calm:D1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "GBPJPY:pa_ins_wild:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USDCAD:vb_hv_chop:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "NVDA:mo_ppo_year:H1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "NVDA:tf_emax_m3:H1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "AAPL:vb_kel_r50:H1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "DE30:tf_lrs_range:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "DE30:vb_dq_t200:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "JP225:pa_eng_chop:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "JP225:pa_eng_raw:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USOIL:mr_z_calm:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "AUDJPY:squeeze_momentum:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "AUDJPY:vb_dq_calm:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "EURJPY:pa_ins_year:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "EURJPY:mo_m121_gold:H1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USDCHF:se_asia_calm:H4": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
+  },
+  "USDCHF:vb_hv_t200:H1": {
+   "first": "2026-11-11",
+   "last": "2026-11-11"
   }
  },
- "updated": "2026-11-10"
+ "updated": "2026-11-11"
 }
