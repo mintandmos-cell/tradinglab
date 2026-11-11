@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-11T16:08:52.055478+00:00",
+   "signal": "XAUUSD-H4-pa_mss_m3-1794398400",
+   "symbol": "XAUUSD",
+   "tf": "H4",
+   "status": "ACTIVE",
+   "side": "SELL",
+   "asked": 4004.986,
+   "fill": 4004.986,
+   "signal_entry": 4004.93,
+   "slip_pts": -0.0,
+   "drift_r": -0.001,
+   "delay_s": 532
+  },
+  {
    "time": "2026-11-10T16:01:40.707136+00:00",
    "signal": "USDCAD-H4-bb_breakout-1794312000",
    "symbol": "USDCAD",
@@ -379,5 +393,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-10T16:04:38.793739+00:00"
+ "updated": "2026-11-11T17:03:49.582535+00:00"
 }
