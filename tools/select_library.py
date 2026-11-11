@@ -25,6 +25,9 @@ PANEL = ["EURUSD", "USDJPY", "XAUUSD", "US500", "BTCUSD", "USOIL"]
 START, END = "2019-07-16", "2026-09-30"
 FAMILIES = ("Pullback", "Mean reversion")
 TARGET, MIN_SIG = 100, 60
+# systems that failed tests/check_strategies after the selection (11 Nov 2026: mr_stochf_year, random-walk mean +0.085 R
+# with the v2 exit grid): removed, and the family is topped up with the next pick of the same greedy order
+FAILED_CHECKS = {"mr_stochf_year"}
 
 
 def main() -> int:
@@ -57,13 +60,16 @@ def main() -> int:
         first = int(np.lexsort((no, C.mean(axis=1)))[0])
         chosen = [first]
         maxc = C[first].copy()
-        while len(chosen) < min(TARGET, len(keys)):
+        want = TARGET + sum(1 for k in keys if k in FAILED_CHECKS)
+        while len(chosen) < min(want, len(keys)) or (len([j for j in chosen if keys[j] not in FAILED_CHECKS]) < TARGET
+                                                     and len(chosen) < len(keys)):
             m = maxc.copy()
             m[chosen] = np.inf
             j = int(np.lexsort((no, m))[0])
             chosen.append(j)
             maxc = np.maximum(maxc, C[j])
-        keep = sorted((keys[j] for j in chosen), key=lambda k: STRATEGIES[k]["no"])
+        order = [keys[j] for j in chosen]
+        keep = sorted([k for k in order if k not in FAILED_CHECKS][:TARGET], key=lambda k: STRATEGIES[k]["no"])
         out[fam] = keep
         sub = C[np.ix_(chosen, chosen)]
         report[fam] = {"candidates": len(ids), "fired_enough": len(keys), "kept": len(keep),
