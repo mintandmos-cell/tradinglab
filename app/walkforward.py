@@ -13,7 +13,7 @@ import pandas as pd
 
 from . import indicators as ta
 from .data import add_months, period_start
-from .engine import cost_by_bar, cost_price, exit_rules, hold_bars, rollover_weights, run, simulate, swap_r, week_guard
+from .engine import cost_by_bar, cost_price, exit_rules, hold_bars, rollover_weights, run, simulate, swap_r, uses_reverse, week_guard
 from .strategies import signals as strat_signals
 from .metrics import summarize
 from .strategies import grid
@@ -45,9 +45,9 @@ def neighbours(combos: list[dict]) -> list[list[int]]:
 
 
 def backtest_combos(df: pd.DataFrame, strategy_id: str, spec: dict, tf: str, combos: list[dict]) -> list[dict]:
-    runs = []
+    runs, cache = [], {}
     for p in combos:
-        tr = run(df, strategy_id, p, spec, tf)["trades"]
+        tr = run(df, strategy_id, p, spec, tf, sig_cache=cache)["trades"]
         runs.append({
             "params": p, "trades": tr,
             "t": pd.DatetimeIndex([x["entry_time"] for x in tr]) if tr else pd.DatetimeIndex([], tz="UTC"),
@@ -195,7 +195,7 @@ def random_benchmark(df: pd.DataFrame, wf: dict, spec: dict, tf: str, sims: int 
                 continue
             H = hold_bars(f["p"], tf, rules)
             key = tuple(sorted(f["p"].items()))
-            if rules["opposite"] and key not in sig_cache:
+            if uses_reverse(f["p"], rules) and key not in sig_cache:
                 sig_cache[key] = strat_signals(wf["strategy"], df, f["p"])[0]
             opp = sig_cache.get(key)
             for i in rng.integers(f["lo"], f["hi"], size=f["n"]):

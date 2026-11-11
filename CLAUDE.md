@@ -147,6 +147,16 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   symbols.json `min_lot`). (7) `.github/workflows/ticker.yml`: self-chaining hourly dispatch of the scan at hh:03 UTC (GitHub
   cron fired 4 times in 32 h); a dispatched scan shares the `tradinglab` concurrency group. (8) research merge streams per
   symbol and refuses incomplete / cancelled parts. Pages deploy sometimes fails when two runs deploy at once (harmless).
+- LIBRARY V2 (user, 11 Nov 2026): 700 systems = 7 families x 100 (Trend following, Momentum, Volatility breakout, Pullback,
+  Mean reversion, Session / liquidity, Price action). `app/strategies_v2.py` = 390 trigger x filter systems #521-#910 for the
+  five small families (pre-registered order, `DROPPED` = 9 that failed tests/check_strategies, replaced by the next combo);
+  Pullback / MR cut to 100 each by `tools/select_library.py` (signal-timing diversity only, never returns) ->
+  `app/library_v2.py` KEEP; the 193 cut ones go to `RETIRED` and stay in the trial ledger (luck gate unchanged — user agreed
+  not to reset it). EXIT MODES inside every system's grid (`strategies.grid`, param `exit_mode`): 1 = SL + TP (opposite
+  signals ignored while in a trade), 2 = SL + opposite signal (stop-and-reverse, no TP), 3 = trailing SL (`TRAIL_GRID` 2 / 3
+  ATR) + opposite signal; 0 = old rule for params chosen before v2. `engine.uses_reverse` decides the Rev exit everywhere
+  (engine, random benchmark, scanner tracking). Signals are cached per signal-param set (`run(sig_cache=)`). Promotion
+  field counts only trials trading since `promotion.since` 2026-11-11. Pre-registration: data/research/library_v2.md.
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after

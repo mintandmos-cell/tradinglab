@@ -68,6 +68,18 @@ def exit_rules() -> dict:
             "friday": bool(r.get("exit_friday_close", False))}
 
 
+EXIT_MODES = {0: "TP / SL / สัญญาณกลับทิศ (แบบเดิม)", 1: "SL + TP (ปิดเมื่อชนฝั่งใดฝั่งหนึ่ง)",
+              2: "SL + สัญญาณกลับทิศ (ไม่มี TP)", 3: "Trailing SL + สัญญาณกลับทิศ (ไม่มี TP)"}
+
+
+def uses_reverse(params: dict, rules: dict | None = None) -> bool:
+    """Does this parameter set close (and reverse) on an opposite signal? Exit modes (user, 11 Nov 2026):
+    1 = SL + TP only (an opposite signal is ignored while the trade is open) · 2 = SL + opposite signal (no TP) ·
+    3 = trailing SL + opposite signal (no TP) · 0 = the older rule (TP, SL and opposite signal) for parameter sets
+    chosen before exit modes existed."""
+    return bool((rules or exit_rules())["opposite"]) and int(params.get("exit_mode") or 0) != 1
+
+
 NO_LIMIT = 10 ** 9
 
 
@@ -184,12 +196,22 @@ def simulate(o, h, l, c, e: int, d: int, sl_dist: float, rr: float, H: int, cost
     return None  # still running at the end of data
 
 
+EXIT_KEYS = ("sl_atr", "rr", "max_hold_h", "trail_atr", "exit_mode")
+
+
 def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, with_lines: bool = False,
-        delay: int = 0) -> dict:
-    """delay > 0 is a robustness stress: enter that many bars after the normal entry bar."""
+        delay: int = 0, sig_cache: dict | None = None) -> dict:
+    """delay > 0 is a robustness stress: enter that many bars after the normal entry bar.
+    sig_cache: reuse the signal array across parameter sets that differ only in their exits (library v2 grids)."""
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     a = ta.atr(h, l, c, 14)
-    sig, lines = signals(strategy_id, df, params)
+    if sig_cache is not None:
+        key = tuple(sorted((k, v) for k, v in params.items() if k not in EXIT_KEYS))
+        if key not in sig_cache:
+            sig_cache[key] = signals(strategy_id, df, params)
+        sig, lines = sig_cache[key]
+    else:
+        sig, lines = signals(strategy_id, df, params)
     rules = exit_rules()
     H, rr = hold_bars(params, tf, rules), float(params["rr"])
     trail_k = float(params.get("trail_atr") or 0)
@@ -201,7 +223,7 @@ def run(df: pd.DataFrame, strategy_id: str, params: dict, spec: dict, tf: str, w
         wlast, wblock, wcut = week_guard(times, tf)
     else:
         wlast, wblock, wcut = None, np.zeros(n, bool), None
-    opp = sig if rules["opposite"] else None
+    opp = sig if uses_reverse(params, rules) else None
     trades, open_trade, free_from = [], None, 0
     for i in np.flatnonzero(sig):
         if not np.isfinite(a[i]) or a[i] <= 0:

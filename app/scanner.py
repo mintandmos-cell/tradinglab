@@ -11,7 +11,7 @@ import pandas as pd
 
 from . import data, notify, promotion, research
 from .config import CLOUD, SYMBOLS, SIGNALS_FILE, TIMEFRAMES, load_settings, read_json, symbol_spec, write_json
-from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, week_guard, weekend_blocked
+from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, uses_reverse, week_guard, weekend_blocked
 from .strategies import STRATEGIES, signals as strat_signals
 from . import indicators as ta
 from .sizing import lots_for
@@ -126,7 +126,9 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
     tp = float(tp) if tp is not None else None
     risk = abs(entry - sl) or 1e-12
     rules = exit_rules()
-    opp = strat_signals(sig["strategy"], df, sig["params"])[0] if rules["opposite"] else None
+    # a system retired from the library (library v2) still has its open signals tracked on SL / TP / trailing stop
+    opp = strat_signals(sig["strategy"], df, sig["params"])[0] \
+        if sig["strategy"] in STRATEGIES and uses_reverse(sig["params"] or {}, rules) else None
     trail = float(sig.get("trail_dist") or 0)
     stop, best = sl, entry
     for k in range(i + 1, len(df)):
@@ -244,8 +246,8 @@ def scan_once() -> list[dict]:
             # every ACTIVE system of the quarter is traded (several per symbol / TF allowed)
             trials = list(entry.get("trial_systems") or []) if settings.get("trials", {}).get("enabled", True) else []
             for cfg in research.live_systems(entry) + trials:
-                if cfg.get("status") not in track or not cfg.get("params"):
-                    continue
+                if cfg.get("status") not in track or not cfg.get("params") or cfg.get("strategy") not in STRATEGIES:
+                    continue                                 # (retired in library v2 until the next research merge)
                 if research._forced_off(settings, sym, cfg):     # veto takes effect at once, not only at the next research merge
                     continue
                 if f"{sym}:{cfg['strategy']}:{cfg['tf']}" in stopped:    # the pre-agreed drawdown stop fired

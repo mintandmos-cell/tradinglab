@@ -19,7 +19,10 @@ EXIT_PARAMS = [
     {"key": "rr", "label": "TP (x ระยะ SL = R:R) · 0 = ไม่มี TP (ออกด้วย SL หรือสัญญาณกลับทิศ)", "type": "float", "default": 2.0, "min": 0, "max": 10, "step": 0.1},
     {"key": "max_hold_h", "label": "ถือสูงสุด (ชม.) — ใช้เมื่อเปิดกฎจำกัดเวลา", "type": "int", "default": 120, "min": 4, "max": 120, "step": 1},
     {"key": "trail_atr", "label": "Trailing stop (x ATR14) · 0 = ไม่ใช้", "type": "float", "default": 0, "min": 0, "max": 10, "step": 0.5},
+    {"key": "exit_mode", "label": "วิธีปิด: 1 = SL+TP · 2 = SL+สัญญาณกลับทิศ · 3 = trailing SL+สัญญาณกลับทิศ · 0 = แบบเดิม", "type": "int",
+     "default": 0, "min": 0, "max": 3, "step": 1},
 ]
+TRAIL_GRID = [2.0, 3.0]  # exit mode 3: trailing-stop distances tried (x ATR14), user 11 Nov 2026
 TRAIL_ATR = 3.0          # the trailing variant tried with every no-TP combo of trend / breakout / momentum systems (2 Nov 2026)
 TREND_FAMILIES = ("Trend following", "Volatility breakout", "Momentum")
 
@@ -1117,6 +1120,9 @@ STRATEGIES.update(MR_STRATEGIES)
 from .strategies_xs import XS_STRATEGIES  # noqa: E402
 STRATEGIES.update(XS_STRATEGIES)
 
+from .strategies_v2 import V2_STRATEGIES  # noqa: E402   library v2 (11 Nov 2026): #521-#910, appended so numbers stay stable
+STRATEGIES.update(V2_STRATEGIES)
+
 # Hour-of-day systems (10 Nov 2026 audit): Exness' H1 history before ~2020 is not on one clock — in part of each year
 # its bars sit 1 h off UTC (New-York-anchored server time; GBPJPY until 2020). Systems that read the hour are tested only
 # on the years whose clock is verified (config.clock_ok_from); every other system is indifferent to a 1 h shift.
@@ -1135,8 +1141,14 @@ RETIRED = {k: STRATEGIES[k]["no"] for k in [
     "rsi_reversion", "bb_reversion", "tsmom", "adx_trend", "ema_pullback", "range_fade", "stoch_pullback",
     "zscore_reversion", "trix_cross", "cci_reversion", "keltner_pullback", "three_bar_pullback", "engulfing_reversal",
     "donchian_fade", "rsi_divergence", "turn_of_month", "london_fix_fade"] if k in STRATEGIES}
+# Library v2 (user, 11 Nov 2026): Pullback and Mean reversion cut to 100 each by a SIGNAL-DIVERSITY rule that never looks at
+# returns (tools/select_library.py -> app/library_v2.py). The rest are retired here; they stay in the test ledger, so they
+# keep counting in the multiple-testing gate.
+from .library_v2 import KEEP as _V2_KEEP  # noqa: E402
+RETIRED.update({k: STRATEGIES[k]["no"] for k, v in STRATEGIES.items()
+                if v["family"] in _V2_KEEP and k not in _V2_KEEP[v["family"]] and k not in RETIRED})
 for _k in RETIRED:
-    STRATEGIES.pop(_k)
+    STRATEGIES.pop(_k, None)
 
 # "No TP" variant (user's choice): trend / breakout / momentum systems also try rr = 0 (exit only by SL or an opposite
 # signal, how trend-following funds let winners run). Walk-forward picks it in-sample like any other parameter.
@@ -1163,14 +1175,21 @@ def normalize(strategy_id: str, params: dict | None) -> dict:
 
 
 def grid(strategy_id: str, max_hold_h: int) -> list[dict]:
+    """Every parameter set walk-forward may choose from (library v2, user 11 Nov 2026): signal parameters x SL distance x
+    THREE exit modes, all inside the SAME system (one test in the luck gate, the exit mode is chosen in-sample like any
+    other parameter):
+      1  SL + TP      : each positive rr of the system's grid; an opposite signal is ignored while the trade is open
+      2  SL + reverse : no TP, exit on SL or an opposite signal (stop-and-reverse)
+      3  trailing     : as 2, with the stop trailing TRAIL_GRID x ATR behind the best completed bar"""
     g = STRATEGIES[strategy_id]["grid"]
-    keys = list(g)
-    out = [normalize(strategy_id, dict(zip(keys, vals)) | {"max_hold_h": max_hold_h})
-           for vals in itertools.product(*(g[k] for k in keys))]
-    # trend families: every no-TP combo is also tried with a trailing stop (user, 2 Nov 2026 — how Turtle / Clenow style
-    # trend followers lock in big moves); walk-forward chooses in-sample like any other parameter
-    if STRATEGIES[strategy_id]["family"] in TREND_FAMILIES:
-        out += [p | {"trail_atr": TRAIL_ATR} for p in out if p["rr"] == 0 and not p.get("trail_atr")]
+    sig_keys = [k for k in g if k not in ("sl_atr", "rr", "trail_atr", "exit_mode")]
+    tps = [float(x) for x in g.get("rr", []) if float(x) > 0] or [2.0]
+    exits = [{"exit_mode": 1, "rr": r, "trail_atr": 0} for r in tps] + [{"exit_mode": 2, "rr": 0, "trail_atr": 0}] + \
+            [{"exit_mode": 3, "rr": 0, "trail_atr": t} for t in TRAIL_GRID]
+    out = []
+    for vals in itertools.product(*(g[k] for k in sig_keys), g.get("sl_atr", [2.0])):
+        base = dict(zip(sig_keys + ["sl_atr"], vals)) | {"max_hold_h": max_hold_h}
+        out += [normalize(strategy_id, base | x) for x in exits]
     return out
 
 

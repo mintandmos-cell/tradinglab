@@ -77,9 +77,10 @@ def build_systems(out_dir, lat: dict, limit: int, full: bool) -> None:
         keep_mr = {(sym, c.get("tf"), c.get("strategy")) for sym, e in (lat.get("symbols") or {}).items()
                    for c in e.get("candidates", []) if c.get("status") != "OFF"}
         jobs = sorted({(sym, tf, sid) for sym in SYMBOLS for tf in ("H1", "H4", "D1") for sid in STRATEGIES
-                       if not sid.startswith("mr_") or (sym, tf, sid) in keep_mr} | live)
+                       if not sid.startswith(("mr_", "tf_", "mo_", "vb_", "se_", "pa_")) or (sym, tf, sid) in keep_mr} | live)
     else:
         jobs = sorted(live)
+    jobs = [j for j in jobs if j[2] in STRATEGIES]        # retired systems (library v2) have no payload any more
     for sym in {j[0] for j in jobs}:                 # load prices once in the parent (forked workers share them)
         for tf in ("H1", "H4", "D1"):
             try:

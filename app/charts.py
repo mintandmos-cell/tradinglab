@@ -75,6 +75,8 @@ def candles(symbol: str, tf: str, limit: int = 1500, cfg: dict | None = None, sy
         r = research.latest().get("symbols", {}).get(symbol)
         if r and r.get("params") and r.get("tf") == tf:
             cfg = {"strategy": r["strategy"], "params": r["params"]}
+    if cfg and cfg["strategy"] not in STRATEGIES:      # retired in library v2 (until the next research merge)
+        cfg = None
     if cfg:
         closed = data.drop_unclosed(df, tf)
         res = run(closed, cfg["strategy"], cfg["params"], spec, tf, with_lines=True)

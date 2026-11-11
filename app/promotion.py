@@ -26,7 +26,9 @@ import pandas as pd
 from .config import RESEARCH_DIR, read_json, write_json
 
 REGISTRY = RESEARCH_DIR / "trial_registry.json"
-DEFAULTS = {"enabled": True, "min_trades": 30, "min_months": 3, "min_exp_r": 0.05, "alpha": 0.05}
+# since = the library lock date (library v2, user 11 Nov 2026): the forward field counts only trials that trade from that
+# day on — forward trades are new data, so systems that stopped trading before it took no test on it
+DEFAULTS = {"enabled": True, "min_trades": 30, "min_months": 3, "min_exp_r": 0.05, "alpha": 0.05, "since": "2026-11-11"}
 
 
 def cfg_of(settings: dict) -> dict:
@@ -40,14 +42,19 @@ def register(latest_symbols: dict) -> dict:
     for sym, r in latest_symbols.items():
         for t in r.get("trial_systems") or []:
             reg["trials"].setdefault(f"{sym}:{t['strategy']}:{t['tf']}", {"first": today})
+    for sym, r in latest_symbols.items():           # still a trial at this merge: seen trading on/after today
+        for t in r.get("trial_systems") or []:
+            reg["trials"][f"{sym}:{t['strategy']}:{t['tf']}"]["last"] = today
     reg["updated"] = today
     write_json(REGISTRY, reg)
     return reg
 
 
-def field_size(latest_symbols: dict, sigs: list[dict] | None = None) -> int:
-    keys = set(read_json(REGISTRY, {"trials": {}}).get("trials", {}))
-    keys |= {f"{x['symbol']}:{x['strategy']}:{x['tf']}" for x in sigs or [] if x.get("source") in ("trial", "forward")}
+def field_size(latest_symbols: dict, sigs: list[dict] | None = None, since: str | None = None) -> int:
+    reg = read_json(REGISTRY, {"trials": {}}).get("trials", {})
+    keys = {k for k, v in reg.items() if not since or str(v.get("last") or v.get("first") or "") >= since}
+    keys |= {f"{x['symbol']}:{x['strategy']}:{x['tf']}" for x in sigs or [] if x.get("source") in ("trial", "forward")
+             and (not since or str(x.get("created") or "")[:10] >= since)}
     keys |= {f"{s}:{t['strategy']}:{t['tf']}" for s, r in latest_symbols.items() for t in r.get("trial_systems") or []}
     return max(len(keys), 1)
 
@@ -83,7 +90,7 @@ def record(sigs: list[dict], sym: str, cfg: dict) -> dict:
 def evaluate(sigs: list[dict], latest_symbols: dict, settings: dict, stopped: set | None = None) -> dict:
     """{key: {..record.., t_need, promoted, why}} for every current trial."""
     c = cfg_of(settings)
-    n_field = field_size(latest_symbols, sigs)
+    n_field = field_size(latest_symbols, sigs, c.get("since"))
     need = t_needed(n_field, float(c["alpha"]))
     out = {}
     fo = set(settings.get("force_off") or [])
