@@ -1159,7 +1159,7 @@ async function renderSystems(view) {
       ${kpi("Profit factor", fnum(sp.oos.metrics.pf, 2))}${kpi("Win rate", sp.oos.metrics.win_rate + "%")}${kpi("Backtest ทั้งช่วง", fr(sp.metrics.expectancy, 3), sp.metrics.trades + " ไม้")}</div>
       <div class="row" style="margin-top:12px"><a class="btn sm" href="#/lab?symbol=${sym}&tf=${tf}&strategy=${sid}">🧪 ดูผลทดสอบทีละขั้นใน Strategy Lab</a><a class="btn sm ghost" href="#/chart?symbol=${sym}&tf=${tf}&strategy=${sid}">📈 ดูบนกราฟ</a></div></section></div>` : "");
   const fams = [...S.strategies.reduce((m, s) => m.set(s.family, (m.get(s.family) || 0) + 1), new Map())].sort((a, b) => b[1] - a[1]);
-  const famTh = { "Trend following": "ตามเทรนด์", Momentum: "โมเมนตัม", "Volatility breakout": "เบรกเอาต์ความผันผวน", "Session / liquidity": "ช่วงเวลา / สภาพคล่อง", "Price action": "Price action", Pullback: "ย่อตัว (pullback)" };
+  const famTh = { "Trend following": "ตามเทรนด์", Momentum: "โมเมนตัม", "Volatility breakout": "เบรกความผันผวน", "Session / liquidity": "ช่วงเวลาตลาด", "Price action": "แท่งเทียน", Pullback: "ย่อตัวในเทรนด์", "Mean reversion": "สวนกลับค่าเฉลี่ย" };
   const catF = store.get("catF", "all");
   $("#catPane").innerHTML = `<div class="cat-hd"><input class="inp" id="catQ" placeholder="ค้นหาเลข ชื่อ กลุ่ม หรือ indicator…"><span class="muted small">กดการ์ดเพื่อเลือกระบบนั้น</span></div>
     <div class="pills cat-f" id="catF"><button class="pill ${catF === "all" ? "on" : ""}" data-f="all">ทั้งหมด <small>${S.strategies.length}</small></button><button class="pill ${catF === "live" ? "on" : ""}" data-f="live">★ ACTIVE บน ${sym}</button>${fams.map(([f, n]) => `<button class="pill ${catF === f ? "on" : ""}" data-f="${esc(f)}">${esc(famTh[f] || f)} <small>${n}</small></button>`).join("")}</div>

@@ -97,13 +97,16 @@ def checks(now: datetime | None = None) -> tuple[list[dict], list[str]]:
                 if want is not None and abs(float(p["sl"]) - float(want)) > max(5 * tick, 0.02 * float(s.get("sl_dist") or 0)):
                     probs.append(_p(f"robot_sl:{sid}", f"SL ใน MT5 ของ {p.get('symbol')} = {p['sl']} แต่ระบบควรเป็น {want} ({sid})"))
         recent_closed = {c.get("signal_id") for c in pc.get("closed", [])}
+        skipped = {x.get("signal_id"): x.get("reason") for x in pc.get("skipped") or []}
         for s in sigs:
             if s.get("outcome") != "open" or s.get("system_status") != "ACTIVE" or s.get("capped") or s["id"] in held \
                     or s["id"] in recent_closed:
                 continue
             created = datetime.fromisoformat(s["created"])
             if now - created > timedelta(hours=2) and now - created < timedelta(days=3):
-                probs.append(_p(f"robot_missing:{s['id']}", f"สัญญาณ ACTIVE {s['symbol']} {s['tf']} ({s['id']}) ไม่มีออเดอร์ใน MT5 — ดูเหตุผลใน log ของคอม (เช่น ตลาดปิด/ราคาวิ่งไปแล้ว/lot ต่ำกว่าขั้นต่ำ)", "info"))
+                why = skipped.get(s["id"])
+                probs.append(_p(f"robot_missing:{s['id']}", f"สัญญาณ ACTIVE {s['symbol']} {s['tf']} ({s['id']}) ไม่มีออเดอร์ใน MT5 — "
+                                + (f"โปรแกรมไม่เปิดเพราะ: {why}" if why else "ดูเหตุผลใน log ของคอม (เช่น ตลาดปิด/ราคาวิ่งไปแล้ว/lot ต่ำกว่าขั้นต่ำ)"), "info"))
 
     # swap booked where the research does not charge it
     done.append("swap_new")
