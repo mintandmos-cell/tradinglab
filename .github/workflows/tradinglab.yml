@@ -122,10 +122,12 @@ jobs:
       max-parallel: 20
       matrix:
         symbol: [EURUSD, GBPUSD, USDJPY, GBPJPY, AUDUSD, USDCAD, NZDUSD, USDCHF, EURJPY, AUDJPY, EURGBP, EURAUD,
-                 XAUUSD, XAGUSD, XPTUSD, XCUUSD, USOIL, UKOIL, XNGUSD, NAS100, US500, DE30, JP225,
-                 NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
-        # 30 symbols x 8 strategy chunks, all 3 TF in each job = 240 jobs (matrix max 256, 6 h job limit)
-        chunk: ["0/8", "1/8", "2/8", "3/8", "4/8", "5/8", "6/8", "7/8"]
+                 AUDNZD, AUDCAD, EURCHF, GBPCHF, CHFJPY, NZDJPY,
+                 XAUUSD, XAGUSD, XPTUSD, XCUUSD, XALUSD, USOIL, UKOIL, XNGUSD, NAS100, US500, DE30, JP225,
+                 UK100, FR40, HK50, AUS200, NVDA, MSFT, AMZN, META, AAPL, BTCUSD, ETHUSD]
+        # 41 symbols x 6 strategy chunks, all 3 TF in each job = 246 jobs (matrix max 256, 6 h job limit;
+        # 11 Nov 2026: an FX job of 1/8 of the 700 systems took up to 107 min -> 1/6 about 145 min)
+        chunk: ["0/6", "1/6", "2/6", "3/6", "4/6", "5/6"]
     env:
       PYTHONWARNINGS: ignore
       TL_OFFLINE: "1"

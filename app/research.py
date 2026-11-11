@@ -231,6 +231,7 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     if chunk:
         k, n = (int(x) for x in chunk.split("/"))
         ids = ids[k::n]
+    ids = [i for i in ids if tf in STRATEGIES[i].get("tfs", (tf,))]      # H1-only families skip H4 / D1
     for sid in ids:
         STATE["progress"] = f"{sym} {tf} {sid}"
         t0 = time.time()
@@ -602,7 +603,8 @@ def _compact(part: dict) -> dict:
 
 def expected_candidates(settings: dict | None = None) -> int:
     settings = settings or load_settings()
-    return len(STRATEGIES) * len(settings["research"].get("timeframes", ["H1", "H4", "D1"]))
+    tfs = settings["research"].get("timeframes", ["H1", "H4", "D1"])
+    return sum(1 for v in STRATEGIES.values() for tf in tfs if tf in v.get("tfs", (tf,)))
 
 
 def merge(parts, symbols: list[str] | None = None) -> dict:

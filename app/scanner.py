@@ -157,15 +157,15 @@ def _track(sig: dict, df: pd.DataFrame, spec: dict) -> None:
 
 # Markets that move together share one risk budget (user, 2 Nov 2026): five 0.5% trades on US stocks are one bet.
 CLUSTERS = {
-    "usd_fx": ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF"), "jpy_cross": ("GBPJPY", "EURJPY", "AUDJPY"),
-    "eur_cross": ("EURGBP", "EURAUD"),
-    "metals": ("XAUUSD", "XAGUSD", "XPTUSD"), "industrial": ("XCUUSD",), "energy": ("USOIL", "UKOIL"), "natgas": ("XNGUSD",),
-    "us_equity": ("NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"), "world_equity": ("DE30", "JP225"),
+    "usd_fx": ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF"), "jpy_cross": ("GBPJPY", "EURJPY", "AUDJPY", "CHFJPY", "NZDJPY"),
+    "eur_cross": ("EURGBP", "EURAUD", "EURCHF", "GBPCHF"), "aud_cross": ("AUDNZD", "AUDCAD"),
+    "metals": ("XAUUSD", "XAGUSD", "XPTUSD"), "industrial": ("XCUUSD", "XALUSD"), "energy": ("USOIL", "UKOIL"), "natgas": ("XNGUSD",),
+    "us_equity": ("NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"), "world_equity": ("DE30", "JP225", "UK100", "FR40", "HK50", "AUS200"),
     "crypto": ("BTCUSD", "ETHUSD"),
 }
-CLUSTER_TH = {"usd_fx": "คู่เงิน USD", "jpy_cross": "คู่เงิน JPY", "eur_cross": "คู่เงิน EUR", "metals": "โลหะมีค่า",
-              "industrial": "ทองแดง", "energy": "น้ำมัน", "natgas": "ก๊าซธรรมชาติ",
-              "us_equity": "หุ้นสหรัฐ", "world_equity": "ดัชนียุโรป/ญี่ปุ่น", "crypto": "คริปโต"}
+CLUSTER_TH = {"usd_fx": "คู่เงิน USD", "jpy_cross": "คู่เงิน JPY", "eur_cross": "คู่เงินยุโรป", "aud_cross": "คู่เงิน AUD", "metals": "โลหะมีค่า",
+              "industrial": "โลหะอุตสาหกรรม", "energy": "น้ำมัน", "natgas": "ก๊าซธรรมชาติ",
+              "us_equity": "หุ้นสหรัฐ", "world_equity": "ดัชนีนอกสหรัฐ", "crypto": "คริปโต"}
 
 
 def cluster_of(sym: str) -> str:

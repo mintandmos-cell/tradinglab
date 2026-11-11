@@ -157,6 +157,11 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   ATR) + opposite signal; 0 = old rule for params chosen before v2. `engine.uses_reverse` decides the Rev exit everywhere
   (engine, random benchmark, scanner tracking). Signals are cached per signal-param set (`run(sig_cache=)`). Promotion
   field counts only trials trading since `promotion.since` 2026-11-11. Pre-registration: data/research/library_v2.md.
+- 41 MARKETS + SESSION H1 (user, 11 Nov 2026 evening, "do now what was planned for 1 Jan"): + AUDNZD AUDCAD EURCHF GBPCHF
+  CHFJPY NZDJPY · UK100 FR40 HK50 AUS200 · XALUSD (clusters jpy_cross / eur_cross / aud_cross / world_equity / industrial;
+  HKD sized at the 7.8 peg). Research matrix 41 symbols x 6 chunks = 246 jobs. Session / liquidity systems carry
+  `tfs = ("H1",)` (research_part skips other TFs, `expected_candidates` counts 1900 per symbol). The user accepted: gold's
+  minimum lot risking ~0.8 % on the demo, and old positions of systems no longer live running out on their own rules.
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after

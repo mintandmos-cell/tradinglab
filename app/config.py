@@ -95,6 +95,30 @@ SYMBOLS: dict[str, dict] = {
               "contract": 1000, "digits": 3, "pip": 0.01, "spread": 0.04, "slippage": 0.01, "commission": 0.0},
     "XNGUSD": {"name": "Natural Gas", "group": "Energy", "yahoo": "NG=F", "quote": "USD",
                "contract": 10000, "digits": 4, "pip": 0.001, "spread": 0.006, "slippage": 0.002, "commission": 0.0},
+    # --- 11 more Exness markets (user, 11 Nov 2026): crosses and non-US indices that move differently from the 30 above.
+    # Spreads are estimates until the PC's cost export (data/exness/costs.json) replaces them.
+    "AUDNZD": {"name": "Australian Dollar / New Zealand Dollar", "group": "Forex", "yahoo": "AUDNZD=X", "quote": "NZD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00025, "slippage": 0.00004, "commission": 0.0},
+    "AUDCAD": {"name": "Australian Dollar / Canadian Dollar", "group": "Forex", "yahoo": "AUDCAD=X", "quote": "CAD",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00022, "slippage": 0.00004, "commission": 0.0},
+    "EURCHF": {"name": "Euro / Swiss Franc", "group": "Forex", "yahoo": "EURCHF=X", "quote": "CHF",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00020, "slippage": 0.00003, "commission": 0.0},
+    "GBPCHF": {"name": "British Pound / Swiss Franc", "group": "Forex", "yahoo": "GBPCHF=X", "quote": "CHF",
+               "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00030, "slippage": 0.00005, "commission": 0.0},
+    "CHFJPY": {"name": "Swiss Franc / Japanese Yen", "group": "Forex", "yahoo": "CHFJPY=X", "quote": "JPY",
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.030, "slippage": 0.005, "commission": 0.0},
+    "NZDJPY": {"name": "New Zealand Dollar / Japanese Yen", "group": "Forex", "yahoo": "NZDJPY=X", "quote": "JPY",
+               "contract": 100000, "digits": 3, "pip": 0.01, "spread": 0.025, "slippage": 0.005, "commission": 0.0},
+    "UK100": {"name": "UK 100 (FTSE)", "group": "Indices", "yahoo": "^FTSE", "quote": "GBP",
+              "contract": 1, "digits": 2, "pip": 1.0, "spread": 1.5, "slippage": 0.5, "commission": 0.0},
+    "FR40": {"name": "France 40 (CAC)", "group": "Indices", "yahoo": "^FCHI", "quote": "EUR",
+             "contract": 1, "digits": 2, "pip": 1.0, "spread": 1.5, "slippage": 0.5, "commission": 0.0},
+    "HK50": {"name": "Hong Kong 50 (Hang Seng)", "group": "Indices", "yahoo": "^HSI", "quote": "HKD",
+             "contract": 1, "digits": 1, "pip": 1.0, "spread": 8.0, "slippage": 2.0, "commission": 0.0},
+    "AUS200": {"name": "Australia 200 (ASX)", "group": "Indices", "yahoo": "^AXJO", "quote": "AUD",
+               "contract": 1, "digits": 2, "pip": 1.0, "spread": 2.5, "slippage": 0.8, "commission": 0.0},
+    "XALUSD": {"name": "Aluminium / US Dollar", "group": "Metals", "yahoo": "ALI=F", "quote": "USD",
+               "contract": 1, "digits": 2, "pip": 1.0, "spread": 6.0, "slippage": 2.0, "commission": 0.0},
 }
 
 DEFAULT_SETTINGS = {
@@ -142,7 +166,7 @@ DEFAULT_SETTINGS = {
     },
     # 2 Nov 2026 (user: "do everything"): risk shared by markets that move together, a pre-agreed drawdown stop, and
     # near-miss systems traded on the DEMO account only at a small risk to collect live evidence
-    "cluster_risk_pct": {"default": 1.5, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0, "eur_cross": 1.0,
+    "cluster_risk_pct": {"default": 1.5, "aud_cross": 1.0, "metals": 1.0, "energy": 1.0, "crypto": 1.0, "jpy_cross": 1.0, "eur_cross": 1.0,
                          "industrial": 0.5, "natgas": 0.5},
     "kill_dd_mult": 2.0,
     # TRIAL -> ACTIVE by the forward test (user, 9 Nov 2026; fixed before any result — app/promotion.py)

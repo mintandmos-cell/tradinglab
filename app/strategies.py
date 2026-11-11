@@ -1130,6 +1130,12 @@ for _k in ("session_breakout", "ny_open_breakout"):
     if _k in STRATEGIES:
         STRATEGIES[_k]["clock_sensitive"] = True
 
+# Session / liquidity systems read the hour of the day or intraday ranges: on D1 they have (almost) no signals and on H4 the
+# ranges are not the ones described (a "00-06 UTC" range becomes 00-08). User, 11 Nov 2026: test this family on H1 only.
+for _k, _v in STRATEGIES.items():
+    if _v["family"] == "Session / liquidity":
+        _v["tfs"] = ("H1",)
+
 # Stable system numbers: shown to the user and written into MT5 comments (TL{no}-{TF}) — never renumber.
 for _i, _k in enumerate(list(STRATEGIES)):
     STRATEGIES[_k]["no"] = _i + 1

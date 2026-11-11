@@ -37,6 +37,8 @@ def value_per_price_unit(sym: str, price: float, mt5_info: dict | None = None, s
     x = read_json(BROKER_COSTS, {}).get("symbols", {}).get(sym) or {}
     if x.get("tick_value") and x.get("tick_size"):
         return float(x["tick_value"]) / float(x["tick_size"])
+    if spec["quote"] == "HKD":         # pegged to the dollar (7.75-7.85): no USDHKD chart in the app
+        return contract / 7.8
     pair, how = _FX.get(spec["quote"], (None, None))
     rate = _last_price(pair) if pair else None
     if rate:
