@@ -1,12 +1,12 @@
 {
- "last_scan": "2026-11-12T08:04:09.367404+00:00",
+ "last_scan": "2026-11-12T09:04:01.637882+00:00",
  "research_error": "",
  "last_error": null,
  "new_signals": 0,
  "checked": 36,
  "errors": [
-  "NVDA H1: newest closed bar is 11 h old (stale data)",
-  "NVDA H1: newest closed bar is 11 h old (stale data)",
-  "AAPL H1: newest closed bar is 11 h old (stale data)"
+  "NVDA H1: newest closed bar is 12 h old (stale data)",
+  "NVDA H1: newest closed bar is 12 h old (stale data)",
+  "AAPL H1: newest closed bar is 12 h old (stale data)"
  ]
 }
