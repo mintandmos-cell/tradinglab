@@ -1,20 +1,18 @@
 {
- "last_scan_hour": "2026-11-12 07:00:00+00:00",
- "new_signals": [
-  "NAS100-H4-pa_maru_range-1794427200"
- ],
+ "last_scan_hour": "2026-11-12 08:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 36,
   "errors": [
-   "NVDA H1: newest closed bar is 10 h old (stale data)",
-   "NVDA H1: newest closed bar is 10 h old (stale data)",
-   "AAPL H1: newest closed bar is 10 h old (stale data)"
+   "NVDA H1: newest closed bar is 11 h old (stale data)",
+   "NVDA H1: newest closed bar is 11 h old (stale data)",
+   "AAPL H1: newest closed bar is 11 h old (stale data)"
   ]
  },
- "time": "2026-11-12T07:01:01.261179+00:00",
+ "time": "2026-11-12T08:00:43.683386+00:00",
  "account": "DEMO",
  "balance": 9953.1,
- "equity": 10281.03,
+ "equity": 10275.56,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -27,8 +25,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 85.598,
-   "profit": 221.2,
+   "price": 86.007,
+   "profit": 213.02,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -41,8 +39,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.32562,
-   "profit": 14.96,
+   "price": 1.32718,
+   "profit": 13.4,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -55,8 +53,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 159.865,
-   "profit": -7.5,
+   "price": 159.683,
+   "profit": -6.37,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -69,8 +67,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.858,
-   "profit": 8.54,
+   "price": 159.676,
+   "profit": 7.41,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -83,8 +81,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.858,
-   "profit": 8.54,
+   "price": 159.676,
+   "profit": 7.41,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -97,8 +95,8 @@
    "price_open": 27652.73,
    "sl": 27279.17,
    "tp": 28715.19,
-   "price": 28139.45,
-   "profit": 24.34,
+   "price": 28168.46,
+   "profit": 25.79,
    "time": "2026-11-09T15:01:43+00:00"
   },
   {
@@ -111,8 +109,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83528,
-   "profit": 0.68,
+   "price": 0.83532,
+   "profit": 0.73,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -125,8 +123,8 @@
    "price_open": 212.357,
    "sl": 211.392,
    "tp": 214.784,
-   "price": 211.9,
-   "profit": -2.86,
+   "price": 211.91,
+   "profit": -2.8,
    "time": "2026-11-10T04:01:30+00:00"
   },
   {
@@ -139,8 +137,8 @@
    "price_open": 85.03,
    "sl": 82.184,
    "tp": 87.63,
-   "price": 85.588,
-   "profit": 5.58,
+   "price": 85.997,
+   "profit": 9.67,
    "time": "2026-11-10T04:01:31+00:00"
   },
   {
@@ -153,8 +151,8 @@
    "price_open": 1.42009,
    "sl": 1.4157,
    "tp": 1.4305,
-   "price": 1.42586,
-   "profit": 12.14,
+   "price": 1.42568,
+   "profit": 11.76,
    "time": "2026-11-10T16:01:41+00:00"
   },
   {
@@ -167,8 +165,8 @@
    "price_open": 4004.986,
    "sl": 4088.37,
    "tp": 3879.79,
-   "price": 3964.536,
-   "profit": 40.45,
+   "price": 3962.853,
+   "profit": 42.14,
    "time": "2026-11-11T16:08:51+00:00"
   },
   {
@@ -181,8 +179,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.32562,
-   "profit": 1.86,
+   "price": 1.32718,
+   "profit": 0.3,
    "time": "2026-11-12T00:01:45+00:00"
   }
  ],
@@ -783,11 +781,17 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-12T06:01:49.451914+00:00",
-  "symbols": 41,
+  "time": "2026-11-12T07:02:29.667466+00:00",
+  "symbols": 39,
   "ok": true
  },
  "skipped": [
+  {
+   "signal_id": "NAS100-H4-pa_maru_range-1794427200",
+   "symbol": "NAS100",
+   "time": "2026-11-12T07:02:29.667466+00:00",
+   "reason": "lot 0.0134 < min 0.05 (0.05 lot would risk 0.37%)"
+  },
   {
    "signal_id": "XAUUSD-H4-pa_sold_wild-1794412800",
    "symbol": "XAUUSD",
