@@ -1,5 +1,5 @@
 {
- "checked_at": "2026-11-11T23:31:03.339355+00:00",
+ "checked_at": "2026-11-12T00:16:49.620093+00:00",
  "checks": [
   "pc_offline",
   "bars_stale",
@@ -17,9 +17,15 @@
    "key": "robot_orphan:USOIL-H4-mr_stoch_gold-1794268800",
    "text": "MT5 ยังถือ USOIL (USOIL-H4-mr_stoch_gold-1794268800) แต่สัญญาณจบไปแล้ว (TP)",
    "level": "warn"
+  },
+  {
+   "key": "scan_errors",
+   "text": "สแกนไม่สำเร็จบางระบบ (3): NVDA H1: newest closed bar is 3 h old (stale data); NVDA H1: newest closed bar is 3 h old (stale data); AAPL H1: newest closed bar is 3 h old (stale data)",
+   "level": "warn"
   }
  ],
  "pushed": {
-  "robot_orphan:USOIL-H4-mr_stoch_gold-1794268800": "2026-11-11T16:05:30.070687+00:00"
+  "robot_orphan:USOIL-H4-mr_stoch_gold-1794268800": "2026-11-11T16:05:30.070687+00:00",
+  "scan_errors": "2026-11-12T00:16:49.620093+00:00"
  }
 }
