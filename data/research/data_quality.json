@@ -1,11 +1,11 @@
 {
- "generated": "2026-11-10T06:50:56.857849+00:00",
+ "generated": "2026-11-12T14:42:44.413793+00:00",
  "symbols": {
   "EURUSD": {
    "symbol": "EURUSD",
    "from": "2009-01-02T04:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110745,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110801,
    "gap_ratio": {
     "2009": 1.7,
     "2010": 1.3,
@@ -340,7 +340,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -359,8 +359,8 @@
   "GBPUSD": {
    "symbol": "GBPUSD",
    "from": "2009-01-02T08:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110712,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110768,
    "gap_ratio": {
     "2009": 2.2,
     "2010": 1.3,
@@ -694,7 +694,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -713,8 +713,8 @@
   "USDJPY": {
    "symbol": "USDJPY",
    "from": "2009-01-02T08:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110724,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110780,
    "gap_ratio": {
     "2009": 3.5,
     "2010": 1.8,
@@ -1049,7 +1049,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -1093,8 +1093,8 @@
   "XAUUSD": {
    "symbol": "XAUUSD",
    "from": "2017-03-01T00:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 57134,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 57188,
    "gap_ratio": {
     "2017": 0.8,
     "2018": 0.7,
@@ -1222,7 +1222,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5074,
+     "bars": 5128,
      "missing_hours": 30,
      "missing_pct": 0.6,
      "spikes": 0,
@@ -1241,8 +1241,8 @@
   "NAS100": {
    "symbol": "NAS100",
    "from": "2019-07-16T07:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 42295,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 42349,
    "gap_ratio": {
     "2019": 2.6,
     "2020": 1.6,
@@ -1344,7 +1344,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5082,
+     "bars": 5136,
      "missing_hours": 21,
      "missing_pct": 0.4,
      "spikes": 0,
@@ -1363,8 +1363,8 @@
   "US500": {
    "symbol": "US500",
    "from": "2019-07-16T07:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 42299,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 42353,
    "gap_ratio": {
     "2019": 2.7,
     "2020": 2.0,
@@ -1466,7 +1466,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5082,
+     "bars": 5136,
      "missing_hours": 21,
      "missing_pct": 0.4,
      "spikes": 0,
@@ -1492,8 +1492,8 @@
   "BTCUSD": {
    "symbol": "BTCUSD",
    "from": "2018-02-14T15:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 76510,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 76566,
    "gap_ratio": {
     "2018": 0.7,
     "2019": 0.9,
@@ -1608,7 +1608,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 7517,
+     "bars": 7573,
      "missing_hours": 1,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -1640,8 +1640,8 @@
   "ETHUSD": {
    "symbol": "ETHUSD",
    "from": "2018-02-09T10:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 76483,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 76539,
    "gap_ratio": {
     "2018": 0.8,
     "2019": 1.3,
@@ -1756,7 +1756,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 7517,
+     "bars": 7573,
      "missing_hours": 1,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -1794,8 +1794,8 @@
   "GBPJPY": {
    "symbol": "GBPJPY",
    "from": "2008-01-02T07:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 116912,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 116968,
    "gap_ratio": {
     "2008": 2.8,
     "2009": 1.5,
@@ -2150,7 +2150,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5335,
+     "bars": 5391,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -2176,8 +2176,8 @@
   "AUDUSD": {
    "symbol": "AUDUSD",
    "from": "2009-01-02T04:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110740,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110796,
    "gap_ratio": {
     "2009": 2.4,
     "2010": 1.4,
@@ -2511,7 +2511,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -2543,8 +2543,8 @@
   "USDCAD": {
    "symbol": "USDCAD",
    "from": "2009-01-02T04:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110744,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110800,
    "gap_ratio": {
     "2009": 2.6,
     "2010": 1.8,
@@ -2878,7 +2878,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -2897,8 +2897,8 @@
   "NVDA": {
    "symbol": "NVDA",
    "from": "2019-12-02T14:00:00+00:00",
-   "to": "2026-11-09T20:00:00+00:00",
-   "bars": 16485,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16508,
    "gap_ratio": {
     "2020": 1.2,
     "2021": 2.0,
@@ -2999,7 +2999,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 2150,
+     "bars": 2173,
      "missing_hours": 119,
      "missing_pct": 5.2,
      "spikes": 0,
@@ -3018,8 +3018,8 @@
   "MSFT": {
    "symbol": "MSFT",
    "from": "2019-12-02T14:00:00+00:00",
-   "to": "2026-11-09T20:00:00+00:00",
-   "bars": 16484,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16507,
    "gap_ratio": {
     "2020": 1.4,
     "2021": 2.4,
@@ -3120,7 +3120,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 2150,
+     "bars": 2173,
      "missing_hours": 119,
      "missing_pct": 5.2,
      "spikes": 0,
@@ -3139,8 +3139,8 @@
   "AMZN": {
    "symbol": "AMZN",
    "from": "2019-12-02T14:00:00+00:00",
-   "to": "2026-11-09T20:00:00+00:00",
-   "bars": 16461,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16484,
    "gap_ratio": {
     "2020": 1.0,
     "2021": 1.6,
@@ -3241,7 +3241,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 2150,
+     "bars": 2173,
      "missing_hours": 119,
      "missing_pct": 5.2,
      "spikes": 0,
@@ -3260,8 +3260,8 @@
   "META": {
    "symbol": "META",
    "from": "2019-12-02T14:00:00+00:00",
-   "to": "2026-11-09T20:00:00+00:00",
-   "bars": 16484,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16507,
    "gap_ratio": {
     "2020": 1.2,
     "2021": 2.3,
@@ -3362,7 +3362,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 2150,
+     "bars": 2173,
      "missing_hours": 119,
      "missing_pct": 5.2,
      "spikes": 0,
@@ -3381,8 +3381,8 @@
   "AAPL": {
    "symbol": "AAPL",
    "from": "2019-12-02T14:00:00+00:00",
-   "to": "2026-11-09T20:00:00+00:00",
-   "bars": 16480,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16503,
    "gap_ratio": {
     "2020": 1.4,
     "2021": 2.5,
@@ -3483,7 +3483,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 2150,
+     "bars": 2173,
      "missing_hours": 119,
      "missing_pct": 5.2,
      "spikes": 0,
@@ -3502,8 +3502,8 @@
   "XAGUSD": {
    "symbol": "XAGUSD",
    "from": "2017-03-01T00:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 57113,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 57167,
    "gap_ratio": {
     "2017": 2.5,
     "2018": 2.2,
@@ -3631,7 +3631,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5074,
+     "bars": 5128,
      "missing_hours": 30,
      "missing_pct": 0.6,
      "spikes": 0,
@@ -3657,8 +3657,8 @@
   "DE30": {
    "symbol": "DE30",
    "from": "2019-07-16T07:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 41233,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 41287,
    "gap_ratio": {
     "2019": 2.0,
     "2020": 2.0,
@@ -3760,7 +3760,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 4988,
+     "bars": 5042,
      "missing_hours": 70,
      "missing_pct": 1.4,
      "spikes": 0,
@@ -3779,8 +3779,8 @@
   "JP225": {
    "symbol": "JP225",
    "from": "2019-07-16T07:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 41349,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 41403,
    "gap_ratio": {
     "2019": 3.0,
     "2020": 2.5,
@@ -3882,7 +3882,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5082,
+     "bars": 5136,
      "missing_hours": 21,
      "missing_pct": 0.4,
      "spikes": 0,
@@ -3901,8 +3901,8 @@
   "USOIL": {
    "symbol": "USOIL",
    "from": "2017-01-03T02:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 58748,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 58802,
    "gap_ratio": {
     "2017": 3.2,
     "2018": 2.3,
@@ -4030,7 +4030,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5073,
+     "bars": 5127,
      "missing_hours": 31,
      "missing_pct": 0.6,
      "spikes": 0,
@@ -4049,8 +4049,8 @@
   "EURJPY": {
    "symbol": "EURJPY",
    "from": "2019-01-02T00:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 48920,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 48976,
    "gap_ratio": {
     "2019": 1.0,
     "2020": 1.3,
@@ -4195,7 +4195,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -4221,8 +4221,8 @@
   "AUDJPY": {
    "symbol": "AUDJPY",
    "from": "2009-02-01T22:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110241,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110297,
    "gap_ratio": {
     "2009": 1.9,
     "2010": 1.4,
@@ -4556,7 +4556,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -4582,8 +4582,8 @@
   "EURGBP": {
    "symbol": "EURGBP",
    "from": "2009-07-02T12:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 107650,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 107706,
    "gap_ratio": {
     "2009": 5.9,
     "2010": 1.6,
@@ -4917,7 +4917,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -4943,8 +4943,8 @@
   "EURAUD": {
    "symbol": "EURAUD",
    "from": "2019-01-02T00:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 48921,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 48977,
    "gap_ratio": {
     "2019": 0.9,
     "2020": 1.9,
@@ -5089,7 +5089,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -5115,8 +5115,8 @@
   "NZDUSD": {
    "symbol": "NZDUSD",
    "from": "2009-01-01T22:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110677,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110733,
    "gap_ratio": {
     "2009": 2.5,
     "2010": 1.8,
@@ -5450,7 +5450,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -5476,8 +5476,8 @@
   "USDCHF": {
    "symbol": "USDCHF",
    "from": "2009-01-02T08:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 110677,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110733,
    "gap_ratio": {
     "2009": 3.3,
     "2010": 1.6,
@@ -5811,7 +5811,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5336,
+     "bars": 5392,
      "missing_hours": 0,
      "missing_pct": 0.0,
      "spikes": 0,
@@ -5843,8 +5843,8 @@
   "XPTUSD": {
    "symbol": "XPTUSD",
    "from": "2020-01-02T01:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 39834,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 39888,
    "gap_ratio": {
     "2020": 2.1,
     "2021": 1.8,
@@ -5933,7 +5933,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5051,
+     "bars": 5105,
      "missing_hours": 53,
      "missing_pct": 1.0,
      "spikes": 0,
@@ -5952,8 +5952,8 @@
   "XCUUSD": {
    "symbol": "XCUUSD",
    "from": "2023-05-02T00:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 16067,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16111,
    "gap_ratio": {
     "2023": 1.6,
     "2024": 1.9,
@@ -6003,8 +6003,8 @@
      "poor": false
     },
     "2026": {
-     "bars": 3901,
-     "missing_hours": 863,
+     "bars": 3945,
+     "missing_hours": 871,
      "missing_pct": 18.1,
      "spikes": 0,
      "big_moves": 0,
@@ -6022,8 +6022,8 @@
   "UKOIL": {
    "symbol": "UKOIL",
    "from": "2020-01-13T08:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 36758,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 36808,
    "gap_ratio": {
     "2020": 1.4,
     "2021": 1.7,
@@ -6112,8 +6112,8 @@
      "poor": false
     },
     "2026": {
-     "bars": 4628,
-     "missing_hours": 212,
+     "bars": 4678,
+     "missing_hours": 214,
      "missing_pct": 4.4,
      "spikes": 0,
      "big_moves": 1,
@@ -6131,8 +6131,8 @@
   "XNGUSD": {
    "symbol": "XNGUSD",
    "from": "2022-03-20T22:00:00+00:00",
-   "to": "2026-11-10T05:00:00+00:00",
-   "bars": 27438,
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 27492,
    "gap_ratio": {
     "2022": 1.7,
     "2023": 2.9,
@@ -6195,7 +6195,7 @@
      "poor": false
     },
     "2026": {
-     "bars": 5073,
+     "bars": 5127,
      "missing_hours": 31,
      "missing_pct": 0.6,
      "spikes": 0,
@@ -6216,6 +6216,2512 @@
      "next_close": 2.4295
     }
    ],
+   "suggest_start": null
+  },
+  "AUDNZD": {
+   "symbol": "AUDNZD",
+   "from": "2009-02-01T22:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110277,
+   "gap_ratio": {
+    "2009": 3.0,
+    "2010": 2.2,
+    "2011": 2.1,
+    "2012": 2.5,
+    "2013": 3.0,
+    "2014": 2.4,
+    "2015": 2.1,
+    "2016": 2.5,
+    "2017": 1.6,
+    "2018": 1.2,
+    "2019": 1.1,
+    "2020": 2.2,
+    "2021": 3.4,
+    "2022": 3.7,
+    "2023": 4.9,
+    "2024": 3.2,
+    "2025": 3.1,
+    "2026": 1.7
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2009": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2010": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2011": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2012": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2013": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2014": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2015": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2016": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2017": {
+     "summer_open": 0,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2018": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2009-02/utc",
+   "years": {
+    "2009": {
+     "bars": 5653,
+     "missing_hours": 54,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2010": {
+     "bars": 6192,
+     "missing_hours": 1,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 5,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2011": {
+     "bars": 6207,
+     "missing_hours": 6,
+     "missing_pct": 0.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 5,
+     "bad": 0,
+     "longest_gap_h": 58.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2012": {
+     "bars": 6205,
+     "missing_hours": 61,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 6,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2013": {
+     "bars": 6154,
+     "missing_hours": 63,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 6,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2014": {
+     "bars": 6149,
+     "missing_hours": 73,
+     "missing_pct": 1.2,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 5,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2015": {
+     "bars": 6195,
+     "missing_hours": 52,
+     "missing_pct": 0.8,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2016": {
+     "bars": 6229,
+     "missing_hours": 3,
+     "missing_pct": 0.0,
+     "spikes": 1,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 55.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2017": {
+     "bars": 6114,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2018": {
+     "bars": 6202,
+     "missing_hours": 57,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 6207,
+     "missing_hours": 65,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6235,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6216,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5392,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2016-12-26T10:00:00+00:00",
+     "close_before": 1.04216,
+     "close": 1.04337,
+     "next_close": 1.04139
+    }
+   ],
+   "suggest_start": null
+  },
+  "AUDCAD": {
+   "symbol": "AUDCAD",
+   "from": "2019-01-02T00:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 48974,
+   "gap_ratio": {
+    "2019": 1.3,
+    "2020": 1.9,
+    "2021": 3.0,
+    "2022": 2.9,
+    "2023": 2.7,
+    "2024": 1.9,
+    "2025": 1.6,
+    "2026": 1.7
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2019-01/utc",
+   "years": {
+    "2019": {
+     "bars": 6207,
+     "missing_hours": 65,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6232,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 1,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6216,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5392,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2020-03-09T01:00:00+00:00",
+     "close_before": 0.89952,
+     "close": 0.8864,
+     "next_close": 0.89416
+    }
+   ],
+   "suggest_start": null
+  },
+  "EURCHF": {
+   "symbol": "EURCHF",
+   "from": "2015-01-18T22:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 73421,
+   "gap_ratio": {
+    "2015": 2.6,
+    "2016": 2.9,
+    "2017": 1.7,
+    "2018": 1.3,
+    "2019": 2.3,
+    "2020": 4.7,
+    "2021": 5.2,
+    "2022": 4.4,
+    "2023": 5.2,
+    "2024": 5.9,
+    "2025": 5.7,
+    "2026": 4.4
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2015": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2016": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2017": {
+     "summer_open": 0,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2018": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2015,
+    2016,
+    2017,
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2015-01/utc",
+   "years": {
+    "2015": {
+     "bars": 5906,
+     "missing_hours": 84,
+     "missing_pct": 1.4,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2016": {
+     "bars": 6230,
+     "missing_hours": 3,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 55.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2017": {
+     "bars": 6114,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2018": {
+     "bars": 6193,
+     "missing_hours": 60,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 6208,
+     "missing_hours": 64,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6235,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6216,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5392,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
+   "suggest_start": null
+  },
+  "GBPCHF": {
+   "symbol": "GBPCHF",
+   "from": "2006-12-04T11:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 123536,
+   "gap_ratio": {
+    "2007": 6.2,
+    "2008": 3.4,
+    "2009": 2.0,
+    "2010": 1.4,
+    "2011": 1.3,
+    "2012": 1.5,
+    "2013": 2.0,
+    "2014": 2.2,
+    "2015": 1.9,
+    "2016": 1.8,
+    "2017": 1.3,
+    "2018": 1.1,
+    "2019": 1.1,
+    "2020": 2.5,
+    "2021": 3.4,
+    "2022": 3.6,
+    "2023": 4.2,
+    "2024": 3.0,
+    "2025": 3.2,
+    "2026": 2.2
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2006": {
+     "summer_open": null,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2007": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2008": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2009": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2010": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2011": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2012": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2013": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2014": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2015": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2016": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2017": {
+     "summer_open": 0,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2018": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2006-12/utc",
+   "years": {
+    "2006": {
+     "bars": 439,
+     "missing_hours": 42,
+     "missing_pct": 8.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 74.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2007": {
+     "bars": 6144,
+     "missing_hours": 74,
+     "missing_pct": 1.2,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 3,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2008": {
+     "bars": 6163,
+     "missing_hours": 67,
+     "missing_pct": 1.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2009": {
+     "bars": 6144,
+     "missing_hours": 55,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2010": {
+     "bars": 6201,
+     "missing_hours": 1,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 11,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2011": {
+     "bars": 6214,
+     "missing_hours": 6,
+     "missing_pct": 0.1,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 9,
+     "bad": 0,
+     "longest_gap_h": 58.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2012": {
+     "bars": 6210,
+     "missing_hours": 61,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 4,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2013": {
+     "bars": 6159,
+     "missing_hours": 63,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 10,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2014": {
+     "bars": 6150,
+     "missing_hours": 72,
+     "missing_pct": 1.2,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2015": {
+     "bars": 6194,
+     "missing_hours": 52,
+     "missing_pct": 0.8,
+     "spikes": 2,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2016": {
+     "bars": 6230,
+     "missing_hours": 3,
+     "missing_pct": 0.0,
+     "spikes": 1,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 55.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2017": {
+     "bars": 6114,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2018": {
+     "bars": 6198,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 6206,
+     "missing_hours": 65,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6235,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6216,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5392,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2015-01-15T15:00:00+00:00",
+     "close_before": 1.34546,
+     "close": 1.37819,
+     "next_close": 1.35394
+    },
+    {
+     "time": "2015-01-15T21:00:00+00:00",
+     "close_before": 1.3179,
+     "close": 1.27297,
+     "next_close": 1.30125
+    },
+    {
+     "time": "2016-12-26T09:00:00+00:00",
+     "close_before": 1.25883,
+     "close": 1.25925,
+     "next_close": 1.25899
+    }
+   ],
+   "suggest_start": null
+  },
+  "CHFJPY": {
+   "symbol": "CHFJPY",
+   "from": "2009-02-01T22:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 110284,
+   "gap_ratio": {
+    "2009": 2.2,
+    "2010": 1.5,
+    "2011": 1.4,
+    "2012": 1.4,
+    "2013": 1.5,
+    "2014": 1.9,
+    "2015": 1.8,
+    "2016": 1.7,
+    "2017": 1.3,
+    "2018": 1.3,
+    "2019": 1.8,
+    "2020": 2.6,
+    "2021": 2.9,
+    "2022": 2.6,
+    "2023": 2.8,
+    "2024": 2.5,
+    "2025": 2.3,
+    "2026": 1.6
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2009": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2010": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2011": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2012": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2013": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2014": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2015": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2016": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2017": {
+     "summer_open": 0,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2018": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2009-02/utc",
+   "years": {
+    "2009": {
+     "bars": 5646,
+     "missing_hours": 59,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2010": {
+     "bars": 6200,
+     "missing_hours": 1,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 8,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2011": {
+     "bars": 6215,
+     "missing_hours": 6,
+     "missing_pct": 0.1,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 4,
+     "bad": 0,
+     "longest_gap_h": 58.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2012": {
+     "bars": 6213,
+     "missing_hours": 60,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 9,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2013": {
+     "bars": 6157,
+     "missing_hours": 63,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 9,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2014": {
+     "bars": 6152,
+     "missing_hours": 72,
+     "missing_pct": 1.2,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 4,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2015": {
+     "bars": 6195,
+     "missing_hours": 52,
+     "missing_pct": 0.8,
+     "spikes": 1,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2016": {
+     "bars": 6228,
+     "missing_hours": 3,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 55.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2017": {
+     "bars": 6114,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2018": {
+     "bars": 6191,
+     "missing_hours": 61,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 6206,
+     "missing_hours": 65,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6235,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 1,
+     "big_moves": 4,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6215,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 5,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5390,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 3,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2015-01-15T21:00:00+00:00",
+     "close_before": 133.792,
+     "close": 138.321,
+     "next_close": 134.937
+    },
+    {
+     "time": "2022-10-23T23:00:00+00:00",
+     "close_before": 149.203,
+     "close": 147.942,
+     "next_close": 148.806
+    }
+   ],
+   "suggest_start": null
+  },
+  "NZDJPY": {
+   "symbol": "NZDJPY",
+   "from": "2008-01-02T07:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 116453,
+   "gap_ratio": {
+    "2008": 4.5,
+    "2009": 1.7,
+    "2010": 1.5,
+    "2011": 2.5,
+    "2012": 1.8,
+    "2013": 1.6,
+    "2014": 2.0,
+    "2015": 1.7,
+    "2016": 1.5,
+    "2017": 1.3,
+    "2018": 1.1,
+    "2019": 1.2,
+    "2020": 3.0,
+    "2021": 4.2,
+    "2022": 3.2,
+    "2023": 3.3,
+    "2024": 3.1,
+    "2025": 2.9,
+    "2026": 2.0
+   },
+   "jumpy_until": null,
+   "clock": {
+    "2008": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2009": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2010": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2011": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2012": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2013": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2014": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2015": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2016": {
+     "summer_open": 22,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2017": {
+     "summer_open": 0,
+     "winter_open": 22,
+     "utc_ok": false
+    },
+    "2018": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2019": {
+     "summer_open": 21,
+     "winter_open": 21,
+     "utc_ok": false
+    },
+    "2020": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2021": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2022": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2023": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2024": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2025": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    },
+    "2026": {
+     "summer_open": 21,
+     "winter_open": 22,
+     "utc_ok": true
+    }
+   },
+   "clock_off_years": [
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2019
+   ],
+   "clock_ok_from": 2020,
+   "source": "exness@2008-01/utc",
+   "years": {
+    "2008": {
+     "bars": 6050,
+     "missing_hours": 128,
+     "missing_pct": 2.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 52.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2009": {
+     "bars": 6020,
+     "missing_hours": 122,
+     "missing_pct": 2.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 79.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2010": {
+     "bars": 6081,
+     "missing_hours": 50,
+     "missing_pct": 0.8,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 56.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2011": {
+     "bars": 6132,
+     "missing_hours": 30,
+     "missing_pct": 0.5,
+     "spikes": 1,
+     "big_moves": 4,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 58.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2012": {
+     "bars": 6194,
+     "missing_hours": 61,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 5,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2013": {
+     "bars": 6150,
+     "missing_hours": 63,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2014": {
+     "bars": 6153,
+     "missing_hours": 71,
+     "missing_pct": 1.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 3,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2015": {
+     "bars": 6195,
+     "missing_hours": 52,
+     "missing_pct": 0.8,
+     "spikes": 0,
+     "big_moves": 3,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 78.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2016": {
+     "bars": 6230,
+     "missing_hours": 3,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 4,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 55.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2017": {
+     "bars": 6114,
+     "missing_hours": 58,
+     "missing_pct": 0.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2018": {
+     "bars": 6158,
+     "missing_hours": 101,
+     "missing_pct": 1.6,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2019": {
+     "bars": 6206,
+     "missing_hours": 65,
+     "missing_pct": 1.0,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2020": {
+     "bars": 6235,
+     "missing_hours": 44,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 6236,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 51.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 6239,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 2,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 6216,
+     "missing_hours": 42,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 73.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 6236,
+     "missing_hours": 47,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 3,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 53.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 6216,
+     "missing_hours": 46,
+     "missing_pct": 0.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5392,
+     "missing_hours": 0,
+     "missing_pct": 0.0,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 50.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [
+    {
+     "time": "2011-03-16T19:00:00+00:00",
+     "close_before": 57.89,
+     "close": 54.896,
+     "next_close": 56.462
+    }
+   ],
+   "suggest_start": null
+  },
+  "UK100": {
+   "symbol": "UK100",
+   "from": "2019-07-16T07:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 41015,
+   "gap_ratio": {
+    "2019": 2.6,
+    "2020": 3.2,
+    "2021": 3.5,
+    "2022": 3.2,
+    "2023": 4.3,
+    "2024": 4.1,
+    "2025": 4.3,
+    "2026": 3.0
+   },
+   "jumpy_until": null,
+   "clock": {},
+   "clock_off_years": [],
+   "clock_ok_from": null,
+   "source": "exness@2019-07/utc",
+   "years": {
+    "2019": {
+     "bars": 2440,
+     "missing_hours": 216,
+     "missing_pct": 8.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 76.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2020": {
+     "bars": 5490,
+     "missing_hours": 294,
+     "missing_pct": 5.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 109.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 5536,
+     "missing_hours": 205,
+     "missing_pct": 3.6,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 109.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 5464,
+     "missing_hours": 251,
+     "missing_pct": 4.4,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 109.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2023": {
+     "bars": 5604,
+     "missing_hours": 225,
+     "missing_pct": 3.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 109.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 5758,
+     "missing_hours": 207,
+     "missing_pct": 3.5,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 100.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2025": {
+     "bars": 5734,
+     "missing_hours": 206,
+     "missing_pct": 3.5,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 109.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2026": {
+     "bars": 4989,
+     "missing_hours": 118,
+     "missing_pct": 2.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 101.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
+   "suggest_start": null
+  },
+  "FR40": {
+   "symbol": "FR40",
+   "from": "2019-07-16T07:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 40113,
+   "gap_ratio": {
+    "2019": 2.2,
+    "2020": 2.9,
+    "2021": 3.6,
+    "2022": 2.9,
+    "2023": 3.8,
+    "2024": 3.4,
+    "2025": 4.0,
+    "2026": 3.7
+   },
+   "jumpy_until": null,
+   "clock": {},
+   "clock_off_years": [],
+   "clock_ok_from": null,
+   "source": "exness@2019-07/utc",
+   "years": {
+    "2019": {
+     "bars": 1760,
+     "missing_hours": 857,
+     "missing_pct": 32.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 67.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2020": {
+     "bars": 4867,
+     "missing_hours": 829,
+     "missing_pct": 14.6,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 3,
+     "poor": false
+    },
+    "2021": {
+     "bars": 5628,
+     "missing_hours": 82,
+     "missing_pct": 1.4,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 5629,
+     "missing_hours": 87,
+     "missing_pct": 1.5,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 5683,
+     "missing_hours": 172,
+     "missing_pct": 2.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 5762,
+     "missing_hours": 203,
+     "missing_pct": 3.4,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 106.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2025": {
+     "bars": 5764,
+     "missing_hours": 184,
+     "missing_pct": 3.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 114.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5020,
+     "missing_hours": 84,
+     "missing_pct": 1.6,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
+   "suggest_start": null
+  },
+  "HK50": {
+   "symbol": "HK50",
+   "from": "2019-07-16T07:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 37567,
+   "gap_ratio": {
+    "2019": 4.5,
+    "2020": 3.5,
+    "2021": 2.5,
+    "2022": 2.9,
+    "2023": 7.1,
+    "2024": 7.6,
+    "2025": 6.3,
+    "2026": 7.2
+   },
+   "jumpy_until": null,
+   "clock": {},
+   "clock_off_years": [],
+   "clock_ok_from": null,
+   "source": "exness@2019-07/utc",
+   "years": {
+    "2019": {
+     "bars": 1715,
+     "missing_hours": 786,
+     "missing_pct": 31.4,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 81.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2020": {
+     "bars": 4574,
+     "missing_hours": 1014,
+     "missing_pct": 18.1,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 3,
+     "bad": 0,
+     "longest_gap_h": 118.0,
+     "thin_weeks": 2,
+     "poor": false
+    },
+    "2021": {
+     "bars": 5121,
+     "missing_hours": 556,
+     "missing_pct": 9.8,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 127.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2022": {
+     "bars": 5098,
+     "missing_hours": 602,
+     "missing_pct": 10.6,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 5,
+     "bad": 0,
+     "longest_gap_h": 103.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2023": {
+     "bars": 5305,
+     "missing_hours": 496,
+     "missing_pct": 8.6,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 126.0,
+     "thin_weeks": 2,
+     "poor": false
+    },
+    "2024": {
+     "bars": 5474,
+     "missing_hours": 484,
+     "missing_pct": 8.1,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 118.0,
+     "thin_weeks": 3,
+     "poor": false
+    },
+    "2025": {
+     "bars": 5495,
+     "missing_hours": 446,
+     "missing_pct": 7.5,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 140.0,
+     "thin_weeks": 2,
+     "poor": false
+    },
+    "2026": {
+     "bars": 4785,
+     "missing_hours": 323,
+     "missing_pct": 6.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 127.0,
+     "thin_weeks": 2,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
+   "suggest_start": null
+  },
+  "AUS200": {
+   "symbol": "AUS200",
+   "from": "2019-07-16T08:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 41385,
+   "gap_ratio": {
+    "2019": 4.9,
+    "2020": 5.1,
+    "2021": 5.1,
+    "2022": 5.9,
+    "2023": 7.8,
+    "2024": 6.5,
+    "2025": 5.9,
+    "2026": 4.6
+   },
+   "jumpy_until": null,
+   "clock": {},
+   "clock_off_years": [],
+   "clock_ok_from": null,
+   "source": "exness@2019-07/utc",
+   "years": {
+    "2019": {
+     "bars": 2559,
+     "missing_hours": 114,
+     "missing_pct": 4.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 67.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2020": {
+     "bars": 5583,
+     "missing_hours": 192,
+     "missing_pct": 3.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 116.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2021": {
+     "bars": 5549,
+     "missing_hours": 183,
+     "missing_pct": 3.2,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 116.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2022": {
+     "bars": 5383,
+     "missing_hours": 297,
+     "missing_pct": 5.2,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 4,
+     "bad": 0,
+     "longest_gap_h": 114.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2023": {
+     "bars": 5660,
+     "missing_hours": 191,
+     "missing_pct": 3.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 2,
+     "bad": 0,
+     "longest_gap_h": 113.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 5835,
+     "missing_hours": 180,
+     "missing_pct": 3.0,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 106.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2025": {
+     "bars": 5768,
+     "missing_hours": 174,
+     "missing_pct": 2.9,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 116.0,
+     "thin_weeks": 1,
+     "poor": false
+    },
+    "2026": {
+     "bars": 5048,
+     "missing_hours": 63,
+     "missing_pct": 1.2,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 1,
+     "bad": 0,
+     "longest_gap_h": 107.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
+   "suggest_start": null
+  },
+  "XALUSD": {
+   "symbol": "XALUSD",
+   "from": "2023-04-14T08:00:00+00:00",
+   "to": "2026-11-12T13:00:00+00:00",
+   "bars": 16299,
+   "gap_ratio": {
+    "2023": 3.5,
+    "2024": 4.0,
+    "2025": 4.4,
+    "2026": 3.2
+   },
+   "jumpy_until": null,
+   "clock": {},
+   "clock_off_years": [],
+   "clock_ok_from": null,
+   "source": "exness@2023-04/utc",
+   "years": {
+    "2023": {
+     "bars": 3232,
+     "missing_hours": 775,
+     "missing_pct": 19.3,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 103.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2024": {
+     "bars": 4571,
+     "missing_hours": 1053,
+     "missing_pct": 18.7,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 102.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2025": {
+     "bars": 4553,
+     "missing_hours": 1049,
+     "missing_pct": 18.7,
+     "spikes": 0,
+     "big_moves": 0,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 103.0,
+     "thin_weeks": 0,
+     "poor": false
+    },
+    "2026": {
+     "bars": 3943,
+     "missing_hours": 872,
+     "missing_pct": 18.1,
+     "spikes": 0,
+     "big_moves": 1,
+     "flat": 0,
+     "bad": 0,
+     "longest_gap_h": 103.0,
+     "thin_weeks": 0,
+     "poor": false
+    }
+   },
+   "poor_years": [],
+   "spike_examples": [],
    "suggest_start": null
   }
  }
