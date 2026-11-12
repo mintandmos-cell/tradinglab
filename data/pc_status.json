@@ -1,18 +1,18 @@
 {
- "last_scan_hour": "2026-11-12 04:00:00+00:00",
+ "last_scan_hour": "2026-11-12 05:00:00+00:00",
  "new_signals": [],
  "scan": {
   "checked": 36,
   "errors": [
-   "NVDA H1: newest closed bar is 7 h old (stale data)",
-   "NVDA H1: newest closed bar is 7 h old (stale data)",
-   "AAPL H1: newest closed bar is 7 h old (stale data)"
+   "NVDA H1: newest closed bar is 8 h old (stale data)",
+   "NVDA H1: newest closed bar is 8 h old (stale data)",
+   "AAPL H1: newest closed bar is 8 h old (stale data)"
   ]
  },
- "time": "2026-11-12T04:00:39.425176+00:00",
+ "time": "2026-11-12T05:00:55.011507+00:00",
  "account": "DEMO",
  "balance": 9953.1,
- "equity": 10272.96,
+ "equity": 10279.73,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -25,8 +25,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 84.631,
-   "profit": 240.54,
+   "price": 84.314,
+   "profit": 246.88,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -39,8 +39,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.32579,
-   "profit": 14.79,
+   "price": 1.32603,
+   "profit": 14.55,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -53,8 +53,8 @@
    "price_open": 158.666,
    "sl": 160.019,
    "tp": 156.636,
-   "price": 159.735,
-   "profit": -6.69,
+   "price": 159.77,
+   "profit": -6.91,
    "time": "2026-11-03T22:00:34+00:00"
   },
   {
@@ -67,8 +67,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.728,
-   "profit": 7.73,
+   "price": 159.763,
+   "profit": 7.95,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -81,8 +81,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.728,
-   "profit": 7.73,
+   "price": 159.763,
+   "profit": 7.95,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -95,8 +95,8 @@
    "price_open": 27652.73,
    "sl": 27279.17,
    "tp": 28715.19,
-   "price": 28180.7,
-   "profit": 26.4,
+   "price": 28143.96,
+   "profit": 24.56,
    "time": "2026-11-09T15:01:43+00:00"
   },
   {
@@ -109,8 +109,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83532,
-   "profit": 0.73,
+   "price": 0.83537,
+   "profit": 0.8,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -123,8 +123,8 @@
    "price_open": 212.357,
    "sl": 211.392,
    "tp": 214.784,
-   "price": 211.757,
-   "profit": -3.76,
+   "price": 211.846,
+   "profit": -3.2,
    "time": "2026-11-10T04:01:30+00:00"
   },
   {
@@ -137,8 +137,8 @@
    "price_open": 85.03,
    "sl": 82.184,
    "tp": 87.63,
-   "price": 84.621,
-   "profit": -4.09,
+   "price": 84.304,
+   "profit": -7.26,
    "time": "2026-11-10T04:01:31+00:00"
   },
   {
@@ -151,8 +151,8 @@
    "price_open": 1.42009,
    "sl": 1.4157,
    "tp": 1.4305,
-   "price": 1.4259,
-   "profit": 12.22,
+   "price": 1.42595,
+   "profit": 12.33,
    "time": "2026-11-10T16:01:41+00:00"
   },
   {
@@ -165,8 +165,8 @@
    "price_open": 4004.986,
    "sl": 4088.37,
    "tp": 3879.79,
-   "price": 3982.421,
-   "profit": 22.57,
+   "price": 3977.463,
+   "profit": 27.53,
    "time": "2026-11-11T16:08:51+00:00"
   },
   {
@@ -179,8 +179,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.32579,
-   "profit": 1.69,
+   "price": 1.32603,
+   "profit": 1.45,
    "time": "2026-11-12T00:01:45+00:00"
   }
  ],
@@ -781,8 +781,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-12T03:01:33.981904+00:00",
-  "symbols": 41,
+  "time": "2026-11-12T04:02:03.633353+00:00",
+  "symbols": 39,
   "ok": true
  },
  "skipped": [
