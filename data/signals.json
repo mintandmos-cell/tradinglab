@@ -877,14 +877,18 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.014,
-  "outcome": "open",
+  "outcome": "win",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": null,
   "stop_now": 82.184,
-  "note": "เปิดสถานะคืน 12 พ.ย.: คลาวด์เคยปิดเป็น TP จากราคาแหล่งฟรี แต่ราคา Exness ไม่ถึง TP และ MT5 ยังถืออยู่"
+  "note": "เปิดสถานะคืน 12 พ.ย.: คลาวด์เคยปิดเป็น TP จากราคาแหล่งฟรี แต่ราคา Exness ไม่ถึง TP และ MT5 ยังถืออยู่",
+  "exit_reason": "TP",
+  "outcome_r": 1.0,
+  "exit_time": "2026-11-12T16:00:00+00:00",
+  "exit_price": 87.63
  },
  {
   "id": "GBPJPY-H4-er_kama-1794268800",
@@ -931,15 +935,17 @@
   "reverse_of": "SHORT",
   "price_source": "Exness MT5",
   "cost_r": 0.027,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-12T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": null,
-  "stop_now": 211.392
+  "stop_now": 211.392,
+  "exit_reason": "SL",
+  "exit_price": 211.392
  },
  {
   "id": "EURGBP-D1-mr_fib_calm-1794096000",
