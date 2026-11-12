@@ -1,18 +1,19 @@
 {
- "id": "2026-11-09-new-markets",
+ "id": "2026-11-12-eleven-markets",
  "list_symbols": false,
  "cost_stats": true,
  "export_history": {
-  "NZDUSD": "NZDUSD",
-  "USDCHF": "USDCHF",
-  "EURJPY": "EURJPY",
-  "AUDJPY": "AUDJPY",
-  "EURGBP": "EURGBP",
-  "EURAUD": "EURAUD",
-  "XPTUSD": "XPTUSD",
-  "XCUUSD": "XCUUSD",
-  "UKOIL": "UKOIL",
-  "XNGUSD": "XNGUSD"
+  "AUDNZD": "AUDNZD",
+  "AUDCAD": "AUDCAD",
+  "EURCHF": "EURCHF",
+  "GBPCHF": "GBPCHF",
+  "CHFJPY": "CHFJPY",
+  "NZDJPY": "NZDJPY",
+  "UK100": "UK100",
+  "FR40": "FR40",
+  "HK50": "HK50",
+  "AUS200": "AUS200",
+  "XALUSD": "XALUSD"
  },
  "bars": 200000
 }
