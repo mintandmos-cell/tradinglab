@@ -154,15 +154,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.056,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-12T17:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 355.89
+  "stop_now": 355.89,
+  "exit_reason": "SL",
+  "exit_price": 355.89
  },
  {
   "id": "NVDA-H1-tf_emax_m3-1794481200",

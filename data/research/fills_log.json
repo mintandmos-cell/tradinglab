@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-12T17:36:27.386395+00:00",
+   "signal": "NVDA-H1-mo_ppo_year-1794501000",
+   "symbol": "NVDA",
+   "tf": "H1",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 164.86,
+   "fill": 164.86,
+   "signal_entry": 164.58,
+   "slip_pts": -0.0,
+   "drift_r": -0.041,
+   "delay_s": 387
+  },
+  {
    "time": "2026-11-12T15:02:29.323374+00:00",
    "signal": "AAPL-H1-vb_kel_r50-1794492000",
    "symbol": "AAPL",
@@ -421,5 +435,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-12T16:23:45.560625+00:00"
+ "updated": "2026-11-12T18:40:41.168406+00:00"
 }
