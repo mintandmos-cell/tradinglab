@@ -1,5 +1,5 @@
 {
- "checked_at": "2026-11-12T03:04:01.810485+00:00",
+ "checked_at": "2026-11-12T04:03:59.687648+00:00",
  "checks": [
   "pc_offline",
   "bars_stale",
@@ -20,7 +20,7 @@
   },
   {
    "key": "scan_errors",
-   "text": "สแกนไม่สำเร็จบางระบบ (6): NVDA H1: newest closed bar is 6 h old (stale data); NVDA H1: newest closed bar is 6 h old (stale data); AAPL H1: newest closed bar is 6 h old (stale data)",
+   "text": "สแกนไม่สำเร็จบางระบบ (6): NVDA H1: newest closed bar is 7 h old (stale data); NVDA H1: newest closed bar is 7 h old (stale data); AAPL H1: newest closed bar is 7 h old (stale data)",
    "level": "warn"
   }
  ],
