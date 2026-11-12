@@ -226,6 +226,26 @@ def pc_covered(sig: dict, tf: str) -> bool:
         return False
 
 
+def _broker_only(df: pd.DataFrame, sym: str, tf: str) -> pd.DataFrame:
+    """Cloud scan while the PC is online: follow open signals only on candles made entirely of the broker's own H1 bars.
+    The newest candle can come from the free feed (a futures price with a basis to the broker's CFD): on 11 Nov 2026 it
+    "hit" a USOIL take-profit at 87.63 that Exness never reached (high 87.608) while MT5 still held the order. When the
+    PC is off (no heartbeat for 2 h) the free feed is all there is, and the cloud tracks on it as before."""
+    if not CLOUD:
+        return df
+    try:
+        st = pc_status()
+        if pd.Timestamp.now(tz="UTC") - pd.Timestamp(st["time"]) > pd.Timedelta(hours=2):
+            return df
+        rec = data.recent_exness(sym)
+        if rec is None or not len(rec):
+            return df
+        end = rec.index[-1] + pd.Timedelta(hours=1)                    # end of the last broker H1 bar
+        return df[df.index + pd.Timedelta(minutes=TIMEFRAMES[tf]) <= end]
+    except Exception:
+        return df
+
+
 def scan_once() -> list[dict]:
     settings = load_settings()
     latest = research.latest().get("symbols", {})
@@ -321,7 +341,7 @@ def scan_once() -> list[dict]:
                         df = frames[(s["symbol"], s["tf"])] = data.get_bars(s["symbol"], s["tf"])
                     except Exception:
                         continue
-                _track(s, df, symbol_spec(s["symbol"], settings))
+                _track(s, _broker_only(df, s["symbol"], s["tf"]), symbol_spec(s["symbol"], settings))
         killed = kill_switch(sigs, latest, settings)
         save_signals(sigs)
     for key in killed:
