@@ -231,7 +231,16 @@ jobs:
           # comparison run (variant swap): judge the parts into data/research/compare/ only — live results stay untouched
           if [ "$MODE" = "merge" ] && [ "${{ inputs.variant }}" = "swap" ]; then MODE="compare"; export TL_SWAP_MODE=charged; fi
           echo "mode=$MODE"
-          python -m app.cloud "$MODE"
+          if [ "$MODE" = "merge" ]; then
+            # 13 Nov 2026: merge + scan + full site build in one step ran the runner out of resources twice (41 markets)
+            # and the finished research was lost. Now: merge -> commit at once -> scan + site with the live payload set.
+            python -m app.cloud mergeonly
+            rm -rf data/research/parts
+            bash tools/commit_bot.sh "cloud: research merge"
+            TL_SYS_FULL=0 python -m app.cloud scan
+          else
+            python -m app.cloud "$MODE"
+          fi
           if [ "$MODE" = "test" ] || [ "$MODE" = "compare" ]; then echo "SKIP_SITE=1" >> "$GITHUB_ENV"; fi
 
       - name: Save system payload cache
@@ -249,21 +258,7 @@ jobs:
           key: prices-${{ github.run_id }}
 
       - name: Commit signals / research
-        run: |
-          git config user.name "tradinglab-bot"
-          git config user.email "tradinglab-bot@users.noreply.github.com"
-          # the PC auto-trader may have pushed signals meanwhile: keep both sides (union by signal id), retry on a race
-          for i in 1 2 3 4; do
-            git fetch -q origin main
-            python -m tools.merge_signals origin/main
-            git add data/signals.json data/research; git add data/cloud_status.json 2>/dev/null || true
-            git checkout -- . 2>/dev/null || true     # drop other edits (pc_status.json copied from origin by the scan) so the rebase can run
-            if ! git diff --cached --quiet; then git commit -q -m "cloud: update signals/research [skip ci]"; fi
-            if [ "$(git rev-list --count origin/main..HEAD)" = "0" ]; then echo "nothing to push"; exit 0; fi
-            git rebase -X theirs origin/main || { git rebase --abort; git reset -q --soft origin/main; continue; }
-            if git push -q origin HEAD:main; then exit 0; fi
-          done
-          echo "::warning::could not push signals after 4 tries"
+        run: bash tools/commit_bot.sh
 
       - uses: actions/configure-pages@v5
         if: env.SKIP_SITE != '1'

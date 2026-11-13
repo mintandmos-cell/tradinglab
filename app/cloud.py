@@ -110,7 +110,9 @@ def main(mode: str, *args: str) -> int:
         compare.compare(_stream_parts(files))
         return 0
     full = None              # system payloads: full rebuild after a research merge, else export decides (once a day)
-    if mode == "merge":      # research run, step 3: judge all candidates, write latest.json, then scan + build below
+    if mode in ("merge", "mergeonly"):   # research run, step 3: judge all candidates, write latest.json, then scan + build below
+        # "mergeonly" (13 Nov 2026): the 41-market merge + full site build in one step ran the runner out of resources twice
+        # and nothing was committed; the workflow now commits right after the merge and builds the site in a later step.
         files, problem = _part_files()
         log.info("merging %d research part files", len(files))
         if problem:
@@ -126,6 +128,8 @@ def main(mode: str, *args: str) -> int:
                 book.build()
             except Exception:
                 log.exception("book simulation failed")
+        if mode == "mergeonly":
+            return 0
         mode = "scan"
     if mode == "test":   # Actions -> TradingLab -> Run workflow -> test: a push at the same priority as real ACTIVE signals
         from .notify import send

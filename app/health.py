@@ -5,7 +5,7 @@ is pushed to the phone once (again only after 12 h if it is still there).
 Checks
   pc_offline       the PC missed an hourly scan (heartbeat older than 70 min): power cut / PC down — urgent push,
                    repeated every 6 h while it lasts, and a "back online" push when the heartbeat returns
-  bars_stale       the PC is online but its Exness bars on GitHub are > 3 h old (chart / cloud fall back to free feeds)
+  bars_stale       the PC is online but has not uploaded its Exness bars for > 4 h (chart / cloud fall back to free feeds)
   untracked        an open signal whose candle cannot be found any more (forward tracking would never close it)
   robot_orphan     an MT5 position of the robot whose signal is already closed
   robot_missing    an ACTIVE signal (not capped) that the robot should hold but MT5 has no position for, 2+ hours on
@@ -63,11 +63,19 @@ def checks(now: datetime | None = None) -> tuple[list[dict], list[str]]:
                             + " · คลาวด์จะแจ้งสัญญาณแทนจนกว่าคอมจะกลับมา"))
     # Exness bars freshness (BTC trades 24/7, so its file must be recent when the PC is on)
     done.append("bars_stale")
+    # 13 Nov 2026: false alarms — the PC uploads the bars at ~hh:02-hh:06 while this check runs at hh:03-hh:04 on a copy
+    # checked out a minute earlier, so the file here is often one upload behind; one failed upload made it "3 h old".
+    # Count the PC's own record of its last successful upload too and alert only after > 4 h (several uploads missed).
     rec = data.recent_exness("BTCUSD")
     if online and rec is not None and len(rec):
-        bars_h = (pd.Timestamp(now) - rec.index[-1]).total_seconds() / 3600
-        if bars_h > 3:
-            probs.append(_p("bars_stale", f"แท่ง Exness ที่คอมส่งขึ้นเว็บเก่า {bars_h:.0f} ชม. ทั้งที่คอมออนไลน์ — กราฟ/คลาวด์ใช้แหล่งฟรีแทน"))
+        fresh = rec.index[-1] + pd.Timedelta(hours=1)               # the newest bar's close
+        bp = pc.get("bars_published") or {}
+        if bp.get("ok") and bp.get("time"):
+            fresh = max(fresh, pd.Timestamp(bp["time"]))
+        bars_h = (pd.Timestamp(now) - fresh).total_seconds() / 3600
+        if bars_h > 4:
+            probs.append(_p("bars_stale", f"คอมส่งแท่ง Exness ขึ้นเว็บไม่สำเร็จมา {bars_h:.0f} ชม. ทั้งที่คอมออนไลน์ — "
+                                          f"กราฟ/คลาวด์ใช้แหล่งฟรีแทนชั่วคราว (การเทรดใน MT5 ไม่กระทบ)"))
 
     # open signals whose candle grid no longer matches (tracking would stop)
     done.append("untracked")

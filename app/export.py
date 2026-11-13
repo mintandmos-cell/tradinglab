@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import shutil
 from datetime import datetime, timezone
 
@@ -56,6 +57,13 @@ def live_set(lat: dict) -> set:
     return {k for k in keep if k[0] in SYMBOLS and k[2] in STRATEGIES}
 
 
+def _nice():
+    try:
+        os.nice(5)
+    except Exception:
+        pass
+
+
 def _payload(job):
     sym, tf, sid, limit, lat, lite = job
     lat = lat if lat is not None else _LAT        # forked workers read the parent's copy (not pickled per job)
@@ -92,12 +100,13 @@ def build_systems(out_dir, lat: dict, limit: int, full: bool) -> None:
                 data.get_bars(sym, tf, closed_only=False)
             except Exception:
                 pass
-    workers = max(1, (os.cpu_count() or 2)) if full and len(jobs) > 50 else 1
+    # one core stays free for the Actions runner agent (13 Nov 2026: all cores busy -> "runner lost communication")
+    workers = max(1, (os.cpu_count() or 2) - 1) if full and len(jobs) > 50 else 1
     if workers > 1:
         global _LAT
         _LAT = lat
         import multiprocessing as mp
-        with ProcessPoolExecutor(workers, mp_context=mp.get_context("fork")) as ex:
+        with ProcessPoolExecutor(workers, mp_context=mp.get_context("fork"), initializer=_nice) as ex:
             results = ex.map(_payload, [(*j, limit, None, j not in live) for j in jobs], chunksize=20)
             for key, p in results:
                 if p is not None:
@@ -121,6 +130,8 @@ def full_due() -> bool:
 
 
 def build(repo: str = "", chart_limit: int = 1200, full_sys: bool | None = None) -> None:
+    if os.environ.get("TL_SYS_FULL") in ("0", "1"):     # workflow override (the step after a research merge: live set only)
+        full_sys = os.environ["TL_SYS_FULL"] == "1"
     if full_sys is None:
         full_sys = full_due()
     settings = load_settings()

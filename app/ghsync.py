@@ -192,16 +192,21 @@ def put_files(files: dict[str, bytes], message: str) -> bool:
         _fail("no GitHub token: files not sent") if not token() else None
         return False
     base = f"https://api.github.com/repos/{REPO}/git/"
-    for _ in range(3):
+    blobs: dict[str, str] = {}              # uploaded once, reused by every retry
+    # 13 Nov 2026: 3 quick retries all lost the race when the cloud bot committed at hh:06 -> wait longer between tries
+    for attempt in range(6):
+        if attempt:
+            time.sleep((5, 15, 30, 60, 90)[attempt - 1])
         try:
             ref = requests.get(base + "ref/heads/main", headers=_hdr(), timeout=30).json()
             head = ref["object"]["sha"]
             tree0 = requests.get(base + f"commits/{head}", headers=_hdr(), timeout=30).json()["tree"]["sha"]
             entries = []
             for path, content in files.items():
-                b = requests.post(base + "blobs", headers=_hdr(), timeout=60,
-                                  json={"content": base64.b64encode(content).decode(), "encoding": "base64"}).json()
-                entries.append({"path": path, "mode": "100644", "type": "blob", "sha": b["sha"]})
+                if path not in blobs:
+                    blobs[path] = requests.post(base + "blobs", headers=_hdr(), timeout=60,
+                                                json={"content": base64.b64encode(content).decode(), "encoding": "base64"}).json()["sha"]
+                entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blobs[path]})
             tree = requests.post(base + "trees", headers=_hdr(), timeout=60, json={"base_tree": tree0, "tree": entries}).json()["sha"]
             com = requests.post(base + "commits", headers=_hdr(), timeout=60,
                                 json={"message": message, "tree": tree, "parents": [head]}).json()["sha"]
