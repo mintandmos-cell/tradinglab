@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-13T08:05:50.605810+00:00",
+   "signal": "AUDJPY-H4-squeeze_momentum-1794542400",
+   "symbol": "AUDJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 108.643,
+   "fill": 108.643,
+   "signal_entry": 108.586,
+   "slip_pts": -0.0,
+   "drift_r": -0.08,
+   "delay_s": 351
+  },
+  {
    "time": "2026-11-12T17:36:27.386395+00:00",
    "signal": "NVDA-H1-mo_ppo_year-1794501000",
    "symbol": "NVDA",
@@ -435,5 +449,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-12T18:40:41.168406+00:00"
+ "updated": "2026-11-13T08:08:53.472398+00:00"
 }
