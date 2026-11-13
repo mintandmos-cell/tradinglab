@@ -58,11 +58,16 @@ def live_set(lat: dict) -> set:
 
 def _payload(job):
     sym, tf, sid, limit, lat, lite = job
+    lat = lat if lat is not None else _LAT        # forked workers read the parent's copy (not pickled per job)
     try:   # lite = a system nobody trades: fewer candles / trades so 6,540 payloads stay ~300 MB on Pages
         return job[:3], charts.system_payload(sym, tf, sid, limit=600 if lite else limit, lat=lat, trades_cap=300 if lite else 1500)
     except Exception as e:
         log.warning("system %s %s %s failed: %s", sym, tf, sid, e)
         return job[:3], None
+
+
+_LAT: dict | None = None      # research summary shared with the worker processes by fork (13 Nov 2026: pickling it into each
+                              # of ~20,000 jobs ran the runner out of memory once the research covered 41 markets)
 
 
 def build_systems(out_dir, lat: dict, limit: int, full: bool) -> None:
@@ -89,8 +94,11 @@ def build_systems(out_dir, lat: dict, limit: int, full: bool) -> None:
                 pass
     workers = max(1, (os.cpu_count() or 2)) if full and len(jobs) > 50 else 1
     if workers > 1:
-        with ProcessPoolExecutor(workers) as ex:
-            results = ex.map(_payload, [(*j, limit, lat, j not in live) for j in jobs], chunksize=20)
+        global _LAT
+        _LAT = lat
+        import multiprocessing as mp
+        with ProcessPoolExecutor(workers, mp_context=mp.get_context("fork")) as ex:
+            results = ex.map(_payload, [(*j, limit, None, j not in live) for j in jobs], chunksize=20)
             for key, p in results:
                 if p is not None:
                     _dump(out_dir / f"{key[0]}_{key[1]}_{key[2]}.json", p)

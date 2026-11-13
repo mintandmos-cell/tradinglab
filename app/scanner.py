@@ -283,7 +283,11 @@ def scan_once() -> list[dict]:
                     n = len(df)
                     STATE["checked"] += 1
                     age_h = (pd.Timestamp.now(tz="UTC") - df.index[-1]).total_seconds() / 3600 - TIMEFRAMES[cfg["tf"]] / 60
-                    if cfg["tf"] == "H1" and age_h > 3 and (SYMBOLS_GROUP.get(sym) == "Crypto" or pd.Timestamp.now(tz="UTC").dayofweek < 5):
+                    _now = pd.Timestamp.now(tz="UTC")
+                    # US stocks only trade ~13:30-21:00 UTC: a bar from last night's close is not stale data (13 Nov 2026:
+                    # the first H1 stock systems raised this alarm every morning) -> judge them inside the session only
+                    _open = SYMBOLS_GROUP.get(sym) != "Stocks" or 16 <= _now.hour <= 20
+                    if cfg["tf"] == "H1" and age_h > 3 and _open and (SYMBOLS_GROUP.get(sym) == "Crypto" or _now.dayofweek < 5):
                         STATE["errors"].append(f"{sym} {cfg['tf']}: newest closed bar is {age_h:.0f} h old (stale data)")
                     flat = res["open_trade"] is None and (not res["trades"] or res["trades"][-1]["exit_i"] < n - 1)
                     entry_t = df.index[-1] + pd.Timedelta(minutes=TIMEFRAMES[cfg["tf"]])

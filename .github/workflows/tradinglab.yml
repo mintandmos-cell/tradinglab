@@ -172,7 +172,11 @@ jobs:
       TL_PUBLIC_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
       PYTHONWARNINGS: ignore
     steps:
+      # the newest main, not the commit the run started on: a research run reaches this job ~10 h later and would scan /
+      # health-check on yesterday's Exness bars (13 Nov 2026: false "bars 13 h old" and "stale data" alerts)
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/setup-python@v5
         with:
