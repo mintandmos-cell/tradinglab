@@ -759,6 +759,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
 
 _upd = {"at": 0.0, "blocked": 0.0}
 _poll = {"at": 0.0}
+_beat = {"at": 0.0}
 _retry = {"at": 0.0}
 _single = None
 CODE_PATHS = ["app", "tools", "requirements.txt"]
@@ -886,6 +887,14 @@ def main() -> None:
                         run_tasks(c, st)
                     except Exception as e:
                         _log("task_error", reason=repr(e))
+                if time.time() - _beat["at"] > 300:                  # heartbeat every 5 min (outage alert within ~15 min)
+                    _beat["at"] = time.time()
+                    if ghsync.beat():
+                        gap = time.time() - float(st.get("last_beat") or time.time())
+                        st["last_beat"] = time.time()
+                        if gap > 15 * 60:                            # we were unreachable: tell the phone we are back
+                            _push(c, "✅ คอมกลับมาออนไลน์แล้ว", f"ขาดการติดต่อไป {gap / 60:.0f} นาที (ไฟดับ / เน็ตหลุด / โปรแกรมปิด) — "
+                                                                  f"ตอนนี้สแกนและดูแลออเดอร์ตามปกติ")
                 cycle(c, st, new_bar)
                 if new_bar and st.pop("scan_ok", False):         # a failed scan (MT5 not connected...) is retried
                     last_hour = st["last_hour"] = hour

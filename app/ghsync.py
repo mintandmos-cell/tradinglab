@@ -220,3 +220,26 @@ def get_json(path: str):
         return json.loads(text)
     except Exception:
         return None
+
+
+BEAT_BRANCH = "pc-heartbeat"
+
+
+def beat() -> bool:
+    """A cheap "I am alive" signal every few minutes (user, 13 Nov 2026: alert on a power cut / lost internet within
+    ~15 min). One parentless commit on the side branch pc-heartbeat, force-moved each time: main's history stays clean
+    and no workflow starts (they listen to main only). The cloud ticker reads the branch's commit date."""
+    if not token():
+        return False
+    base = f"https://api.github.com/repos/{REPO}/git/"
+    try:
+        now = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        tree = requests.post(base + "trees", headers=_hdr(), timeout=10,
+                             json={"tree": [{"path": "beat", "mode": "100644", "type": "blob", "content": now}]}).json()["sha"]
+        com = requests.post(base + "commits", headers=_hdr(), timeout=10, json={"message": "pc heartbeat", "tree": tree, "parents": []}).json()["sha"]
+        r = requests.patch(base + f"refs/heads/{BEAT_BRANCH}", headers=_hdr(), timeout=10, json={"sha": com, "force": True})
+        if r.status_code in (404, 422):
+            r = requests.post(base + "refs", headers=_hdr(), timeout=10, json={"ref": f"refs/heads/{BEAT_BRANCH}", "sha": com})
+        return r.status_code in (200, 201)
+    except Exception:
+        return False

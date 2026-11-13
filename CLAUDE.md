@@ -162,8 +162,11 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   HKD sized at the 7.8 peg). Research matrix 41 symbols x 6 chunks = 246 jobs. Session / liquidity systems carry
   `tfs = ("H1",)` (research_part skips other TFs, `expected_candidates` counts 1900 per symbol). The user accepted: gold's
   minimum lot risking ~0.8 % on the demo, and old positions of systems no longer live running out on their own rules.
-- OUTAGE ALERT (user, 13 Nov 2026): `health.py` pc_offline fires when the PC heartbeat is older than 70 min (a missed hourly
-  scan), urgent push "🔌", repeated every 6 h, "✅ back online" push when it returns. Cloud tracking uses broker candles only
+- OUTAGE ALERT (user, 13 Nov 2026): FAST = the robot moves the side branch `pc-heartbeat` every 5 min (`ghsync.beat`, a
+  parentless commit, main untouched); `ticker.yml` reads its commit date every 5 min while it waits and pushes "🔌" once when
+  the silence passes 15 min (power cut / internet lost / PC down); the robot itself pushes "✅ back online" with its first
+  beat after a gap > 15 min (state `last_beat`). SLOW = `health.py` pc_offline (heartbeat older than 70 min) repeats it with
+  the open positions, every 6 h. Cloud tracking uses broker candles only
   while the PC is online (`scanner._broker_only`, 12 Nov: a free-feed candle closed a USOIL signal at a TP Exness never hit).
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old

@@ -176,12 +176,6 @@ def run(notify_new: bool = True) -> dict:
         if p["level"] != "info" and (not last or now - datetime.fromisoformat(last) > (timedelta(hours=6) if p["key"] == "pc_offline" else REPUSH)):
             new.append(p)
             pushed[p["key"]] = now.isoformat()
-    back = [k for k in (old.get("pushed") or {}) if k == "pc_offline" and k not in pushed]
-    if notify_new and back:                       # the outage alert was sent and the heartbeat is fresh again
-        try:
-            notify.send("✅ คอมกลับมาออนไลน์แล้ว", "โปรแกรมเทรดส่งสัญญาณชีพอีกครั้ง — สแกนและเปิด/ปิดออเดอร์ตามปกติ", priority=3, tags=["white_check_mark"])
-        except Exception as e:
-            log.warning("recovery push failed: %s", e)
     if notify_new and new:
         try:
             off = any(p["key"] == "pc_offline" for p in new)

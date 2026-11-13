@@ -27,14 +27,44 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
     steps:
-      - name: Wait for the next candle close (hh:03 UTC)
+      - name: Wait for the next candle close (hh:03 UTC), watching the PC heartbeat every 5 minutes
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
+          # The PC robot moves the branch pc-heartbeat every 5 min (app/ghsync.beat). No beat for 15 min = power cut, PC
+          # down or internet lost (user, 13 Nov 2026) -> one urgent push when the silence passes 15 min. The hourly health
+          # check repeats it with details after 70 min; the PC itself says "back online" with its first new beat.
           now=$(date -u +%s)
           target=$(( (now / 3600 + 1) * 3600 + 180 ))
           # started within the first 3 minutes of an hour: this hour's scan has not been asked for yet
           if [ $(( now % 3600 )) -lt 170 ]; then target=$(( now / 3600 * 3600 + 180 )); fi
-          echo "sleep $(( target - now )) s"
-          sleep $(( target - now ))
+          prev=$(( now - 320 ))
+          while :; do
+            now=$(date -u +%s)
+            d=$(gh api "repos/$REPO/commits/pc-heartbeat" -q .commit.committer.date 2>/dev/null || true)
+            if [ -n "$d" ]; then
+              beat=$(date -u -d "$d" +%s)
+              age=$(( now - beat )); before=$(( prev - beat ))
+              echo "heartbeat age $(( age / 60 )) min"
+              if [ "$age" -ge 900 ] && [ "$before" -lt 900 ] && [ -n "$NTFY_TOPIC" ]; then
+                AGE=$(( age / 60 )) LAST=$(TZ=Asia/Bangkok date -d "$d" +%H:%M) python3 - <<'PY' || true
+          import json, os, urllib.request
+          body = {"topic": os.environ["NTFY_TOPIC"], "priority": 5, "tags": ["rotating_light"],
+                  "title": "🔌 คอมเทรดขาดการติดต่อ — ไฟดับ / เน็ตหลุด?",
+                  "message": f"ไม่ได้รับสัญญาณชีพจากคอมมา {os.environ['AGE']} นาที (ล่าสุด {os.environ['LAST']} น.) — อาจไฟดับ คอมดับ "
+                             "อินเทอร์เน็ตหลุด หรือโปรแกรมปิด · ระหว่างนี้ไม่มีการเปิดออเดอร์ใหม่ ไม่เลื่อน SL และไม่ปิดตามสัญญาณกลับทิศ · "
+                             "ออเดอร์ที่ค้างอยู่ยังมี SL/TP ที่โบรกเกอร์คุ้มครอง"}
+          urllib.request.urlopen(urllib.request.Request("https://ntfy.sh/", json.dumps(body).encode(),
+                                                        {"Content-Type": "application/json"}), timeout=20)
+          print("outage alert sent")
+          PY
+              fi
+            fi
+            prev=$now
+            left=$(( target - $(date -u +%s) ))
+            if [ "$left" -le 0 ]; then break; fi
+            sleep $(( left < 300 ? left : 300 ))
+          done
       - name: Start the cloud scan
         run: gh workflow run tradinglab.yml --repo "$REPO" --ref main -f mode=scan
       - name: Next link of the chain
