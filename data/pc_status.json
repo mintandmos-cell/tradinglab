@@ -5,10 +5,10 @@
   "checked": 36,
   "errors": []
  },
- "time": "2026-11-13T11:02:02.723706+00:00",
+ "time": "2026-11-13T11:05:39.542372+00:00",
  "account": "DEMO",
- "balance": 10080.49,
- "equity": 10351.18,
+ "balance": 10073.9,
+ "equity": 10351.54,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 87.336,
-   "profit": 186.44,
+   "price": 87.334,
+   "profit": 186.48,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 1.34058,
    "sl": 1.35779,
    "tp": 1.3149,
-   "price": 1.32257,
-   "profit": 18.01,
+   "price": 1.32247,
+   "profit": 18.11,
    "time": "2026-11-02T22:00:29+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.907,
-   "profit": 8.84,
+   "price": 159.918,
+   "profit": 8.91,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.907,
-   "profit": 8.84,
+   "price": 159.918,
+   "profit": 8.91,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 27652.73,
    "sl": 27279.17,
    "tp": 28715.19,
-   "price": 28337.16,
-   "profit": 34.22,
+   "price": 28335.66,
+   "profit": 34.15,
    "time": "2026-11-09T15:01:43+00:00"
   },
   {
@@ -105,8 +105,8 @@
    "price_open": 1.42009,
    "sl": 1.4157,
    "tp": 1.4305,
-   "price": 1.42676,
-   "profit": 14.02,
+   "price": 1.4269,
+   "profit": 14.32,
    "time": "2026-11-10T16:01:41+00:00"
   },
   {
@@ -119,23 +119,9 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.32257,
-   "profit": 4.91,
+   "price": 1.32247,
+   "profit": 5.01,
    "time": "2026-11-12T00:01:45+00:00"
-  },
-  {
-   "ticket": 2845223949,
-   "symbol": "NVDA",
-   "system": "TL595-H1",
-   "signal_id": "NVDA-H1-mo_ppo_year-1794501000",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 164.86,
-   "sl": 171.4,
-   "tp": null,
-   "price": 171.15,
-   "profit": -6.33,
-   "time": "2026-11-12T17:36:27+00:00"
   },
   {
    "ticket": 2848514271,
@@ -147,12 +133,25 @@
    "price_open": 108.643,
    "sl": 109.297,
    "tp": null,
-   "price": 108.569,
-   "profit": 0.93,
+   "price": 108.568,
+   "profit": 0.94,
    "time": "2026-11-13T08:05:51+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2845223949,
+   "signal_id": "NVDA-H1-mo_ppo_year-1794501000",
+   "time": "2026-11-13T11:05:37.200674+00:00",
+   "symbol": "NVDA",
+   "system": "TL595-H1",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 164.86,
+   "price": 171.41,
+   "reason": "SL",
+   "profit": -6.59
+  },
   {
    "ticket": 2826373308,
    "signal_id": "USOIL-H4-mr_stoch_gold-1794268800",
@@ -319,16 +318,6 @@
    "side": "BUY",
    "lots": 0.01,
    "price_open": 51.226
-  },
-  {
-   "ticket": 2793293936,
-   "signal_id": "USDJPY-D1-mr_rsi2_slope-1793656800",
-   "time": "2026-11-08T15:01:43.978837+00:00",
-   "symbol": "USDJPY",
-   "system": "TL130-D1",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 158.666
   }
  ],
  "fills": [
@@ -803,8 +792,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-13T10:03:41.855380+00:00",
-  "symbols": 40,
+  "time": "2026-11-13T11:04:33.284462+00:00",
+  "symbols": 37,
   "ok": true
  },
  "skipped": [
