@@ -1,6 +1,20 @@
 {
  "fills": [
   {
+   "time": "2026-11-13T12:02:59.254155+00:00",
+   "signal": "USDCHF-H4-se_asia_calm-1794556800",
+   "symbol": "USDCHF",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 0.83791,
+   "fill": 0.83791,
+   "signal_entry": 0.83765,
+   "slip_pts": 0.0,
+   "drift_r": 0.079,
+   "delay_s": 179
+  },
+  {
    "time": "2026-11-13T08:05:50.605810+00:00",
    "signal": "AUDJPY-H4-squeeze_momentum-1794542400",
    "symbol": "AUDJPY",
@@ -449,5 +463,5 @@
    "delay_s": 3621
   }
  ],
- "updated": "2026-11-13T08:08:53.472398+00:00"
+ "updated": "2026-11-13T12:06:51.160429+00:00"
 }

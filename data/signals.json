@@ -107,7 +107,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 109.297
+  "stop_now": 109.255
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
@@ -431,15 +431,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.018,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.075,
+  "exit_time": "2026-11-13T11:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": null,
-  "stop_now": 169.79
+  "stop_now": 169.79,
+  "exit_reason": "SL",
+  "exit_price": 170.49
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794481200",
