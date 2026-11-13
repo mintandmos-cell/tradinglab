@@ -91,14 +91,45 @@ def _get(path: str) -> tuple[str, str | None]:
     return r.text, None
 
 
+_PULLED: dict = {}          # path -> sha of the copy already on disk (research changes once a year)
+
+
+def _sha(path: str) -> str | None:
+    """The blob sha of a file on main without downloading it (contents API metadata; None when unknown)."""
+    if not token():
+        return None
+    try:
+        r = requests.get(API + path, headers={**_hdr(), "Accept": "application/vnd.github.object+json"},
+                         params={"ref": "main"}, timeout=20)
+        r.raise_for_status()
+        return r.json().get("sha")
+    except Exception:
+        return None
+
+
 def pull() -> bool:
-    """Newest research + signals from GitHub into the local files (the scan reads them)."""
+    """Newest research + signals from GitHub into the local files (the scan reads them).
+    13 Nov 2026: latest.json is ~80 MB (41 markets) and was downloaded again every 2 minutes and before every hourly scan
+    (slow PC, ~1 min of the entry delay). It is fetched only when its sha on GitHub changed; signals.json is small."""
     ok = True
     for path, local in (("data/research/latest.json", LATEST_RESEARCH), ("data/signals.json", SIGNALS_FILE)):
         try:
-            text, _ = _get(path)
+            big = path.endswith("latest.json")
+            if big and local.exists() and not token():         # no token: no sha check -> at most every 30 min
+                if time.time() - _PULLED.get("raw_at", 0) < 1800:
+                    continue
+                _PULLED["raw_at"] = time.time()
+            if big and local.exists() and token():
+                sha = _sha(path)
+                if sha and _PULLED.get(path) == sha:
+                    continue
+                if sha is None:
+                    raise RuntimeError("sha unknown")
+            text, sha = _get(path)
             json.loads(text)
             local.write_text(text, encoding="utf-8")
+            if sha:
+                _PULLED[path] = sha
         except Exception as e:
             log.warning("pull %s failed: %s — using the local copy", path, e)
             ok = False
