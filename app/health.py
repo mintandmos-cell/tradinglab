@@ -3,7 +3,8 @@ Runs after every cloud scan; problems go to data/research/health.json (shown on 
 is pushed to the phone once (again only after 12 h if it is still there).
 
 Checks
-  pc_offline       the PC's heartbeat is older than 2 h (no orders are placed while it is off)
+  pc_offline       the PC missed an hourly scan (heartbeat older than 70 min): power cut / PC down — urgent push,
+                   repeated every 6 h while it lasts, and a "back online" push when the heartbeat returns
   bars_stale       the PC is online but its Exness bars on GitHub are > 3 h old (chart / cloud fall back to free feeds)
   untracked        an open signal whose candle cannot be found any more (forward tracking would never close it)
   robot_orphan     an MT5 position of the robot whose signal is already closed
@@ -42,13 +43,24 @@ def checks(now: datetime | None = None) -> tuple[list[dict], list[str]]:
     sigs = scanner.load_signals()
     settings = research.load_settings()
 
-    # PC heartbeat
+    # PC heartbeat (user, 13 Nov 2026: tell me when the power fails or the PC dies). The robot writes its heartbeat right
+    # after every hourly scan (hh:00) and this check runs at hh:03, so a heartbeat older than 70 min = a scan was missed.
     done.append("pc_offline")
     age_h = (now - datetime.fromisoformat(pc["time"])).total_seconds() / 3600 if pc.get("time") else None
     online = age_h is not None and age_h < 2
-    if age_h is None or age_h >= 2:
-        probs.append(_p("pc_offline", f"คอมออฟไลน์มา {age_h:.0f} ชม. — โปรแกรมไม่เปิดออเดอร์ให้ (คลาวด์แจ้งเตือนแทน)" if age_h else "ยังไม่เคยได้รับสัญญาณชีพจากคอม"))
-
+    if age_h is None or age_h * 60 >= 70:
+        if age_h is None:
+            probs.append(_p("pc_offline", "ยังไม่เคยได้รับสัญญาณชีพจากคอม"))
+        else:
+            last = (datetime.fromisoformat(pc["time"]) + timedelta(hours=7)).strftime("%d/%m %H:%M")
+            held = [p_.get("symbol") for p_ in pc.get("positions") or []]
+            mins = int(age_h * 60)
+            dur = f"{mins} นาที" if mins < 120 else f"{age_h:.0f} ชม."
+            probs.append(_p("pc_offline",
+                            f"คอมที่รันโปรแกรมเทรดเงียบไป {dur} (สัญญาณล่าสุด {last} น.) — อาจไฟดับ / คอมดับ / เน็ตหลุด / โปรแกรมปิด · "
+                            f"ระหว่างนี้ไม่มีการเปิดออเดอร์ใหม่ ไม่เลื่อน SL และไม่ปิดตามสัญญาณกลับทิศ"
+                            + (f" · ออเดอร์ที่ค้างใน MT5 {len(held)} ตัว ({', '.join(sorted(set(held))[:8])}) ยังมี SL/TP ที่โบรกเกอร์คุ้มครองอยู่" if held else "")
+                            + " · คลาวด์จะแจ้งสัญญาณแทนจนกว่าคอมจะกลับมา"))
     # Exness bars freshness (BTC trades 24/7, so its file must be recent when the PC is on)
     done.append("bars_stale")
     rec = data.recent_exness("BTCUSD")
@@ -161,12 +173,20 @@ def run(notify_new: bool = True) -> dict:
     new = []
     for p in probs:
         last = pushed.get(p["key"])
-        if p["level"] != "info" and (not last or now - datetime.fromisoformat(last) > REPUSH):
+        if p["level"] != "info" and (not last or now - datetime.fromisoformat(last) > (timedelta(hours=6) if p["key"] == "pc_offline" else REPUSH)):
             new.append(p)
             pushed[p["key"]] = now.isoformat()
+    back = [k for k in (old.get("pushed") or {}) if k == "pc_offline" and k not in pushed]
+    if notify_new and back:                       # the outage alert was sent and the heartbeat is fresh again
+        try:
+            notify.send("✅ คอมกลับมาออนไลน์แล้ว", "โปรแกรมเทรดส่งสัญญาณชีพอีกครั้ง — สแกนและเปิด/ปิดออเดอร์ตามปกติ", priority=3, tags=["white_check_mark"])
+        except Exception as e:
+            log.warning("recovery push failed: %s", e)
     if notify_new and new:
         try:
-            notify.send(f"🩺 ตรวจระบบพบ {len(new)} เรื่อง", "\n".join("• " + p["text"] for p in new[:6]), priority=4, tags=["warning"])
+            off = any(p["key"] == "pc_offline" for p in new)
+            notify.send("🔌 คอมเทรดเงียบไป — ไฟดับหรือเครื่องดับ?" if off else f"🩺 ตรวจระบบพบ {len(new)} เรื่อง",
+                        "\n".join("• " + p["text"] for p in new[:6]), priority=5 if off else 4, tags=["rotating_light" if off else "warning"])
         except Exception as e:
             log.warning("health push failed: %s", e)
     out = {"checked_at": now.isoformat(), "checks": done, "problems": probs, "pushed": pushed}

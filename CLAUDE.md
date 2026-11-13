@@ -162,6 +162,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   HKD sized at the 7.8 peg). Research matrix 41 symbols x 6 chunks = 246 jobs. Session / liquidity systems carry
   `tfs = ("H1",)` (research_part skips other TFs, `expected_candidates` counts 1900 per symbol). The user accepted: gold's
   minimum lot risking ~0.8 % on the demo, and old positions of systems no longer live running out on their own rules.
+- OUTAGE ALERT (user, 13 Nov 2026): `health.py` pc_offline fires when the PC heartbeat is older than 70 min (a missed hourly
+  scan), urgent push "🔌", repeated every 6 h, "✅ back online" push when it returns. Cloud tracking uses broker candles only
+  while the PC is online (`scanner._broker_only`, 12 Nov: a free-feed candle closed a USOIL signal at a TP Exness never hit).
 - SAME CANDLES EVERYWHERE (user, 4 Nov 2026: chart vs MT5 did not match): settings `mt5_server_time` = "utc" (Exness MT5 is
   GMT+0) -> H4 = 00/04/08 UTC, D1 = UTC day, Sunday-evening FX bars kept (`data.market_hours`, JS `marketOpen`); old
   data/history files keep `history_server_time` "ny_close". The PC pushes the last 1500 closed MT5 H1 bars of every symbol after
