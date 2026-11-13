@@ -203,8 +203,14 @@ def _read_json(path: Path, default):
 
 def _write_json(path: Path, obj) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
+    # research files are written compact (13 Nov 2026: the 41-market latest.json was 115 MB with indent -> GitHub refused
+    # the push, limit 100 MB; compact = ~65 % of that). Small hand-read files keep the indent.
+    compact = RESEARCH_DIR in Path(path).resolve().parents
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=1, default=str)
+        if compact:
+            json.dump(obj, f, ensure_ascii=False, separators=(",", ":"), default=str)
+        else:
+            json.dump(obj, f, ensure_ascii=False, indent=1, default=str)
     os.replace(tmp, path)
 
 
