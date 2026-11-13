@@ -2589,15 +2589,17 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.008,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-12T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": null,
-  "stop_now": 160.019
+  "stop_now": 160.019,
+  "exit_reason": "SL",
+  "exit_price": 160.019
  },
  {
   "id": "USDCAD-H1-ichimoku_tk-1793736000",
