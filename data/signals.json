@@ -272,7 +272,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 108.954
+  "stop_now": 108.856
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
@@ -718,7 +718,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 991.53,
-  "stop_now": 28648.7
+  "stop_now": 28624.44
  },
  {
   "id": "GBPUSD-D1-mo_st50_don-1794355200",
