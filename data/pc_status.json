@@ -1,11 +1,13 @@
 {
- "last_scan_hour": "2026-11-14 09:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-14 10:00:00+00:00",
+ "new_signals": [
+  "AUDJPY-H4-vb_dq_calm-1794600000"
+ ],
  "scan": {
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-14T09:00:59.887908+00:00",
+ "time": "2026-11-14T10:01:05.341052+00:00",
  "account": "DEMO",
  "balance": 10078.13,
  "equity": 10325.03,
@@ -893,8 +895,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-14T08:01:53.309729+00:00",
-  "symbols": 41,
+  "time": "2026-11-14T09:02:30.012517+00:00",
+  "symbols": 40,
   "ok": true
  },
  "skipped": [
