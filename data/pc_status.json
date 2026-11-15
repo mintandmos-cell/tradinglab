@@ -1,13 +1,11 @@
 {
- "last_scan_hour": "2026-11-15 00:00:00+00:00",
- "new_signals": [
-  "BTCUSD-D1-vb_atrb_r50-1794614400"
- ],
+ "last_scan_hour": "2026-11-15 01:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-15T00:00:39.335582+00:00",
+ "time": "2026-11-15T01:01:00.289474+00:00",
  "account": "DEMO",
  "balance": 10078.13,
  "equity": 10325.03,
@@ -874,7 +872,7 @@
   }
  ],
  "swap_watch": {
-  "day": "2026-11-14",
+  "day": "2026-11-15",
   "checked": 56,
   "charged": 2,
   "symbols": [
@@ -895,11 +893,17 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-14T23:01:45.241888+00:00",
+  "time": "2026-11-15T00:01:57.616793+00:00",
   "symbols": 41,
   "ok": true
  },
  "skipped": [
+  {
+   "signal_id": "BTCUSD-D1-vb_atrb_r50-1794614400",
+   "symbol": "BTCUSD",
+   "time": "2026-11-15T00:01:57.616793+00:00",
+   "reason": "lot 0.0028 < min 0.01 (0.01 lot would risk 0.36%)"
+  },
   {
    "signal_id": "AUDJPY-H4-vb_dq_calm-1794600000",
    "symbol": "AUDJPY",
