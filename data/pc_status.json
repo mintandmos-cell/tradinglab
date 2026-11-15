@@ -1,11 +1,11 @@
 {
- "last_scan_hour": "2026-11-15 03:00:00+00:00",
+ "last_scan_hour": "2026-11-15 04:00:00+00:00",
  "new_signals": [],
  "scan": {
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-15T03:26:52.029601+00:00",
+ "time": "2026-11-15T04:01:34.974200+00:00",
  "account": "DEMO",
  "balance": 10078.13,
  "equity": 10325.03,
@@ -874,6 +874,12 @@
   "ok": false
  },
  "skipped": [
+  {
+   "signal_id": "USOIL-D1-mr_dn_wild-1794528000",
+   "symbol": "USOIL",
+   "time": "2026-11-15T03:28:10.762076+00:00",
+   "reason": "lot 0.0011 < min 0.01 (0.01 lot would risk 0.91%)"
+  },
   {
    "signal_id": "BTCUSD-D1-vb_atrb_r50-1794614400",
    "symbol": "BTCUSD",
