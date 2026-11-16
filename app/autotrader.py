@@ -426,8 +426,10 @@ def hourly_scan(c: dict, st: dict) -> list[dict]:
         if _tradable(c, s):
             _queue(c, st, s, "pc")
     follow_alerts(c, st, pull=False)
-    if c.get("trail_stops", True):
-        trail_positions(c, st)
+    if c.get("trail_stops", True) and trail_positions(c, st):
+        # 16 Nov 2026: the status above was written BEFORE the stops moved, so the cloud's health check saw the old SL next
+        # to the new trailing stop ("SL in MT5 differs") -> publish the positions again with the moved SL
+        publish_status(c, st)
     swap_watch(c, st)
     publish_bars(c, st)
     return new
@@ -459,10 +461,11 @@ def publish_bars(c: dict, st: dict) -> None:
         _log("bars", symbols=len(files), ok=ok)
 
 
-def trail_positions(c: dict, st: dict) -> None:
+def trail_positions(c: dict, st: dict) -> int:
     """Systems with a trailing stop: move the position's SL to the stop the forward tracking computed on the broker's
     COMPLETED candles (signal 'stop_now' — the same rule as the backtest). Only ever tightens."""
     mt5 = _mt5()
+    moved = 0
     sigs = {x["id"]: x for x in scanner.load_signals()}
     for p in _positions(c):
         sig = sigs.get(_signal_of(st, p) or "")
@@ -479,8 +482,10 @@ def trail_positions(c: dict, st: dict) -> None:
             continue
         r = mt5.order_send(req)
         ok = r is not None and r.retcode == mt5.TRADE_RETCODE_DONE
+        moved += 1
         _log("trail" if ok else "trail_failed", symbol=p.symbol, ticket=p.ticket, old_sl=p.sl, sl=new,
              retcode=getattr(r, "retcode", None), msg=getattr(r, "comment", None) or str(mt5.last_error()))
+    return moved
 
 
 def sync_exits(c: dict, st: dict) -> None:
