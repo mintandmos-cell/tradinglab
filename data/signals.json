@@ -272,7 +272,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 1022.33,
-  "stop_now": 28305.64
+  "stop_now": 28202.89
  },
  {
   "id": "USOIL-D1-mr_dn_wild-1794528000",
@@ -539,15 +539,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.04,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-16T16:00:00+00:00",
   "user_status": "new",
   "late": true,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00691,
-  "stop_now": 0.96278
+  "stop_now": 0.96278,
+  "exit_reason": "SL",
+  "exit_price": 0.96278
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1794571200",
@@ -712,7 +714,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 108.215
+  "stop_now": 108.001
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
@@ -1158,7 +1160,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 991.53,
-  "stop_now": 28274.84
+  "stop_now": 28172.09
  },
  {
   "id": "GBPUSD-D1-mo_st50_don-1794355200",
