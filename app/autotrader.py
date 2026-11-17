@@ -319,33 +319,53 @@ def watch_positions(c: dict, st: dict, force: bool = False) -> None:
         st["fills"] = (_fills + st.get("fills", []))[:100]
         _fills.clear()
         force = True
-    now = {str(p.ticket): p for p in _positions(c)}
+    raw = mt5.positions_get()
+    if raw is None:          # 16 Nov 2026: MT5 lost its connection for a moment -> None looked like "every position closed"
+        _log("positions_unavailable", msg=str(mt5.last_error()))
+        return
+    now = {str(p.ticket): p for p in raw if p.magic == c["magic"]}
     before = st.get("open_tickets", [])
-    closed = [t for t in before if t not in now]
-    for t in closed:
+    closed = []
+    for t in [t for t in before if t not in now]:
         known = st.get("rows", {}).get(t, {})
         row = {"ticket": int(t), "signal_id": st["tickets"].get(t), "time": datetime.now(timezone.utc).isoformat(),
                **{k: known[k] for k in ("symbol", "system", "side", "lots", "price_open") if k in known}}
         try:
             deals = mt5.history_deals_get(position=int(t)) or []
             out = [d for d in deals if d.entry in (1, 3)]                    # DEAL_ENTRY_OUT / OUT_BY
-            if out:
-                d = out[-1]
-                row.setdefault("symbol", d.symbol)
-                row.setdefault("system", d.comment or "")
-                row.update(price=d.price, reason=REASONS.get(d.reason, str(d.reason)),
-                           profit=round(sum(x.profit + x.swap + x.commission for x in deals), 2))
         except Exception as e:
             log.warning("deal history %s: %s", t, e)
+            out = []
+        if not out:
+            # no closing deal in MT5's history: the position only vanished from the list (reconnect / history not loaded
+            # yet). Keep it as open and look again next loop instead of announcing a close that did not happen.
+            miss = st.setdefault("missing_since", {})
+            miss.setdefault(t, time.time())
+            if time.time() - miss[t] < 30 * 60:
+                now[t] = None
+            else:                                    # gone for 30 min without a deal: stop tracking it, no push
+                miss.pop(t, None)
+                _log("vanished", **row)
+            continue
+        st.get("missing_since", {}).pop(t, None)
+        d = out[-1]
+        row.setdefault("symbol", d.symbol)
+        row.setdefault("system", d.comment or "")
+        row.update(price=d.price, reason=REASONS.get(d.reason, str(d.reason)),
+                   profit=round(sum(x.profit + x.swap + x.commission for x in deals), 2))
+        closed.append(t)
         st.setdefault("closed", []).insert(0, row)
         del st["closed"][30:]
         _log("closed", **row)
         _push(c, f"ปิด {row.get('symbol', '')} {row.get('system', '')} — {row.get('reason', '')}",
               f"ราคา {row.get('price', '–')} · กำไร/ขาดทุน {row.get('profit', 0):+.2f} USD")
+    for t in [t for t in st.get("missing_since", {}) if now.get(t) is not None or t not in now]:
+        st["missing_since"].pop(t, None)                     # came back (or dropped): forget the timer
     changed = sorted(now) != sorted(before)
     st["open_tickets"] = sorted(now)
-    st["rows"] = {t: {"symbol": p.symbol, "system": p.comment, "side": "BUY" if p.type == mt5.POSITION_TYPE_BUY else "SELL",
-                      "lots": p.volume, "price_open": p.price_open} for t, p in now.items()}
+    rows = st.get("rows", {})
+    st["rows"] = {t: ({"symbol": p.symbol, "system": p.comment, "side": "BUY" if p.type == mt5.POSITION_TYPE_BUY else "SELL",
+                       "lots": p.volume, "price_open": p.price_open} if p is not None else rows.get(t, {})) for t, p in now.items()}
     if changed or force:
         publish_status(c, st)
 
