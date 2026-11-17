@@ -272,7 +272,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 1022.33,
-  "stop_now": 28202.89
+  "stop_now": 28194.67
  },
  {
   "id": "USOIL-D1-mr_dn_wild-1794528000",
@@ -327,7 +327,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 7.245,
-  "stop_now": 94.194
+  "stop_now": 91.06
  },
  {
   "id": "BTCUSD-D1-vb_atrb_r50-1794614400",
@@ -714,7 +714,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 108.001
+  "stop_now": 107.996
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
@@ -1160,7 +1160,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 991.53,
-  "stop_now": 28172.09
+  "stop_now": 28163.87
  },
  {
   "id": "GBPUSD-D1-mo_st50_don-1794355200",
