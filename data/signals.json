@@ -272,7 +272,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 1022.33,
-  "stop_now": 28054.39
+  "stop_now": 27626.65
  },
  {
   "id": "USOIL-D1-mr_dn_wild-1794528000",
@@ -883,7 +883,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 167.95
+  "stop_now": 163.79
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -938,7 +938,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 168.09
+  "stop_now": 163.93
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
@@ -1164,7 +1164,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 991.53,
-  "stop_now": 28023.59
+  "stop_now": 27595.85
  },
  {
   "id": "GBPUSD-D1-mo_st50_don-1794355200",
