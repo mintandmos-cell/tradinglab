@@ -651,15 +651,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.039,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.0,
+  "exit_time": "2026-11-17T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": null,
-  "stop_now": 0.83436
+  "stop_now": 0.83436,
+  "exit_reason": "TP",
+  "exit_price": 0.84094
  },
  {
   "id": "AUDJPY-H4-squeeze_momentum-1794542400",
@@ -714,7 +716,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 107.996
+  "stop_now": 107.947
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
