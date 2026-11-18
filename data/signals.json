@@ -154,15 +154,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.011,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-18T04:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 4.016,
-  "stop_now": 83.355
+  "stop_now": 83.355,
+  "exit_reason": "SL",
+  "exit_price": 83.355
  },
  {
   "id": "XAUUSD-H4-pa_mss_m3-1794801600",
