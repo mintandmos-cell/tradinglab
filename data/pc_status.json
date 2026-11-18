@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-18T17:01:25.483133+00:00",
+ "time": "2026-11-18T17:51:54.773056+00:00",
  "account": "DEMO",
- "balance": 10156.7,
- "equity": 10617.34,
+ "balance": 10278.39,
+ "equity": 10628.62,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 81.238,
-   "profit": 308.4,
+   "price": 81.393,
+   "profit": 305.3,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.24,
-   "profit": 4.69,
+   "price": 159.299,
+   "profit": 5.06,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.24,
-   "profit": 4.69,
+   "price": 159.299,
+   "profit": 5.06,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83401,
-   "profit": -1.0,
+   "price": 0.83451,
+   "profit": -0.34,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.31517,
-   "profit": 12.31,
+   "price": 1.31475,
+   "profit": 12.73,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -91,23 +91,9 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 106.916,
-   "profit": 25.0,
+   "price": 107.02,
+   "profit": 23.03,
    "time": "2026-11-13T20:01:44+00:00"
-  },
-  {
-   "ticket": 2860174322,
-   "symbol": "XAUUSD",
-   "system": "TL891-H4",
-   "signal_id": "XAUUSD-H4-pa_mss_m3-1794801600",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 3855.136,
-   "sl": 3938.53,
-   "tp": 3733.45,
-   "price": 3747.353,
-   "profit": 107.79,
-   "time": "2026-11-16T08:01:47+00:00"
   },
   {
    "ticket": 2864450169,
@@ -119,8 +105,8 @@
    "price_open": 0.96342,
    "sl": 0.95782,
    "tp": 0.97156,
-   "price": 0.96225,
-   "profit": -1.63,
+   "price": 0.96293,
+   "profit": -0.68,
    "time": "2026-11-16T20:01:51+00:00"
   },
   {
@@ -133,12 +119,25 @@
    "price_open": 1.09733,
    "sl": 1.09957,
    "tp": null,
-   "price": 1.09694,
-   "profit": 0.39,
+   "price": 1.09726,
+   "profit": 0.07,
    "time": "2026-11-18T08:12:09+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2860174322,
+   "signal_id": "XAUUSD-H4-pa_mss_m3-1794801600",
+   "time": "2026-11-18T17:51:53.109380+00:00",
+   "symbol": "XAUUSD",
+   "system": "TL891-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 3855.136,
+   "price": 3733.45,
+   "reason": "TP",
+   "profit": 121.69
+  },
   {
    "ticket": 2786124974,
    "signal_id": "GBPUSD-D1-mr_dn_raw-1793570400",
@@ -296,16 +295,6 @@
    "side": "BUY",
    "lots": 0.01,
    "price_open": 0.83477
-  },
-  {
-   "ticket": 2815255163,
-   "signal_id": "USDJPY-H4-ppo_flip-1793980800",
-   "time": "2026-11-16T06:00:48.795279+00:00",
-   "symbol": "USDJPY",
-   "system": "TL90-H4",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 158.493
   }
  ],
  "fills": [
@@ -878,8 +867,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-18T16:02:31.048429+00:00",
-  "symbols": 40,
+  "time": "2026-11-18T17:03:04.259871+00:00",
+  "symbols": 41,
   "ok": true
  },
  "skipped": [
