@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-19T01:00:50.686332+00:00",
+ "time": "2026-11-19T01:27:31.270029+00:00",
  "account": "DEMO",
- "balance": 10278.39,
- "equity": 10624.19,
+ "balance": 10270.58,
+ "equity": 10615.48,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 81.687,
-   "profit": 299.42,
+   "price": 82.251,
+   "profit": 288.14,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.417,
-   "profit": 5.8,
+   "price": 159.329,
+   "profit": 5.25,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.417,
-   "profit": 5.8,
+   "price": 159.329,
+   "profit": 5.25,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83462,
-   "profit": -0.2,
+   "price": 0.83471,
+   "profit": -0.08,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.31532,
-   "profit": 12.16,
+   "price": 1.31448,
+   "profit": 13.0,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -91,23 +91,9 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 106.646,
-   "profit": 30.05,
+   "price": 106.473,
+   "profit": 33.33,
    "time": "2026-11-13T20:01:44+00:00"
-  },
-  {
-   "ticket": 2864450169,
-   "symbol": "AUDCAD",
-   "system": "TL174-H4",
-   "signal_id": "AUDCAD-H4-mr_stoch_raw-1794844800",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 0.96342,
-   "sl": 0.95782,
-   "tp": 0.97156,
-   "price": 0.95862,
-   "profit": -6.7,
-   "time": "2026-11-16T20:01:51+00:00"
   },
   {
    "ticket": 2876060723,
@@ -119,12 +105,25 @@
    "price_open": 1.09733,
    "sl": 1.09957,
    "tp": null,
-   "price": 1.09786,
-   "profit": -0.53,
+   "price": 1.09732,
+   "profit": 0.01,
    "time": "2026-11-18T08:12:09+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2864450169,
+   "signal_id": "AUDCAD-H4-mr_stoch_raw-1794844800",
+   "time": "2026-11-19T01:27:29.911970+00:00",
+   "symbol": "AUDCAD",
+   "system": "TL174-H4",
+   "side": "BUY",
+   "lots": 0.02,
+   "price_open": 0.96342,
+   "price": 0.95782,
+   "reason": "SL",
+   "profit": -7.81
+  },
   {
    "ticket": 2860174322,
    "signal_id": "XAUUSD-H4-pa_mss_m3-1794801600",
@@ -285,16 +284,6 @@
    "side": "BUY",
    "lots": 0.03,
    "price_open": 1.42009
-  },
-  {
-   "ticket": 2825924595,
-   "signal_id": "EURGBP-D1-mr_fib_calm-1794096000",
-   "time": "2026-11-16T06:00:48.810900+00:00",
-   "symbol": "EURGBP",
-   "system": "TL388-D1",
-   "side": "BUY",
-   "lots": 0.01,
-   "price_open": 0.83477
   }
  ],
  "fills": [
@@ -867,7 +856,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-19T00:02:05.706049+00:00",
+  "time": "2026-11-19T01:02:18.186973+00:00",
   "symbols": 40,
   "ok": true
  },
