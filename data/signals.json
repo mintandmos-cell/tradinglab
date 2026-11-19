@@ -154,15 +154,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.016,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.358,
+  "exit_time": "2026-11-19T08:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00429,
-  "stop_now": 1.09957
+  "stop_now": 1.09957,
+  "exit_reason": "Trail",
+  "exit_price": 1.09957
  },
  {
   "id": "AUDCAD-H4-mr_stoch_raw-1794844800",
