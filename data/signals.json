@@ -209,15 +209,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.038,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.749,
+  "exit_time": "2026-11-19T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00732,
-  "stop_now": 0.95335
+  "stop_now": 0.95335,
+  "exit_reason": "Trail",
+  "exit_price": 0.95335
  },
  {
   "id": "EURUSD-H4-tsi_cross-1794974400",
@@ -1174,7 +1176,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 161.24
+  "stop_now": 160.56
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1229,7 +1231,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 161.38
+  "stop_now": 160.7
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
