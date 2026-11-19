@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-19T12:00:39.446960+00:00",
+ "time": "2026-11-19T12:02:25.334990+00:00",
  "account": "DEMO",
  "balance": 10268.34,
- "equity": 10607.23,
+ "equity": 10606.01,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 82.227,
-   "profit": 288.62,
+   "price": 82.323,
+   "profit": 286.7,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.894,
-   "profit": 8.76,
+   "price": 159.935,
+   "profit": 9.02,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.894,
-   "profit": 8.76,
+   "price": 159.935,
+   "profit": 9.02,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83556,
-   "profit": 1.04,
+   "price": 0.83562,
+   "profit": 1.12,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -79,8 +79,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.31564,
-   "profit": 11.84,
+   "price": 1.31538,
+   "profit": 12.1,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -93,8 +93,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 107.289,
-   "profit": 17.9,
+   "price": 107.303,
+   "profit": 17.63,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -107,9 +107,23 @@
    "price_open": 0.95853,
    "sl": 0.95335,
    "tp": null,
-   "price": 0.95994,
-   "profit": 1.97,
+   "price": 0.95983,
+   "profit": 1.82,
    "time": "2026-11-19T04:02:40+00:00"
+  },
+  {
+   "ticket": 2885771994,
+   "symbol": "USDJPY",
+   "system": "TL674-H4",
+   "signal_id": "USDJPY-H4-vb_sqz_m3-1795075200",
+   "side": "BUY",
+   "lots": 0.03,
+   "price_open": 159.921,
+   "sl": 159.451,
+   "tp": 160.578,
+   "price": 159.935,
+   "profit": 0.26,
+   "time": "2026-11-19T12:02:04+00:00"
   }
  ],
  "closed": [
@@ -292,6 +306,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-19T12:02:03.962672+00:00",
+   "signal": "USDJPY-H4-vb_sqz_m3-1795075200",
+   "symbol": "USDJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 159.921,
+   "fill": 159.921,
+   "signal_entry": 159.902,
+   "slip_pts": 0.0,
+   "drift_r": 0.042,
+   "delay_s": 124
+  },
   {
    "time": "2026-11-19T04:02:39.698130+00:00",
    "signal": "AUDCAD-H4-mr_drop_wild-1795046400",
@@ -837,20 +865,6 @@
    "slip_pts": -0.0,
    "drift_r": 0.003,
    "delay_s": 29
-  },
-  {
-   "time": "2026-11-02T17:00:20.533423+00:00",
-   "signal": "DE30-H1-ny_open_breakout-1793631600",
-   "symbol": "DE30",
-   "tf": "H1",
-   "status": "TRIAL",
-   "side": "BUY",
-   "asked": 26034.6,
-   "fill": 26034.6,
-   "signal_entry": 26003.1,
-   "slip_pts": 0.0,
-   "drift_r": 0.16,
-   "delay_s": 3621
   }
  ],
  "swap_watch": {
@@ -875,8 +889,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-19T11:02:13.255148+00:00",
-  "symbols": 41,
+  "time": "2026-11-19T12:02:03.684245+00:00",
+  "symbols": 40,
   "ok": true
  },
  "skipped": [
