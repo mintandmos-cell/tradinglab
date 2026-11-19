@@ -154,15 +154,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.042,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-19T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": null,
-  "stop_now": 0.95782
+  "stop_now": 0.95782,
+  "exit_reason": "SL",
+  "exit_price": 0.95782
  },
  {
   "id": "USOIL-H4-mr_z_calm-1794816000",
@@ -832,7 +834,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 0.711,
-  "stop_now": 107.517
+  "stop_now": 106.93
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794484800",
