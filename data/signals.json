@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.154,
-  "stop_now": 209.03
+  "stop_now": 208.806
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795161600",
@@ -154,15 +154,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.035,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.92,
+  "exit_time": "2026-11-20T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00784,
-  "stop_now": 0.9489
+  "stop_now": 0.9489,
+  "exit_reason": "Trail",
+  "exit_price": 0.9489
  },
  {
   "id": "NZDJPY-H4-pa_sold_m3-1795118400",
@@ -264,15 +266,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.037,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-20T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": null,
-  "stop_now": 0.95024
+  "stop_now": 0.95024,
+  "exit_reason": "SL",
+  "exit_price": 0.95024
  },
  {
   "id": "ETHUSD-H4-pa_out_calm-1795089600",
@@ -327,7 +331,7 @@
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": 113.87,
-  "stop_now": 1760.58
+  "stop_now": 1692.3
  },
  {
   "id": "USDJPY-H4-vb_sqz_m3-1795075200",
@@ -1398,7 +1402,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 148.22
+  "stop_now": 140.84
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1453,7 +1457,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 148.36
+  "stop_now": 140.98
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
