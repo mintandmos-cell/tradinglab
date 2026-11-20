@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00784,
-  "stop_now": 0.94838
+  "stop_now": 0.9489
  },
  {
   "id": "NZDJPY-H4-pa_sold_m3-1795118400",
@@ -217,7 +217,7 @@
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": 113.87,
-  "stop_now": 1834.78
+  "stop_now": 1829.75
  },
  {
   "id": "USDJPY-H4-vb_sqz_m3-1795075200",
