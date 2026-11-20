@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-20T19:25:59.403864+00:00",
+ "time": "2026-11-20T19:32:01.923822+00:00",
  "account": "DEMO",
- "balance": 10236.35,
- "equity": 10639.22,
+ "balance": 10256.6,
+ "equity": 10656.98,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 83.286,
-   "profit": 267.44,
+   "price": 82.722,
+   "profit": 278.72,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.719,
-   "profit": 1.42,
+   "price": 158.583,
+   "profit": 0.57,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.719,
-   "profit": 1.42,
+   "price": 158.583,
+   "profit": 0.57,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83772,
-   "profit": 3.86,
+   "price": 0.8379,
+   "profit": 4.1,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.3089,
-   "profit": 18.58,
+   "price": 1.30864,
+   "profit": 18.84,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -91,8 +91,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.049,
-   "profit": 60.37,
+   "price": 104.905,
+   "profit": 63.14,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -105,23 +105,9 @@
    "price_open": 1776.53,
    "sl": 1760.58,
    "tp": null,
-   "price": 1586.37,
-   "profit": 28.52,
+   "price": 1587.83,
+   "profit": 28.31,
    "time": "2026-11-19T16:01:50+00:00"
-  },
-  {
-   "ticket": 2890447777,
-   "symbol": "NZDJPY",
-   "system": "TL887-H4",
-   "signal_id": "NZDJPY-H4-pa_sold_m3-1795118400",
-   "side": "SELL",
-   "lots": 0.04,
-   "price_open": 87.591,
-   "sl": 87.931,
-   "tp": 86.788,
-   "price": 86.865,
-   "profit": 18.3,
-   "time": "2026-11-20T00:02:19+00:00"
   },
   {
    "ticket": 2897140596,
@@ -133,8 +119,8 @@
    "price_open": 174.082,
    "sl": 174.81,
    "tp": 172.399,
-   "price": 174.058,
-   "profit": 0.3,
+   "price": 173.915,
+   "profit": 2.11,
    "time": "2026-11-20T12:01:59+00:00"
   },
   {
@@ -147,12 +133,25 @@
    "price_open": 208.175,
    "sl": 209.03,
    "tp": null,
-   "price": 207.753,
-   "profit": 2.66,
+   "price": 207.538,
+   "profit": 4.02,
    "time": "2026-11-20T13:01:39+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2890447777,
+   "signal_id": "NZDJPY-H4-pa_sold_m3-1795118400",
+   "time": "2026-11-20T19:32:00.840155+00:00",
+   "symbol": "NZDJPY",
+   "system": "TL887-H4",
+   "side": "SELL",
+   "lots": 0.04,
+   "price_open": 87.591,
+   "price": 86.788,
+   "reason": "TP",
+   "profit": 20.25
+  },
   {
    "ticket": 2893221619,
    "signal_id": "AUDCAD-H4-mr_drop_wild-1795132800",
@@ -331,16 +330,6 @@
    "side": "SELL",
    "lots": 0.03,
    "price_open": 108.243
-  },
-  {
-   "ticket": 2851971409,
-   "signal_id": "AUDCAD-H4-mr_drop_wild-1794542400",
-   "time": "2026-11-16T06:00:48.826524+00:00",
-   "symbol": "AUDCAD",
-   "system": "TL338-H4",
-   "side": "BUY",
-   "lots": 0.04,
-   "price_open": 0.96582
   }
  ],
  "fills": [
