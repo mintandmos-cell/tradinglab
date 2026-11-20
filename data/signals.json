@@ -1842,15 +1842,17 @@
   "reverse_of": "LONG",
   "price_source": "Exness MT5",
   "cost_r": 0.008,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 3.0,
+  "exit_time": "2026-11-19T20:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": null,
-  "stop_now": 76926.21
+  "stop_now": 76926.21,
+  "exit_reason": "TP",
+  "exit_price": 61764.52
  },
  {
   "id": "USDCAD-H1-mr_z_t100-1794294000",
