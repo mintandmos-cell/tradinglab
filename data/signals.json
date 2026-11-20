@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.154,
-  "stop_now": 208.806
+  "stop_now": 208.508
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795161600",
@@ -211,15 +211,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.087,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.501,
+  "exit_time": "2026-11-20T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": null,
-  "stop_now": 87.931
+  "stop_now": 87.931,
+  "exit_reason": "TP",
+  "exit_price": 86.788
  },
  {
   "id": "AUDCAD-H4-mr_stoch_raw-1795089600",
@@ -1402,7 +1404,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 140.84
+  "stop_now": 139.72
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1457,7 +1459,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 140.98
+  "stop_now": 139.86
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
