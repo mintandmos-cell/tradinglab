@@ -1343,7 +1343,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 160.07
+  "stop_now": 155.5
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1398,7 +1398,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 160.21
+  "stop_now": 155.64
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
