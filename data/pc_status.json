@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-20T04:00:50.008525+00:00",
+ "time": "2026-11-20T04:02:51.879509+00:00",
  "account": "DEMO",
  "balance": 10252.27,
- "equity": 10602.07,
+ "equity": 10602.04,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 83.086,
-   "profit": 271.44,
+   "price": 83.081,
+   "profit": 271.54,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.222,
-   "profit": 4.58,
+   "price": 159.232,
+   "profit": 4.64,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.222,
-   "profit": 4.58,
+   "price": 159.232,
+   "profit": 4.64,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83764,
-   "profit": 3.76,
+   "price": 0.83755,
+   "profit": 3.64,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -93,8 +93,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 106.094,
-   "profit": 40.49,
+   "price": 106.101,
+   "profit": 40.35,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -107,8 +107,8 @@
    "price_open": 1776.53,
    "sl": 1834.78,
    "tp": null,
-   "price": 1739.39,
-   "profit": 5.57,
+   "price": 1737.62,
+   "profit": 5.84,
    "time": "2026-11-19T16:01:50+00:00"
   },
   {
@@ -121,8 +121,8 @@
    "price_open": 0.95582,
    "sl": 0.95024,
    "tp": 0.96599,
-   "price": 0.95462,
-   "profit": -1.67,
+   "price": 0.95464,
+   "profit": -1.65,
    "time": "2026-11-19T16:01:52+00:00"
   },
   {
@@ -135,9 +135,23 @@
    "price_open": 87.591,
    "sl": 87.931,
    "tp": 86.788,
-   "price": 87.438,
-   "profit": 3.84,
+   "price": 87.444,
+   "profit": 3.69,
    "time": "2026-11-20T00:02:19+00:00"
+  },
+  {
+   "ticket": 2893221619,
+   "symbol": "AUDCAD",
+   "system": "TL338-H4",
+   "signal_id": "AUDCAD-H4-mr_drop_wild-1795132800",
+   "side": "BUY",
+   "lots": 0.02,
+   "price_open": 0.95473,
+   "sl": 0.94838,
+   "tp": null,
+   "price": 0.95464,
+   "profit": -0.13,
+   "time": "2026-11-20T04:02:35+00:00"
   }
  ],
  "closed": [
@@ -326,6 +340,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-20T04:02:35.479843+00:00",
+   "signal": "AUDCAD-H4-mr_drop_wild-1795132800",
+   "symbol": "AUDCAD",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 0.95473,
+   "fill": 0.95473,
+   "signal_entry": 0.95491,
+   "slip_pts": 0.0,
+   "drift_r": -0.028,
+   "delay_s": 155
+  },
   {
    "time": "2026-11-20T00:02:19.342896+00:00",
    "signal": "NZDJPY-H4-pa_sold_m3-1795118400",
@@ -871,20 +899,6 @@
    "slip_pts": -0.0,
    "drift_r": 0.07,
    "delay_s": 35
-  },
-  {
-   "time": "2026-11-04T00:00:29.405536+00:00",
-   "signal": "EURUSD-H1-ichimoku_tk-1793746800",
-   "symbol": "EURUSD",
-   "tf": "H1",
-   "status": "ACTIVE",
-   "side": "BUY",
-   "asked": 1.12084,
-   "fill": 1.12084,
-   "signal_entry": 1.12067,
-   "slip_pts": 0.0,
-   "drift_r": 0.063,
-   "delay_s": 29
   }
  ],
  "swap_watch": {
@@ -909,8 +923,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-20T03:02:08.696188+00:00",
-  "symbols": 40,
+  "time": "2026-11-20T04:02:14.960385+00:00",
+  "symbols": 41,
   "ok": true
  },
  "skipped": [
