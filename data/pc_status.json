@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-20T12:00:24.864766+00:00",
+ "time": "2026-11-20T12:02:16.253131+00:00",
  "account": "DEMO",
  "balance": 10252.27,
- "equity": 10627.22,
+ "equity": 10626.21,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 82.02,
-   "profit": 292.76,
+   "price": 82.045,
+   "profit": 292.26,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 0.83477,
    "sl": 0.82844,
    "tp": 0.84004,
-   "price": 0.83669,
-   "profit": 2.51,
+   "price": 0.83666,
+   "profit": 2.48,
    "time": "2026-11-10T02:14:20+00:00"
   },
   {
@@ -79,8 +79,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.30973,
-   "profit": 17.75,
+   "price": 1.30991,
+   "profit": 17.57,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -93,8 +93,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.738,
-   "profit": 47.31,
+   "price": 105.754,
+   "profit": 47.01,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -107,8 +107,8 @@
    "price_open": 1776.53,
    "sl": 1829.75,
    "tp": null,
-   "price": 1748.88,
-   "profit": 4.15,
+   "price": 1746.43,
+   "profit": 4.52,
    "time": "2026-11-19T16:01:50+00:00"
   },
   {
@@ -121,8 +121,8 @@
    "price_open": 0.95582,
    "sl": 0.95024,
    "tp": 0.96599,
-   "price": 0.9539,
-   "profit": -2.68,
+   "price": 0.95407,
+   "profit": -2.44,
    "time": "2026-11-19T16:01:52+00:00"
   },
   {
@@ -135,8 +135,8 @@
    "price_open": 87.591,
    "sl": 87.931,
    "tp": 86.788,
-   "price": 87.192,
-   "profit": 10.05,
+   "price": 87.22,
+   "profit": 9.34,
    "time": "2026-11-20T00:02:19+00:00"
   },
   {
@@ -149,9 +149,23 @@
    "price_open": 0.95473,
    "sl": 0.9489,
    "tp": null,
-   "price": 0.9539,
-   "profit": -1.16,
+   "price": 0.95407,
+   "profit": -0.92,
    "time": "2026-11-20T04:02:35+00:00"
+  },
+  {
+   "ticket": 2897140596,
+   "symbol": "EURJPY",
+   "system": "TL895-H4",
+   "signal_id": "EURJPY-H4-pa_ins_year-1795161600",
+   "side": "SELL",
+   "lots": 0.02,
+   "price_open": 174.082,
+   "sl": 174.81,
+   "tp": 172.399,
+   "price": 174.093,
+   "profit": -0.14,
+   "time": "2026-11-20T12:01:59+00:00"
   }
  ],
  "closed": [
@@ -340,6 +354,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-20T12:01:59.865440+00:00",
+   "signal": "EURJPY-H4-pa_ins_year-1795161600",
+   "symbol": "EURJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 174.082,
+   "fill": 174.082,
+   "signal_entry": 174.121,
+   "slip_pts": -0.0,
+   "drift_r": 0.057,
+   "delay_s": 120
+  },
   {
    "time": "2026-11-20T04:02:35.479843+00:00",
    "signal": "AUDCAD-H4-mr_drop_wild-1795132800",
@@ -885,20 +913,6 @@
    "slip_pts": -0.0,
    "drift_r": 0.128,
    "delay_s": 37
-  },
-  {
-   "time": "2026-11-04T01:00:35.462545+00:00",
-   "signal": "DE30-H1-ichimoku_tk-1793750400",
-   "symbol": "DE30",
-   "tf": "H1",
-   "status": "ACTIVE",
-   "side": "SELL",
-   "asked": 25727.8,
-   "fill": 25727.8,
-   "signal_entry": 25741.8,
-   "slip_pts": -0.0,
-   "drift_r": 0.07,
-   "delay_s": 35
   }
  ],
  "swap_watch": {
@@ -923,8 +937,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-20T11:02:03.006335+00:00",
-  "symbols": 40,
+  "time": "2026-11-20T12:01:41.724595+00:00",
+  "symbols": 41,
   "ok": true
  },
  "skipped": [
