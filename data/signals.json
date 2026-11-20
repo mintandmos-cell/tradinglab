@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.154,
-  "stop_now": 209.433
+  "stop_now": 209.09
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795161600",
@@ -327,7 +327,7 @@
   "origin": "pc",
   "cluster": "crypto",
   "trail_dist": 113.87,
-  "stop_now": 1829.75
+  "stop_now": 1779.53
  },
  {
   "id": "USDJPY-H4-vb_sqz_m3-1795075200",
@@ -1398,7 +1398,7 @@
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 152.25
+  "stop_now": 149.03
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1453,7 +1453,7 @@
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 152.39
+  "stop_now": 149.17
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
