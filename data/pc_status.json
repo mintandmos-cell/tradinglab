@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-21T11:00:27.348046+00:00",
+ "time": "2026-11-21T11:32:24.572447+00:00",
  "account": "DEMO",
- "balance": 10256.6,
- "equity": 10633.65,
+ "balance": 10275.78,
+ "equity": 10632.09,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -96,20 +96,6 @@
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
-   "ticket": 2887991960,
-   "symbol": "ETHUSD",
-   "system": "TL836-H4",
-   "signal_id": "ETHUSD-H4-pa_out_calm-1795089600",
-   "side": "SELL",
-   "lots": 0.15,
-   "price_open": 1776.53,
-   "sl": 1648.66,
-   "tp": null,
-   "price": 1638.29,
-   "profit": 20.74,
-   "time": "2026-11-19T16:01:50+00:00"
-  },
-  {
    "ticket": 2897140596,
    "symbol": "EURJPY",
    "system": "TL895-H4",
@@ -139,6 +125,19 @@
   }
  ],
  "closed": [
+  {
+   "ticket": 2887991960,
+   "signal_id": "ETHUSD-H4-pa_out_calm-1795089600",
+   "time": "2026-11-21T11:32:23.178697+00:00",
+   "symbol": "ETHUSD",
+   "system": "TL836-H4",
+   "side": "SELL",
+   "lots": 0.15,
+   "price_open": 1776.53,
+   "price": 1648.66,
+   "reason": "SL",
+   "profit": 19.18
+  },
   {
    "ticket": 2890447777,
    "signal_id": "NZDJPY-H4-pa_sold_m3-1795118400",
@@ -320,16 +319,6 @@
    "price": 1.4304999999999999,
    "reason": "TP",
    "profit": 21.83
-  },
-  {
-   "ticket": 2852471228,
-   "signal_id": "AUDJPY-H4-vb_dq_calm-1794585600",
-   "time": "2026-11-16T06:00:48.826524+00:00",
-   "symbol": "AUDJPY",
-   "system": "TL646-H4",
-   "side": "SELL",
-   "lots": 0.03,
-   "price_open": 108.243
   }
  ],
  "fills": [
@@ -916,7 +905,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-21T10:01:34.926374+00:00",
+  "time": "2026-11-21T11:01:42.926256+00:00",
   "symbols": 41,
   "ok": true
  },
