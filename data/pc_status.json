@@ -1,14 +1,16 @@
 {
- "last_scan_hour": "2026-11-20 23:00:00+00:00",
- "new_signals": [],
+ "last_scan_hour": "2026-11-21 00:00:00+00:00",
+ "new_signals": [
+  "AUDCAD-H4-mr_drop_wild-1795190400"
+ ],
  "scan": {
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-20T23:00:18.870376+00:00",
+ "time": "2026-11-21T00:00:29.487910+00:00",
  "account": "DEMO",
  "balance": 10256.6,
- "equity": 10636.53,
+ "equity": 10636.22,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -105,8 +107,8 @@
    "price_open": 1776.53,
    "sl": 1692.3,
    "tp": null,
-   "price": 1619.09,
-   "profit": 23.62,
+   "price": 1621.16,
+   "profit": 23.31,
    "time": "2026-11-19T16:01:50+00:00"
   },
   {
@@ -916,7 +918,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-20T22:01:35.316679+00:00",
+  "time": "2026-11-20T23:01:39.145080+00:00",
   "symbols": 41,
   "ok": true
  },
