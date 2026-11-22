@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-22T23:00:31.289949+00:00",
+ "time": "2026-11-22T23:01:49.305613+00:00",
  "account": "DEMO",
  "balance": 10279.96,
- "equity": 10629.5,
+ "equity": 10630.03,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 83.385,
-   "profit": 265.46,
+   "price": 83.227,
+   "profit": 268.62,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.547,
-   "profit": 0.34,
+   "price": 158.636,
+   "profit": 0.9,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.547,
-   "profit": 0.34,
+   "price": 158.636,
+   "profit": 0.9,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.30922,
-   "profit": 18.26,
+   "price": 1.30915,
+   "profit": 18.33,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.051,
-   "profit": 60.39,
+   "price": 105.155,
+   "profit": 58.39,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -91,8 +91,8 @@
    "price_open": 174.082,
    "sl": 174.81,
    "tp": 172.399,
-   "price": 173.985,
-   "profit": 1.22,
+   "price": 174.08,
+   "profit": 0.03,
    "time": "2026-11-20T12:01:59+00:00"
   },
   {
@@ -105,12 +105,25 @@
    "price_open": 208.175,
    "sl": 208.398,
    "tp": null,
-   "price": 207.616,
-   "profit": 3.53,
+   "price": 207.715,
+   "profit": 2.9,
    "time": "2026-11-20T13:01:39+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2825924595,
+   "signal_id": "EURGBP-D1-mr_fib_calm-1794096000",
+   "time": "2026-11-22T23:01:48.165021+00:00",
+   "symbol": "EURGBP",
+   "system": "TL388-D1",
+   "side": "BUY",
+   "lots": 0.01,
+   "price_open": 0.83477,
+   "price": 0.83796,
+   "reason": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1b\u0e34\u0e14",
+   "profit": 4.18
+  },
   {
    "ticket": 2887991960,
    "signal_id": "ETHUSD-H4-pa_out_calm-1795089600",
@@ -292,19 +305,6 @@
    "price": 0.96278,
    "reason": "SL",
    "profit": -8.5
-  },
-  {
-   "ticket": 2831119409,
-   "signal_id": "USDCAD-H4-bb_breakout-1794312000",
-   "time": "2026-11-16T13:39:59.849495+00:00",
-   "symbol": "USDCAD",
-   "system": "TL29-H4",
-   "side": "BUY",
-   "lots": 0.03,
-   "price_open": 1.42009,
-   "price": 1.4304999999999999,
-   "reason": "TP",
-   "profit": 21.83
   }
  ],
  "fills": [
@@ -891,7 +891,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-22T22:01:45.742914+00:00",
+  "time": "2026-11-22T23:01:48.165021+00:00",
   "symbols": 41,
   "ok": true
  },
