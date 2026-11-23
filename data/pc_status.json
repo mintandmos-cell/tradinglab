@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T15:00:23.441883+00:00",
+ "time": "2026-11-23T15:21:10.180540+00:00",
  "account": "DEMO",
- "balance": 10289.92,
- "equity": 10668.31,
+ "balance": 10311.4,
+ "equity": 10698.48,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 81.442,
-   "profit": 304.32,
+   "price": 80.305,
+   "profit": 327.06,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.329,
-   "profit": 5.25,
+   "price": 159.343,
+   "profit": 5.33,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.329,
-   "profit": 5.25,
+   "price": 159.343,
+   "profit": 5.33,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,26 +63,25 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.789,
-   "profit": 46.2,
+   "price": 105.621,
+   "profit": 49.36,
    "time": "2026-11-13T20:01:44+00:00"
-  },
-  {
-   "ticket": 2912807999,
-   "symbol": "US500",
-   "system": "TL895-H4",
-   "signal_id": "US500-H4-pa_ins_year-1795420800",
-   "side": "BUY",
-   "lots": 0.14,
-   "price_open": 7116.54,
-   "sl": 7010.46,
-   "tp": 7269.96,
-   "price": 7240.63,
-   "profit": 17.37,
-   "time": "2026-11-23T12:01:49+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2912807999,
+   "signal_id": "US500-H4-pa_ins_year-1795420800",
+   "time": "2026-11-23T15:21:08.930578+00:00",
+   "symbol": "US500",
+   "system": "TL895-H4",
+   "side": "BUY",
+   "lots": 0.14,
+   "price_open": 7116.54,
+   "price": 7269.96,
+   "reason": "TP",
+   "profit": 21.48
+  },
   {
    "ticket": 2838587551,
    "signal_id": "GBPUSD-D1-mo_st50_don-1794355200",
@@ -264,19 +263,6 @@
    "price": 1.3149,
    "reason": "TP",
    "profit": 25.68
-  },
-  {
-   "ticket": 2848514271,
-   "signal_id": "AUDJPY-H4-squeeze_momentum-1794542400",
-   "time": "2026-11-17T23:37:54.954687+00:00",
-   "symbol": "AUDJPY",
-   "system": "TL116-H4",
-   "side": "SELL",
-   "lots": 0.02,
-   "price_open": 108.643,
-   "price": 107.577,
-   "reason": "SL",
-   "profit": 13.36
   }
  ],
  "fills": [
@@ -863,7 +849,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T14:01:41.430211+00:00",
+  "time": "2026-11-23T15:01:41.398950+00:00",
   "symbols": 41,
   "ok": true
  },
