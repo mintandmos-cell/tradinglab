@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00845,
-  "stop_now": 0.9436
+  "stop_now": 0.94444
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795161600",
@@ -99,15 +99,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.018,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.283,
+  "exit_time": "2026-11-23T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.154,
-  "stop_now": 208.398
+  "stop_now": 208.398,
+  "exit_reason": "Trail",
+  "exit_price": 208.398
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795161600",
