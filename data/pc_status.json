@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T18:00:19.914716+00:00",
+ "time": "2026-11-23T18:02:15.418027+00:00",
  "account": "DEMO",
  "balance": 10311.4,
- "equity": 10690.88,
+ "equity": 10691.48,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 80.812,
-   "profit": 316.92,
+   "price": 80.726,
+   "profit": 318.64,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.283,
-   "profit": 4.96,
+   "price": 159.259,
+   "profit": 4.81,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.283,
-   "profit": 4.96,
+   "price": 159.259,
+   "profit": 4.81,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,9 +65,23 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.448,
-   "profit": 52.64,
+   "price": 105.483,
+   "profit": 51.99,
    "time": "2026-11-13T20:01:44+00:00"
+  },
+  {
+   "ticket": 2916666294,
+   "symbol": "NVDA",
+   "system": "TL595-H1",
+   "signal_id": "NVDA-H1-mo_ppo_year-1795453200",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 164.29,
+   "sl": 172.33,
+   "tp": null,
+   "price": 164.46,
+   "profit": -0.17,
+   "time": "2026-11-23T18:01:59+00:00"
   }
  ],
  "closed": [
@@ -268,6 +282,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-23T18:01:59.102316+00:00",
+   "signal": "NVDA-H1-mo_ppo_year-1795453200",
+   "symbol": "NVDA",
+   "tf": "H1",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 164.29,
+   "fill": 164.29,
+   "signal_entry": 164.02,
+   "slip_pts": -0.0,
+   "drift_r": -0.032,
+   "delay_s": 119
+  },
   {
    "time": "2026-11-23T12:01:49.102559+00:00",
    "signal": "US500-H4-pa_ins_year-1795420800",
@@ -813,20 +841,6 @@
    "slip_pts": -0.0,
    "drift_r": 0.04,
    "delay_s": 90
-  },
-  {
-   "time": "2026-11-04T06:00:58.963602+00:00",
-   "signal": "XAGUSD-H1-ichimoku_tk-1793768400",
-   "symbol": "XAGUSD",
-   "tf": "H1",
-   "status": "ACTIVE",
-   "side": "BUY",
-   "asked": 51.226,
-   "fill": 51.226,
-   "signal_entry": 51.047,
-   "slip_pts": 0.0,
-   "drift_r": 0.137,
-   "delay_s": 59
   }
  ],
  "swap_watch": {
@@ -851,7 +865,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T17:01:34.603193+00:00",
+  "time": "2026-11-23T18:01:38.414569+00:00",
   "symbols": 41,
   "ok": true
  },
