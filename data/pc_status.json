@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T02:00:31.244274+00:00",
+ "time": "2026-11-23T02:01:51.337787+00:00",
  "account": "DEMO",
- "balance": 10279.96,
- "equity": 10618.45,
+ "balance": 10278.56,
+ "equity": 10616.45,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 83.001,
-   "profit": 273.14,
+   "price": 83.031,
+   "profit": 272.54,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.898,
-   "profit": 2.55,
+   "price": 158.945,
+   "profit": 2.84,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.898,
-   "profit": 2.55,
+   "price": 158.945,
+   "profit": 2.84,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.31112,
-   "profit": 16.36,
+   "price": 1.31119,
+   "profit": 16.29,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.554,
-   "profit": 50.77,
+   "price": 105.601,
+   "profit": 49.86,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -91,26 +91,25 @@
    "price_open": 174.082,
    "sl": 174.81,
    "tp": 172.399,
-   "price": 174.543,
-   "profit": -5.8,
+   "price": 174.597,
+   "profit": -6.48,
    "time": "2026-11-20T12:01:59+00:00"
-  },
-  {
-   "ticket": 2897616146,
-   "symbol": "GBPJPY",
-   "system": "TL845-H4",
-   "signal_id": "GBPJPY-H4-pa_ins_wild-1795161600",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 208.175,
-   "sl": 208.398,
-   "tp": null,
-   "price": 208.346,
-   "profit": -1.08,
-   "time": "2026-11-20T13:01:39+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2897616146,
+   "signal_id": "GBPJPY-H4-pa_ins_wild-1795161600",
+   "time": "2026-11-23T02:01:50.009692+00:00",
+   "symbol": "GBPJPY",
+   "system": "TL845-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 208.175,
+   "price": 208.398,
+   "reason": "SL",
+   "profit": -1.4
+  },
   {
    "ticket": 2825924595,
    "signal_id": "EURGBP-D1-mr_fib_calm-1794096000",
@@ -292,19 +291,6 @@
    "price": 0.84094,
    "reason": "TP",
    "profit": 7.21
-  },
-  {
-   "ticket": 2851971409,
-   "signal_id": "AUDCAD-H4-mr_drop_wild-1794542400",
-   "time": "2026-11-16T18:35:39.336078+00:00",
-   "symbol": "AUDCAD",
-   "system": "TL338-H4",
-   "side": "BUY",
-   "lots": 0.04,
-   "price_open": 0.96582,
-   "price": 0.96278,
-   "reason": "SL",
-   "profit": -8.5
   }
  ],
  "fills": [
@@ -891,7 +877,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T01:01:38.133530+00:00",
+  "time": "2026-11-23T02:01:50.009692+00:00",
   "symbols": 41,
   "ok": true
  },
