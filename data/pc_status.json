@@ -5,10 +5,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T06:00:15.821048+00:00",
+ "time": "2026-11-23T06:19:29.096642+00:00",
  "account": "DEMO",
- "balance": 10278.56,
- "equity": 10604.91,
+ "balance": 10269.4,
+ "equity": 10607.59,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 83.448,
-   "profit": 264.2,
+   "price": 83.217,
+   "profit": 268.82,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.952,
-   "profit": 2.89,
+   "price": 158.936,
+   "profit": 2.79,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.952,
-   "profit": 2.89,
+   "price": 158.936,
+   "profit": 2.79,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.31234,
-   "profit": 15.14,
+   "price": 1.3125,
+   "profit": 14.98,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -77,26 +77,25 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.603,
-   "profit": 49.82,
+   "price": 105.657,
+   "profit": 48.81,
    "time": "2026-11-13T20:01:44+00:00"
-  },
-  {
-   "ticket": 2897140596,
-   "symbol": "EURJPY",
-   "system": "TL895-H4",
-   "signal_id": "EURJPY-H4-pa_ins_year-1795161600",
-   "side": "SELL",
-   "lots": 0.02,
-   "price_open": 174.082,
-   "sl": 174.81,
-   "tp": 172.399,
-   "price": 174.765,
-   "profit": -8.59,
-   "time": "2026-11-20T12:01:59+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2897140596,
+   "signal_id": "EURJPY-H4-pa_ins_year-1795161600",
+   "time": "2026-11-23T06:19:27.877915+00:00",
+   "symbol": "EURJPY",
+   "system": "TL895-H4",
+   "side": "SELL",
+   "lots": 0.02,
+   "price_open": 174.082,
+   "price": 174.81,
+   "reason": "SL",
+   "profit": -9.16
+  },
   {
    "ticket": 2897616146,
    "signal_id": "GBPJPY-H4-pa_ins_wild-1795161600",
@@ -278,19 +277,6 @@
    "price": 174.811,
    "reason": "TP",
    "profit": 18.99
-  },
-  {
-   "ticket": 2849559988,
-   "signal_id": "USDCHF-H4-se_asia_calm-1794556800",
-   "time": "2026-11-17T01:12:29.222191+00:00",
-   "symbol": "USDCHF",
-   "system": "TL734-H4",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 0.83791,
-   "price": 0.84094,
-   "reason": "TP",
-   "profit": 7.21
   }
  ],
  "fills": [
@@ -877,7 +863,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T05:01:41.664880+00:00",
+  "time": "2026-11-23T06:01:36.227162+00:00",
   "symbols": 41,
   "ok": true
  },
