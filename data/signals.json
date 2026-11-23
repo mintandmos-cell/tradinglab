@@ -1514,15 +1514,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.025,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 3.723,
+  "exit_time": "2026-11-23T13:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "us_equity",
   "trail_dist": 13.5,
-  "stop_now": 139.72
+  "stop_now": 139.72,
+  "exit_reason": "Trail",
+  "exit_price": 139.72
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1794501000",
@@ -1569,15 +1571,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5 (แท่งที่ใหม่กว่านั้น: yahoo)",
   "cost_r": 0.025,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 3.625,
+  "exit_time": "2026-11-23T13:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "cloud",
   "cluster": "us_equity",
   "trail_dist": 13.64,
-  "stop_now": 139.86
+  "stop_now": 139.86,
+  "exit_reason": "Trail",
+  "exit_price": 139.86
  },
  {
   "id": "AAPL-H1-vb_kel_r50-1794492000",
