@@ -18,8 +18,9 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
 - Exits (user's rule, 26 Oct 2026): **only TP, SL or an opposite signal** (exit at the next bar's open and reverse, reason "Rev").
   No time limit and no Friday close — `research.exit_max_hold` / `exit_friday_close` stay false unless the user asks again
   (the code for both is kept: `engine.week_guard` / `friday_cutoff`). A reversal signal carries `reverse_of` and tells the user to close the old order.
-- Sizing (user, 2 Nov 2026): EVERY signal risks 0.5% (`risk_per_trade_pct` = `portfolio_risk_pct` = 0.5), max 1% open risk per
-  asset (`max_symbol_risk_pct`); target asked 100%/yr — told the user that needs ~1% risk and 60-80% historical DD. Of `account_balance` (5000 USD; cloud = variable
+- Sizing (user, 23 Nov 2026 — was 0.5 % / 1 % since 2 Nov): EVERY signal risks 1% (`risk_per_trade_pct` = `portfolio_risk_pct` = 1.0),
+  max 2% open risk per asset (`max_symbol_risk_pct`, also settings.autotrade), cluster caps doubled; user accepts ~16 % stress DD
+  (MC: 1 % -> 1-y p95 DD ~9 %); TRIALs stay 0.1 %; guards 25/30 % unchanged; data/settings.json is in the robot's CODE_PATHS; target asked 100%/yr — told the user that needs ~1% risk and 60-80% historical DD. Of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.
   The user's manual is the "คู่มือ" page (`renderGuide` / `manualChapters` in `web/app.js`) — keep it in sync with behaviour changes
   (chapters 6–8 explain the testing method step by step, ACTIVE/WATCH/OFF, references and limitations).

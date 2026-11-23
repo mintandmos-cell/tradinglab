@@ -1,7 +1,7 @@
 {
- "risk_per_trade_pct": 0.5,
- "portfolio_risk_pct": 0.5,
- "max_symbol_risk_pct": 1.0,
+ "risk_per_trade_pct": 1.0,
+ "portfolio_risk_pct": 1.0,
+ "max_symbol_risk_pct": 2.0,
  "default_risk_pct": 0.25,
  "max_risk_pct": 1.0,
  "target_max_dd_pct": 10,
@@ -107,5 +107,16 @@
   "DE30:vol_breakout:H1",
   "USOIL:vol_breakout:H1"
  ],
- "scan_interval_sec": 120
+ "scan_interval_sec": 120,
+ "cluster_risk_pct": {
+  "default": 3.0,
+  "aud_cross": 2.0,
+  "metals": 2.0,
+  "energy": 2.0,
+  "crypto": 2.0,
+  "jpy_cross": 2.0,
+  "eur_cross": 2.0,
+  "industrial": 1.0,
+  "natgas": 1.0
+ }
 }

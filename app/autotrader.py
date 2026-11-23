@@ -787,7 +787,7 @@ _poll = {"at": 0.0}
 _beat = {"at": 0.0}
 _retry = {"at": 0.0}
 _single = None
-CODE_PATHS = ["app", "tools", "requirements.txt"]
+CODE_PATHS = ["app", "tools", "requirements.txt", "data/settings.json"]   # 23 Nov 2026: risk changes reach the PC
 
 
 def _git(*args, timeout=120):
