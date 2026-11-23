@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T20:00:33.039030+00:00",
+ "time": "2026-11-23T20:02:14.666943+00:00",
  "account": "DEMO",
  "balance": 10311.4,
- "equity": 10706.76,
+ "equity": 10707.95,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 79.819,
-   "profit": 336.78,
+   "price": 79.781,
+   "profit": 337.54,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.943,
-   "profit": 2.83,
+   "price": 158.951,
+   "profit": 2.88,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 158.943,
-   "profit": 2.83,
+   "price": 158.951,
+   "profit": 2.88,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.353,
-   "profit": 54.55,
+   "price": 105.331,
+   "profit": 54.96,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -79,9 +79,23 @@
    "price_open": 164.29,
    "sl": 172.33,
    "tp": null,
-   "price": 165.92,
-   "profit": -1.63,
+   "price": 165.89,
+   "profit": -1.6,
    "time": "2026-11-23T18:01:59+00:00"
+  },
+  {
+   "ticket": 2917188642,
+   "symbol": "EURUSD",
+   "system": "TL88-H4",
+   "signal_id": "EURUSD-H4-tsi_cross-1795449600",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 1.09011,
+   "sl": 1.09769,
+   "tp": null,
+   "price": 1.09022,
+   "profit": -0.11,
+   "time": "2026-11-23T20:01:53+00:00"
   }
  ],
  "closed": [
@@ -282,6 +296,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-23T20:01:53.055366+00:00",
+   "signal": "EURUSD-H4-tsi_cross-1795449600",
+   "symbol": "EURUSD",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 1.09011,
+   "fill": 1.09011,
+   "signal_entry": 1.08985,
+   "slip_pts": -0.0,
+   "drift_r": -0.033,
+   "delay_s": 113
+  },
   {
    "time": "2026-11-23T18:01:59.102316+00:00",
    "signal": "NVDA-H1-mo_ppo_year-1795453200",
@@ -827,20 +855,6 @@
    "slip_pts": 0.0,
    "drift_r": -0.66,
    "delay_s": 133263
-  },
-  {
-   "time": "2026-11-04T09:01:30.310836+00:00",
-   "signal": "USDCAD-H1-ichimoku_tk-1793779200",
-   "symbol": "USDCAD",
-   "tf": "H1",
-   "status": "ACTIVE",
-   "side": "SELL",
-   "asked": 1.39564,
-   "fill": 1.39564,
-   "signal_entry": 1.39578,
-   "slip_pts": -0.0,
-   "drift_r": 0.04,
-   "delay_s": 90
   }
  ],
  "swap_watch": {
@@ -865,7 +879,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T19:01:36.648831+00:00",
+  "time": "2026-11-23T20:01:53.008498+00:00",
   "symbols": 41,
   "ok": true
  },
