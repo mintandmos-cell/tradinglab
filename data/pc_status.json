@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T12:00:32.851789+00:00",
+ "time": "2026-11-23T12:02:08.541791+00:00",
  "account": "DEMO",
  "balance": 10269.4,
- "equity": 10633.17,
+ "equity": 10634.34,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 82.274,
-   "profit": 287.68,
+   "price": 82.222,
+   "profit": 288.72,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 1.32748,
    "sl": 1.3381,
    "tp": 1.30696,
-   "price": 1.30999,
-   "profit": 17.49,
+   "price": 1.30981,
+   "profit": 17.67,
    "time": "2026-11-12T00:01:45+00:00"
   },
   {
@@ -79,9 +79,23 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.537,
-   "profit": 51.02,
+   "price": 105.529,
+   "profit": 51.17,
    "time": "2026-11-13T20:01:44+00:00"
+  },
+  {
+   "ticket": 2912807999,
+   "symbol": "US500",
+   "system": "TL895-H4",
+   "signal_id": "US500-H4-pa_ins_year-1795420800",
+   "side": "BUY",
+   "lots": 0.14,
+   "price_open": 7116.54,
+   "sl": 7010.46,
+   "tp": 7269.96,
+   "price": 7115.14,
+   "profit": -0.2,
+   "time": "2026-11-23T12:01:49+00:00"
   }
  ],
  "closed": [
@@ -282,6 +296,20 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-23T12:01:49.102559+00:00",
+   "signal": "US500-H4-pa_ins_year-1795420800",
+   "symbol": "US500",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 7116.54,
+   "fill": 7116.54,
+   "signal_entry": 7114.26,
+   "slip_pts": 0.0,
+   "drift_r": 0.022,
+   "delay_s": 109
+  },
   {
    "time": "2026-11-20T13:01:39.240602+00:00",
    "signal": "GBPJPY-H4-pa_ins_wild-1795161600",
@@ -827,20 +855,6 @@
    "slip_pts": 0.0,
    "drift_r": 0.137,
    "delay_s": 59
-  },
-  {
-   "time": "2026-11-04T03:00:20.852212+00:00",
-   "signal": "ETHUSD-H1-ichimoku_tk-1793757600",
-   "symbol": "ETHUSD",
-   "tf": "H1",
-   "status": "ACTIVE",
-   "side": "SELL",
-   "asked": 2241.05,
-   "fill": 2240.53,
-   "signal_entry": 2240.55,
-   "slip_pts": 52.0,
-   "drift_r": 0.001,
-   "delay_s": 21
   }
  ],
  "swap_watch": {
@@ -865,7 +879,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-23T11:01:42.821026+00:00",
+  "time": "2026-11-23T12:01:49.055681+00:00",
   "symbols": 41,
   "ok": true
  },
