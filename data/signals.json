@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00845,
-  "stop_now": 0.94159
+  "stop_now": 0.94341
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795161600",
@@ -899,7 +899,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 7.245,
-  "stop_now": 88.385
+  "stop_now": 87.906
  },
  {
   "id": "BTCUSD-D1-vb_atrb_r50-1794614400",
