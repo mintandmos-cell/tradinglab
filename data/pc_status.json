@@ -7,10 +7,10 @@
   "checked": 42,
   "errors": []
  },
- "time": "2026-11-23T12:02:08.541791+00:00",
+ "time": "2026-11-23T12:47:22.904687+00:00",
  "account": "DEMO",
- "balance": 10269.4,
- "equity": 10634.34,
+ "balance": 10289.92,
+ "equity": 10644.45,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 82.222,
-   "profit": 288.72,
+   "price": 81.91,
+   "profit": 294.96,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.096,
-   "profit": 3.79,
+   "price": 158.99,
+   "profit": 3.13,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,23 +51,9 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.096,
-   "profit": 3.79,
+   "price": 158.99,
+   "profit": 3.13,
    "time": "2026-11-06T20:01:08+00:00"
-  },
-  {
-   "ticket": 2838587551,
-   "symbol": "GBPUSD",
-   "system": "TL623-D1",
-   "signal_id": "GBPUSD-D1-mo_st50_don-1794355200",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 1.32748,
-   "sl": 1.3381,
-   "tp": 1.30696,
-   "price": 1.30981,
-   "profit": 17.67,
-   "time": "2026-11-12T00:01:45+00:00"
   },
   {
    "ticket": 2852471228,
@@ -79,8 +65,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.529,
-   "profit": 51.17,
+   "price": 105.094,
+   "profit": 59.42,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -93,12 +79,25 @@
    "price_open": 7116.54,
    "sl": 7010.46,
    "tp": 7269.96,
-   "price": 7115.14,
-   "profit": -0.2,
+   "price": 7072.89,
+   "profit": -6.11,
    "time": "2026-11-23T12:01:49+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2838587551,
+   "signal_id": "GBPUSD-D1-mo_st50_don-1794355200",
+   "time": "2026-11-23T12:47:21.685967+00:00",
+   "symbol": "GBPUSD",
+   "system": "TL623-D1",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 1.32748,
+   "price": 1.3069600000000001,
+   "reason": "TP",
+   "profit": 20.52
+  },
   {
    "ticket": 2897140596,
    "signal_id": "EURJPY-H4-pa_ins_year-1795161600",
@@ -280,19 +279,6 @@
    "price": 107.577,
    "reason": "SL",
    "profit": 13.36
-  },
-  {
-   "ticket": 2851648932,
-   "signal_id": "EURJPY-H4-pa_ins_year-1794571200",
-   "time": "2026-11-17T09:24:03.848722+00:00",
-   "symbol": "EURJPY",
-   "system": "TL895-H4",
-   "side": "SELL",
-   "lots": 0.02,
-   "price_open": 176.32,
-   "price": 174.811,
-   "reason": "TP",
-   "profit": 18.99
   }
  ],
  "fills": [
