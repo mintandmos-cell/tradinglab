@@ -70,3 +70,13 @@ def lots_for(sym: str, entry: float, sl: float, balance: float, risk_pct: float,
     return {"lots": lots if lots >= min_lot else 0.0, "raw_lots": round(raw, 4), "risk_usd": round(risk_usd, 2),
             "actual_risk_usd": round(lots * dist * vpu, 2), "value_per_point_per_lot": vpu,
             "below_min_lot": lots < min_lot, "min_lot": min_lot}
+
+
+def min_lot_ceiling(settings: dict, sym: str, tf: str) -> float:
+    """User, 24 Nov 2026: the most a broker-minimum-lot trade may risk (% of balance) when the normal risk (0.5 %) is below
+    the minimum lot - per TF and symbol (gold / silver H4 1 %, D1 2 %), else `default` (0.5 % = skip)."""
+    c = settings.get("min_lot_ceiling_pct") or {}
+    by_tf = c.get(tf)
+    if isinstance(by_tf, dict) and sym in by_tf:
+        return float(by_tf[sym])
+    return float(c.get("default", settings.get("risk_per_trade_pct") or 0.5))

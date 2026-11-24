@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from . import data, ghsync, notify, scanner
+from . import data, ghsync, notify, scanner, sizing
 from .config import DATA_DIR, SYMBOLS, TIMEFRAMES, load_settings, read_json, write_json
 from .strategies import STRATEGIES
 
@@ -220,13 +220,19 @@ def execute(c: dict, s: dict, balance: float) -> str:
     step, vmin, vmax = info.volume_step or 0.01, info.volume_min or 0.01, info.volume_max or 100
     lots = min(vmax, math.floor(raw / step + 1e-9) * step)
     trial = s.get("system_status") == "TRIAL"
-    forced = _forced(c, sym) and not trial          # a trial never risks more than ~3x its small budget for the min lot
+    # user, 24 Nov 2026: below the minimum lot, the minimum lot is traded only up to the ceiling of this symbol x TF
+    # (settings min_lot_ceiling_pct: 0.5 %, gold / silver H4 1 %, D1 2 %) - above it the trade is skipped. The old
+    # "always the minimum lot" (min_lot_always) applies only when no ceiling table is set.
+    st_all = load_settings()
+    ceiling = sizing.min_lot_ceiling(st_all, sym, s["tf"]) if st_all.get("min_lot_ceiling_pct") else None
+    forced = ceiling is None and _forced(c, sym) and not trial    # a trial never risks more than ~3x its small budget
     if trial and lots < vmin and vmin * sl_dist * vpu / balance * 100 <= 3 * risk_pct:
         lots = vmin
     if lots < vmin:
         min_risk_pct = vmin * sl_dist * vpu / balance * 100
-        if not forced and min_risk_pct > float(c.get("min_lot_up_to_pct") or 0):
-            _skip(s, symbol=sym, system=tag, reason=f"lot {raw:.4f} < min {vmin} ({vmin} lot would risk {min_risk_pct:.2f}%)")
+        limit = ceiling if ceiling is not None and not trial else float(c.get("min_lot_up_to_pct") or 0)
+        if not forced and min_risk_pct > limit + 1e-9:
+            _skip(s, symbol=sym, system=tag, reason=f"lot {raw:.4f} < min {vmin} ({vmin} lot would risk {min_risk_pct:.2f}% > ceiling {limit}%)")
             return "done"
         lots = vmin
     risk_usd = lots * sl_dist * vpu
@@ -243,7 +249,8 @@ def execute(c: dict, s: dict, balance: float) -> str:
         _skip(s, symbol=sym, system=tag, reason=f"portfolio heat {100 * (heat + risk_usd) / balance:.2f}% > cap {tcap}%")
         return "done"
     if not forced:
-        cap_usd = balance * float(c["max_symbol_risk_pct"]) * float(c["risk_scale"]) / 100
+        sym_pct = min(float(c["max_symbol_risk_pct"]), float(st_all.get("max_symbol_risk_pct") or 99))   # shared rule wins
+        cap_usd = balance * max(sym_pct, ceiling or 0) * float(c["risk_scale"]) / 100
         open_risk = sum(abs(q.price_open - q.sl) * _value_per_unit(mt5.symbol_info(q.symbol)) * q.volume
                         for q in _positions(c) if q.symbol == name and q.sl)
         if open_risk + risk_usd > cap_usd + 1e-6:

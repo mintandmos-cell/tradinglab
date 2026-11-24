@@ -14,7 +14,7 @@ from .config import CLOUD, SYMBOLS, SIGNALS_FILE, TIMEFRAMES, load_settings, rea
 from .engine import cost_price, exit_rules, friday_cutoff, hold_bars, run, simulate, uses_reverse, week_guard, weekend_blocked
 from .strategies import STRATEGIES, signals as strat_signals
 from . import indicators as ta
-from .sizing import lots_for
+from .sizing import lots_for, min_lot_ceiling
 
 log = logging.getLogger("tradinglab.scanner")
 BKK = timezone(timedelta(hours=7))
@@ -96,6 +96,7 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
         "reward_usd": round(size["actual_risk_usd"] * rr, 2) if tp is not None else None, "below_min_lot": size["below_min_lot"],
         "raw_lots": size.get("raw_lots"), "balance": balance, "min_lot_risk_usd": min_lot_risk, "min_lot": min_lot,
         "min_lot_risk_pct": round(100 * min_lot_risk / balance, 2) if balance else None,
+        "min_lot_ceiling_pct": min_lot_ceiling(settings, sym, cfg["tf"]),
         "max_hold_h": p["max_hold_h"], "close_by": close_by.isoformat() if close_by is not None else None,
         "reverse_of": ("SHORT" if d > 0 else "LONG") if rev else None,
         "price_source": data.price_source(sym, settings), "cost_r": round(cost_price(spec) / sl_dist, 3),
@@ -384,8 +385,12 @@ def alert_text(s: dict, d: int) -> tuple[str, str]:
     if s["below_min_lot"]:
         ml = f"{float(s.get('min_lot') or 0.01):g}"
         title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — lot ต่ำกว่า {ml}"
+        ceil = s.get("min_lot_ceiling_pct")
+        ok = ceil is not None and s.get("min_lot_risk_pct") is not None and s["min_lot_risk_pct"] <= ceil + 1e-9
         lot_line = (f"⚠️ Lot ที่คำนวณได้ {s['raw_lots']} ต่ำกว่าขั้นต่ำ {ml} · ถ้าเปิด {ml} lot จะเสี่ยง "
-                    f"${s['min_lot_risk_usd']} ({s['min_lot_risk_pct']}% ของทุน) มากกว่าที่ตั้งไว้ {s['risk_pct']}%")
+                    f"${s['min_lot_risk_usd']} ({s['min_lot_risk_pct']}% ของทุน) มากกว่าที่ตั้งไว้ {s['risk_pct']}%"
+                    + ("" if ceil is None else (f" · ✅ ไม่เกินเพดาน lot ขั้นต่ำ {ceil}% ของ {s['symbol']} {s['tf']} — เปิด {ml} lot ได้" if ok
+                       else f" · ⛔ เกินเพดาน lot ขั้นต่ำ {ceil}% ของ {s['symbol']} {s['tf']} — ข้ามไม้นี้")))
     else:
         title = f"{side} {s['mt5_symbol']} {s['tf']} #{no} — เปิด {s['lots']:.2f} lot"
         lot_line = f"📦 LOT {s['lots']:.2f} · เสี่ยง ${s['risk_usd']} ({s['risk_pct']}% ของทุน ${s['balance']:,.0f})"

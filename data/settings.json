@@ -1,7 +1,7 @@
 {
- "risk_per_trade_pct": 1.0,
- "portfolio_risk_pct": 1.0,
- "max_symbol_risk_pct": 2.0,
+ "risk_per_trade_pct": 0.5,
+ "portfolio_risk_pct": 0.5,
+ "max_symbol_risk_pct": 1.0,
  "default_risk_pct": 0.25,
  "max_risk_pct": 1.0,
  "target_max_dd_pct": 10,
@@ -111,16 +111,28 @@
  ],
  "scan_interval_sec": 120,
  "cluster_risk_pct": {
-  "default": 3.0,
-  "aud_cross": 2.0,
+  "default": 1.5,
+  "aud_cross": 1.0,
   "metals": 2.0,
-  "energy": 2.0,
-  "crypto": 2.0,
-  "jpy_cross": 2.0,
-  "eur_cross": 2.0,
-  "industrial": 1.0,
-  "natgas": 1.0
+  "energy": 1.0,
+  "crypto": 1.0,
+  "jpy_cross": 1.0,
+  "eur_cross": 1.0,
+  "industrial": 0.5,
+  "natgas": 0.5
  },
- "kept_risk_pct": 0.5,
- "max_total_risk_pct": 5.0
+ "kept_risk_pct": 0.25,
+ "max_total_risk_pct": 4.0,
+ "min_lot_ceiling_pct": {
+  "_note": "user 24 Nov 2026: every trade risks 0.5 %; when 0.5 % is below the broker's minimum lot, the minimum lot is traded only if it risks <= this ceiling (by TF, then symbol), else the trade is skipped",
+  "default": 0.5,
+  "H4": {
+   "XAUUSD": 1.0,
+   "XAGUSD": 1.0
+  },
+  "D1": {
+   "XAUUSD": 2.0,
+   "XAGUSD": 2.0
+  }
+ }
 }
