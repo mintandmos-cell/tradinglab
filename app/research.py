@@ -47,22 +47,47 @@ def adjusted_t(n_candidates: int, alpha: float = 0.05) -> float:
     return round(NormalDist().inv_cdf(1 - p), 2)
 
 
-def effective_tests(series: list) -> tuple[float, int]:
+def _li_ji(M: np.ndarray) -> float:
+    """Li & Ji (2005) M_eff of the columns of M (periods x series); the T x T dual when series outnumber periods."""
+    Z = M - M.mean(axis=0)
+    sd = Z.std(axis=0, ddof=1)
+    Z = Z[:, sd > 0] / sd[sd > 0]
+    T, k = Z.shape
+    if k <= 1:
+        return float(max(k, 1))
+    G = (Z.T @ Z if k <= T else Z @ Z.T) / (T - 1)
+    lam = np.clip(np.linalg.eigvalsh(G), 0, None)
+    return float(np.sum((lam >= 1).astype(float) + (lam - np.floor(lam))))
+
+
+def effective_tests(series: list, keys: list | None = None) -> tuple[float, int]:
     """How many INDEPENDENT tests a set of candidates is worth (user, 2 Nov 2026: similar systems must not count as
     separate lottery tickets). Weekly OOS R of every candidate -> correlation matrix -> eigenvalues -> Li & Ji (2005)
     effective number M_eff = sum over eigenvalues of [lambda >= 1] + (lambda - floor(lambda)). Identical candidates
     count once, unrelated ones count fully. The same idea as the Deflated Sharpe Ratio's 'independent trials'
-    (Bailey & Lopez de Prado 2014). Returns (M_eff, number of usable series)."""
-    cols = [x for x in series if x is not None and len(x) and float(np.std(x.to_numpy())) > 0]
-    k = len(cols)
+    (Bailey & Lopez de Prado 2014). Returns (M_eff, number of usable series).
+    AUDIT 24 Nov 2026 (found in IntradayLab's audit): a correlation matrix of k series over T periods has rank <= T, so
+    with k > T (2,000+ candidates of a symbol, 200-800 OOS weeks) the full-matrix count stalls near T - 1,200 independent
+    random series over 250 weeks counted as 375. The luck gate then tracked the length of the OOS history, not the number
+    of tests. With `keys` (related candidates side by side: family, setup, TF) M_eff is summed over blocks of <= T/3
+    neighbouring series; ignoring correlation between blocks can only count MORE tests (stricter), never fewer."""
+    idx = [i for i, x in enumerate(series) if x is not None and len(x) and float(np.std(x.to_numpy())) > 0]
+    k = len(idx)
     if k <= 1:
         return float(max(k, 1)), k
-    M = pd.concat(cols, axis=1).fillna(0.0).to_numpy()
-    C = np.nan_to_num(np.corrcoef(M.T))
-    np.fill_diagonal(C, 1.0)
-    lam = np.clip(np.linalg.eigvalsh(C), 0, None)
-    m_eff = float(np.sum((lam >= 1).astype(float) + (lam - np.floor(lam))))
+    M = pd.concat([series[i] for i in idx], axis=1).fillna(0.0).to_numpy()
+    if keys is None:
+        return max(1.0, min(_li_ji(M), float(k))), k
+    order = sorted(range(k), key=lambda j: keys[idx[j]])
+    blk = max(10, M.shape[0] // 3)
+    m_eff = sum(_li_ji(M[:, order[a:a + blk]]) for a in range(0, k, blk))
     return max(1.0, min(m_eff, float(k))), k
+
+
+def related_key(sid: str, tf: str) -> tuple:
+    """Sort key that puts related candidates next to each other for the block count: family, setup (the id without its
+    last '_part', e.g. mr_rsi3 of mr_rsi3_range), TF."""
+    return (STRATEGIES.get(sid, {}).get("family", ""), sid.rsplit("_", 1)[0], tf, sid)
 
 
 def weekly_r(oos_eq: list) -> pd.Series | None:
@@ -510,7 +535,7 @@ def portfolio_research(by_sym: dict[str, list[dict]], settings: dict, prev: dict
     # same quarter: portfolio systems already ACTIVE stay until the quarter ends
     n_raw = n_port
     if settings["research"].get("effective_trials", True) and cands:
-        m_eff, k = effective_tests([c["_mr"] for c in cands])
+        m_eff, k = effective_tests([c["_mr"] for c in cands], [related_key(c["strategy"], c["tf"]) for c in cands])
         n_port = max(1, int(round(m_eff * n_raw / max(k, 1))))
         t_need = adjusted_t(n_port)
         for c in cands:
@@ -591,7 +616,8 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     raw_n = len(used) + ghost_tests(sym, {f"{sym}|{c['strategy']}|{c['tf']}" for c in used}, settings)
     if cfg.get("effective_trials", True) and used:
         heavy_of = {(p["tf"], sid): h for p in parts for sid, h in p["heavy"].items()}
-        m_eff, k = effective_tests([weekly_r(heavy_of.get((c["tf"], c["strategy"]), {}).get("oos_eq", [])) for c in used])
+        m_eff, k = effective_tests([weekly_r(heavy_of.get((c["tf"], c["strategy"]), {}).get("oos_eq", [])) for c in used],
+                                   [related_key(c["strategy"], c["tf"]) for c in used])
         n_cand = max(1, int(round(m_eff * raw_n / max(k, 1)))) if k else raw_n
     else:
         n_cand = raw_n
