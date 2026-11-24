@@ -2,7 +2,7 @@
 
 The user (Thai, trades manually in MetaTrader 5) asked Claude to keep the trading systems in this
 project up to date for 20 Exness symbols (2 Nov 2026: EURUSD GBPUSD USDJPY GBPJPY AUDUSD USDCAD · XAUUSD XAGUSD USOIL ·
-NAS100(USTEC) US500 DE30 JP225 · NVDA MSFT AMZN META AAPL · BTCUSD ETHUSD — SOL/XRP/LTC are disabled on the user's Exness), using
+NAS100(USTEC) US500 DE30 JP225 · GOOGL MSFT AMZN META AAPL (NVDA replaced 24 Nov 2026) · BTCUSD ETHUSD — SOL/XRP/LTC are disabled on the user's Exness), using
 walk-forward, robustness tests and Monte Carlo, long and short (exits: see below). Reply to the user in Thai.
 
 ## How it runs (no PC needed)
@@ -202,6 +202,21 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   OOS max_dd_r (>= 5 closed trades this quarter); skipped like force_off, push sent once.
 - EXECUTION: robot records each fill (`fills` in pc_status: slippage points vs quote, drift in R vs the signal entry, delay);
   พอร์ต MT5 page shows them, cluster risk and auto-stopped systems. Lab step 7 shows losing-streak stats (`streakHtml`).
+
+- AUDIT 24 Nov 2026 (user: "do items 1-9, then research both systems at once, don't wait for 1 Jan"; pre-registered in
+  data/research/audit_2026-11-24.md BEFORE the run): (1) `research.holdout_uses` / data/research/holdout_ledger.json counts
+  every merge that looked at a cut-off's sealed holdout (9 looks at the 1 Oct 2026 one before the ledger); new gate
+  "fresh" = live params on the bars after the cut-off (`fresh_check`, computed in research_part for exp > 0 candidates):
+  first look -> < 5 trades passes; from the 2nd look it needs >= `fresh_min_trades` 5 and exp >= 0; failing only luck and/or
+  fresh-for-lack-of-trades = TRIAL (`trial_eligible`). Gates now carry `key` (only_mt_failed uses keys). (2) US stocks =
+  5 largest US companies on 31 Mar 2019 that Exness offers: MSFT AAPL AMZN GOOGL META (NVDA out; GOOGL history via a PC
+  task after the robot restarted). (3) gate "excess" = OOS exp - random benchmark mean (same long/short mix) >=
+  `min_excess_r` 0.05. (4) data/news/us_high_impact.csv (NFP/CPI/FOMC 2018-2027, BLS + Fed, UTC): long system only shows
+  `news_split` (Lab step 8), no blocking. (7) `kept_risk_pct` 0.5 for carried-over systems (merge_symbol + scanner).
+  (8) `max_total_risk_pct` 5 = all open ACTIVE alerts (scanner capped, book.simulate); robot `max_total_risk_pct` 10 /
+  `trial_total_risk_pct` 4 on its own positions. (9) robot logs `spread_pts` at each order; `fills.calibration`
+  spread_ratio vs the tested spread of that UTC hour -> `spread_mult` (>= 10 fills/symbol, >= 50 total, > 1 only) scales
+  spec spread in `symbol_spec`. Keep the news calendar filled (BLS/Fed schedules) — the intraday robot warns 45 days ahead.
 
 ## Layout
 - `app/data.py` — MT5 (broker-exact, when the terminal is running) else Yahoo (FX/futures proxies) / Binance.

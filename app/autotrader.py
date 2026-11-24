@@ -45,6 +45,8 @@ DEFAULTS = {
     "risk_scale": 1.0,             # x each signal's risk (0.25 % single, 0.10 % portfolio) = same sizing as the alerts
     "follow_cap": True,            # skip a signal the alert also skips (per-symbol risk cap 0.75 %, "capped" on the website),
                                    # so the robot, the phone and the website always agree
+    "max_total_risk_pct": 10.0,    # audit 24 Nov 2026: all robot positions together (ACTIVE alerts are capped at 5 % already)
+    "trial_total_risk_pct": 4.0,   # a TRIAL order is skipped once the robot's total open risk would pass this
     "max_symbol_risk_pct": 1.0,    # robot own cap per asset (user: max 1 % per asset), only for symbols NOT in min_lot_always
     # user's rule 28 Oct 2026: no prop-style 6 % / 3 % limits, only "don't blow the account" (0 = off)
     "pause_total_dd_pct": 25.0,    # loss from the starting balance: stop opening new trades
@@ -228,6 +230,18 @@ def execute(c: dict, s: dict, balance: float) -> str:
             return "done"
         lots = vmin
     risk_usd = lots * sl_dist * vpu
+    # audit item 8: portfolio heat of the robot's own positions (risk still at stake = entry to SL; a stop past the entry
+    # locks profit and counts 0). Trials stop at `trial_total_risk_pct`, so they never use up the room ACTIVE signals need.
+    heat = 0.0
+    for q in _positions(c):
+        qi = mt5.symbol_info(q.symbol)
+        if q.sl and qi:
+            qd = 1 if q.type == mt5.POSITION_TYPE_BUY else -1
+            heat += max(0.0, qd * (q.price_open - q.sl)) * _value_per_unit(qi) * q.volume
+    tcap = float(c.get("trial_total_risk_pct" if trial else "max_total_risk_pct") or 0)
+    if tcap > 0 and heat + risk_usd > balance * tcap / 100 + 1e-6:
+        _skip(s, symbol=sym, system=tag, reason=f"portfolio heat {100 * (heat + risk_usd) / balance:.2f}% > cap {tcap}%")
+        return "done"
     if not forced:
         cap_usd = balance * float(c["max_symbol_risk_pct"]) * float(c["risk_scale"]) / 100
         open_risk = sum(abs(q.price_open - q.sl) * _value_per_unit(mt5.symbol_info(q.symbol)) * q.volume
@@ -269,6 +283,7 @@ def execute(c: dict, s: dict, balance: float) -> str:
     _fills.insert(0, {"time": datetime.now(timezone.utc).isoformat(), "signal": s["id"], "symbol": sym, "tf": s["tf"],
                       "status": s.get("system_status"), "side": side, "asked": price, "fill": fill, "signal_entry": s["entry"],
                       "slip_pts": round(d * (fill - price) / pt, 1),                  # + = worse than the quote
+                      "spread_pts": round((tick.ask - tick.bid) / pt, 1),             # quoted spread at the order (audit 9)
                       "drift_r": round(d * (fill - float(s["entry"])) / float(s["sl_dist"]), 3) if s.get("sl_dist") else None,
                       "delay_s": round((pd.Timestamp.now(tz="UTC") - pd.Timestamp(s["bar_time"])
                                         - pd.Timedelta(minutes=TIMEFRAMES[s["tf"]])).total_seconds())})

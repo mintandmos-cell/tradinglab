@@ -49,6 +49,7 @@ def system_trades(sym: str, sid: str, tf: str, settings: dict) -> list[dict]:
 def simulate(trades: list[dict], settings: dict, guard: bool = True) -> dict:
     caps = settings.get("cluster_risk_pct") or {"default": 1.5}
     sym_cap = float(settings.get("max_symbol_risk_pct") or 1.0) / 100
+    tot_cap = float(settings.get("max_total_risk_pct") or 0) / 100     # portfolio heat (audit 24 Nov 2026); 0 = none
     days = sorted({d for t in trades for d in t["marks"].index})
     starts: dict = {}
     for i, t in enumerate(trades):
@@ -87,7 +88,8 @@ def simulate(trades: list[dict], settings: dict, guard: bool = True) -> dict:
                 cl = cluster_of(t["symbol"])
                 co = sum(o["risk"] for j, o in open_.items() if cluster_of(trades[j]["symbol"]) == cl)
                 cap = float(caps.get(cl, caps.get("default", 1.5))) / 100
-                if so + risk > sym_cap + 1e-9 or co + risk > cap + 1e-9:
+                to = sum(o["risk"] for o in open_.values())
+                if so + risk > sym_cap + 1e-9 or co + risk > cap + 1e-9 or (tot_cap > 0 and to + risk > tot_cap + 1e-9):
                     skipped += 1
                     continue
                 open_[i] = {"risk": risk, "eq": eq, "last": 0.0}
@@ -160,7 +162,8 @@ def build(settings: dict | None = None) -> dict:
             cands.append((sym, x["strategy"], x["tf"], risk))
     out = {"generated": pd.Timestamp.now(tz="UTC").isoformat(), "research_generated": research.latest().get("generated"),
            "rules": {"risk_pct": 100 * risk, "max_symbol_risk_pct": settings.get("max_symbol_risk_pct"),
-                     "cluster_risk_pct": settings.get("cluster_risk_pct"), "pause_dd_pct": 25, "stop_dd_pct": 30}}
+                     "cluster_risk_pct": settings.get("cluster_risk_pct"),
+                     "max_total_risk_pct": settings.get("max_total_risk_pct"), "pause_dd_pct": 25, "stop_dd_pct": 30}}
     cache: dict = {}
     for name, systems in (("live", live), ("candidates", live + cands)):
         trades = []

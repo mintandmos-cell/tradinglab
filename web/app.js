@@ -325,14 +325,14 @@ const CANDLE = { classic: { up: "#16c784", down: "#ef4444", name: "เขีย�
 const LIVE_DEFAULT = { EURUSD: "OANDA:EUR_USD", GBPUSD: "OANDA:GBP_USD", USDJPY: "OANDA:USD_JPY", XAUUSD: "OANDA:XAU_USD",
   NAS100: "OANDA:NAS100_USD", US500: "OANDA:SPX500_USD", GBPJPY: "OANDA:GBP_JPY", AUDUSD: "OANDA:AUD_USD", USDCAD: "OANDA:USD_CAD",
   USOIL: "OANDA:WTICO_USD", XAGUSD: "OANDA:XAG_USD", DE30: "OANDA:DE30_EUR", JP225: "OANDA:JP225_USD",
-  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  GOOGL: "GOOGL", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
   EURJPY: "OANDA:EUR_JPY", AUDJPY: "OANDA:AUD_JPY", EURGBP: "OANDA:EUR_GBP", EURAUD: "OANDA:EUR_AUD", NZDUSD: "OANDA:NZD_USD",
   USDCHF: "OANDA:USD_CHF", XPTUSD: "OANDA:XPT_USD", XCUUSD: "OANDA:XCU_USD", UKOIL: "OANDA:BCO_USD", XNGUSD: "OANDA:NATGAS_USD",
   AUDNZD: "OANDA:AUD_NZD", AUDCAD: "OANDA:AUD_CAD", EURCHF: "OANDA:EUR_CHF", GBPCHF: "OANDA:GBP_CHF", CHFJPY: "OANDA:CHF_JPY", NZDJPY: "OANDA:NZD_JPY",
   UK100: "OANDA:UK100_GBP", FR40: "OANDA:FR40_EUR", HK50: "OANDA:HK33_HKD", AUS200: "OANDA:AU200_AUD" };
 const BINANCE_LIVE = { BTCUSD: "btcusdt", ETHUSD: "ethusdt" };
 const TWELVE_SYM = { EURUSD: "EUR/USD", GBPUSD: "GBP/USD", USDJPY: "USD/JPY", XAUUSD: "XAU/USD", NAS100: "NDX", US500: "SPX",
-  GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  GBPJPY: "GBP/JPY", AUDUSD: "AUD/USD", USDCAD: "USD/CAD", USOIL: "WTI/USD", XAGUSD: "XAG/USD", GOOGL: "GOOGL", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
   EURJPY: "EUR/JPY", AUDJPY: "AUD/JPY", EURGBP: "EUR/GBP", EURAUD: "EUR/AUD", NZDUSD: "NZD/USD", USDCHF: "USD/CHF", XPTUSD: "XPT/USD",
   AUDNZD: "AUD/NZD", AUDCAD: "AUD/CAD", EURCHF: "EUR/CHF", GBPCHF: "GBP/CHF", CHFJPY: "CHF/JPY", NZDJPY: "NZD/JPY" };
 
@@ -528,7 +528,7 @@ async function navigate() {
 // ------------------------------------------------------------------ workspace (chart / systems / lab): main area + right rail
 const ABBR = { EURUSD: "EU", GBPUSD: "GU", USDJPY: "UJ", XAUUSD: "XAU", NAS100: "NAS", US500: "SPX", BTCUSD: "BTC", ETHUSD: "ETH",
   GBPJPY: "GJ", AUDUSD: "AU", USDCAD: "UC", USOIL: "OIL", XAGUSD: "XAG", DE30: "DAX", JP225: "NKY",
-  NVDA: "NVDA", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
+  GOOGL: "GOOGL", MSFT: "MSFT", AMZN: "AMZN", META: "META", AAPL: "AAPL",
   EURJPY: "EJ", AUDJPY: "AJ", EURGBP: "EG", EURAUD: "EA", NZDUSD: "NU", USDCHF: "UCF", XPTUSD: "XPT", XCUUSD: "CU", UKOIL: "BRN", XNGUSD: "GAS",
   AUDNZD: "AN", AUDCAD: "AC", EURCHF: "EC", GBPCHF: "GC", CHFJPY: "CJ", NZDJPY: "NJ", UK100: "UK", FR40: "CAC", HK50: "HK", AUS200: "ASX", XALUSD: "AL" };
 const stratById = (id) => S.strategies.find((s) => s.id === id);
@@ -543,7 +543,7 @@ const ASSET_GROUPS = [
 const SYM_ORDER = ["EURUSD", "GBPUSD", "USDJPY", "GBPJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF", "EURJPY", "AUDJPY", "EURGBP", "EURAUD",
   "AUDNZD", "AUDCAD", "EURCHF", "GBPCHF", "CHFJPY", "NZDJPY",
   "XAUUSD", "XAGUSD", "XPTUSD", "XCUUSD", "XALUSD", "USOIL", "UKOIL", "XNGUSD",
-  "NAS100", "US500", "DE30", "JP225", "UK100", "FR40", "HK50", "AUS200", "NVDA", "MSFT", "AMZN", "META", "AAPL", "BTCUSD", "ETHUSD"];
+  "NAS100", "US500", "DE30", "JP225", "UK100", "FR40", "HK50", "AUS200", "GOOGL", "MSFT", "AMZN", "META", "AAPL", "BTCUSD", "ETHUSD"];
 const groupIdx = (x) => { const i = ASSET_GROUPS.findIndex((g) => g.groups.includes(x.group)); return i < 0 ? ASSET_GROUPS.length : i; };
 const sortSyms = (a) => (a || []).slice().sort((x, y) => groupIdx(x) - groupIdx(y)
   || ((SYM_ORDER.indexOf(x.symbol) + 1 || 99) - (SYM_ORDER.indexOf(y.symbol) + 1 || 99)));
@@ -1309,7 +1309,7 @@ async function renderLab(view) {
     ${step(7, "Monte Carlo (สุ่มลำดับไม้ OOS 3,000 รอบ)", mc ? `<div class="kpis">${kpi("ผลตอบแทน 1 ปี (กลาง)", fnum(mc.ret50, 1) + "%", `${mc.n} ไม้ · เสี่ยง ${risk}%`, cls(mc.ret50))}${kpi("กรณีแย่ 5%", fnum(mc.ret5, 1) + "%", "", cls(mc.ret5))}${kpi("DD 95%", fnum(mc.dd95, 1) + "%", "", "neg")}${kpi("โอกาสกำไรใน 1 ปี", fnum(mc.prob, 0) + "%")}${kpi("PF ที่ 95%", fnum(mcFull?.pf5, 2), "ทั้งชุด OOS", mcFull?.pf5 >= 1 ? "pos" : "neg")}</div>
       ${streakHtml(rOos, o?.trades_per_year)}
       <div class="hint">Monte Carlo บอกว่า “ถ้าโชคไม่ดี” จะแย่ได้แค่ไหน แต่ตรวจ overfitting ไม่ได้ จึงใช้เฉพาะผล OOS</div>` : '<div class="hint">มีเทรด OOS ไม่พอ</div>', mcFull ? (mcFull.pf5 >= 1 ? "ok" : "no") : "na")}
-    ${step(8, "เทียบเพิ่มเติม: ฝั่ง Buy/Sell · ซื้อแล้วถือ · ถ้าถูกหัก swap", extraHtml(cand, cmpAll, `${sym}:${sid}:${tf}`, dq?.symbols?.[sym]))}
+    ${step(8, "เทียบเพิ่มเติม: ช่วงข่าว · ข้อมูลใหม่ · ฝั่ง Buy/Sell · ซื้อแล้วถือ · ถ้าถูกหัก swap", extraHtml(cand, cmpAll, `${sym}:${sid}:${tf}`, dq?.symbols?.[sym]))}
     ${step(9, "ผลตัดสิน", `${gateChips(gates)}<p class="verdict-line">${isBest ? `สถานะ ${statusBadge(R.status)} — ${R.status === "ACTIVE" ? (cand?.kept && passed < judged ? `<b class="neg">ไม่ผ่านเกณฑ์รอบล่าสุด (${passed}/${judged})</b> แต่ยังเทรดอยู่เพราะกติกา “คงไว้จนจบรอบปี” (ตกแค่ด่านหักโชค)` : "ผ่านทุกเกณฑ์ ใช้ส่งแจ้งเตือนจริง") : R.status === "WATCH" ? "ผลบวกแต่ยังพิสูจน์ไม่พอ เฝ้าดูผลจริง ไม่แจ้งเตือน" : "ไม่พบความได้เปรียบ ไม่เทรด"}` : `${cand?.status ? `สถานะของระบบนี้ ${statusBadge(cand.status)} · ` : ""}ผ่าน ${passed}/${judged} เกณฑ์ — ระบบที่ใช้จริงของ ${sym} คือ ${stratLabel(best.strategy)} ${best.tf || ""}`}</p>`)}
   </div>`;
   if (rOos.length) {
@@ -1561,7 +1561,11 @@ function extraHtml(c, cmp, key, dq) {
       ${[["ไม่หัก swap (ใช้จริง)", x.free], ["หัก swap (เทียบ)", x.swap]].map(([n, v]) => `<tr><td>${n}</td><td>${v[0] ? statusBadge(v[0]) : "–"}</td><td class="num">${fnum(v[1], 2)}</td><td class="num ${cls(v[2])}">${v[2] != null ? fnum(v[2], 3) : "–"}</td></tr>`).join("")}
       </tbody></table></div>${x.free[0] === "ACTIVE" && x.swap[0] !== "ACTIVE" ? '<div class="hint neg">ผ่านเพราะบัญชีไม่มี swap — ถ้าย้ายไปบัญชีที่มี swap ระบบนี้จะไม่ผ่าน</div>' : ""}`;
   const poor = dq && dq.poor_years && dq.poor_years.length ? `<div class="hint neg">ข้อมูลราคาปี ${dq.poor_years.join(", ")} มีช่วงขาดหรือราคากระโดดผิดปกติ</div>` : "";
-  return `<div class="kpis">${side(L, "ฝั่ง Buy")}${side(Sh, "ฝั่ง Sell")}${bh ? kpi("ซื้อแล้วถือ ช่วงเดียวกัน", (bh.pct > 0 ? "+" : "") + fnum(bh.pct, 1) + "%", bh.pct_year != null ? `${bh.pct_year > 0 ? "+" : ""}${fnum(bh.pct_year, 1)}%/ปี` : "", cls(bh.pct)) : ""}</div>
+  // audit 24 Nov 2026: trades entered within +-2 h of NFP / CPI / FOMC, and the live parameters on data after the cut-off
+  const nw = c.news, fz = c.fresh;
+  const newsHtml = nw ? `<div class="kpis" style="margin-top:10px">${kpi("ไม้ช่วงข่าวแรง ±2 ชม.", nw.n_near ? fr(nw.exp_near, 3) : "–", `${nw.n_near} ไม้ · รวม ${fnum(nw.net_near, 1)}R`, cls(nw.exp_near))}${kpi("ไม้นอกช่วงข่าว", nw.n_rest ? fr(nw.exp_rest, 3) : "–", `${nw.n_rest} ไม้`, cls(nw.exp_rest))}${fz ? kpi("ข้อมูลใหม่หลังวันตัด", fz.trades ? fr(fz.expectancy, 3) : "–", `${fz.trades} ไม้ ตั้งแต่ ${String(fz.from).slice(0, 10)}`, cls(fz.expectancy)) : ""}</div>
+    ${nw.n_near && nw.exp_rest != null && nw.exp_rest <= 0 && nw.net_near > 0 ? '<div class="hint neg">กำไรมาจากไม้ช่วงข่าวเท่านั้น — นอกช่วงข่าวไม่ทำกำไร</div>' : ""}` : "";
+  return `${newsHtml}<div class="kpis">${side(L, "ฝั่ง Buy")}${side(Sh, "ฝั่ง Sell")}${bh ? kpi("ซื้อแล้วถือ ช่วงเดียวกัน", (bh.pct > 0 ? "+" : "") + fnum(bh.pct, 1) + "%", bh.pct_year != null ? `${bh.pct_year > 0 ? "+" : ""}${fnum(bh.pct_year, 1)}%/ปี` : "", cls(bh.pct)) : ""}</div>
     ${note ? `<div class="hint">${note}</div>` : ""}<div style="margin-top:10px"><b class="small">ถ้าถูกหัก swap</b></div>${swap}${poor}`;
 }
 function streakHtml(r, perYear) {
@@ -1927,8 +1931,12 @@ ${symGroups().map(({ g, list }) => `- ${g.icon} **${g.label} (${g.short})**: ${l
 - **WATCH:** OOS เป็นบวก, t ≥ 1 และมีอย่างน้อย 15 ไม้ แต่ยังไม่ผ่านบางเกณฑ์ → ไม่เทรด ไม่แจ้งเตือน (ดูผลได้ในปุ่ม ⚡ ด่วน)
 - **ค่า t ใช้ผลรวมรายเดือน** (เดือนที่ไม่มีไม้ = 0) ไม่ใช่รายไม้ เพราะไม้ที่เกิดติด ๆ กันมักได้ผลคล้ายกัน นับรายไม้จะทำให้ t สูงเกินจริง
 - **ข้อสอบปิดผนึก:** เกณฑ์ทั้งหมดตัดสินจากผล OOS **ก่อน** 12 เดือนล่าสุด แล้วใช้ 12 เดือนล่าสุดเป็นข้อสอบสุดท้ายแยกต่างหาก (ต้องไม่ขาดทุน) — เหมือนเก็บข้อสอบจริงไว้ในซองที่เปิดครั้งเดียว
+- **นับการเปิดซอง (เพิ่ม 24 พ.ย. 2026):** ซองข้อสอบเปิดดูได้ "สะอาด" ครั้งเดียว ถ้าวิจัยซ้ำ (เพิ่มระบบ/ตลาด) ก็เหมือนให้คนสอบใหม่ข้อเดิม — ระบบจึงนับว่าซองถูกเปิดกี่ครั้ง และเพิ่มด่าน **"ข้อมูลใหม่หลังวันตัด"** = เอาพารามิเตอร์ใช้จริงไปลองกับแท่งราคาหลังวันตัดที่ยังไม่มีขั้นไหนเคยเห็น ถ้าซองถูกเปิดมาแล้ว ต้องมี ≥ ${S.settings?.research?.gates?.fresh_min_trades ?? 5} ไม้ และไม่ขาดทุน (ถ้าไม้ยังไม่พอ = TRIAL ทดลองบน demo ก่อน)
+- **เกินการสุ่มทิศเดียวกัน (เพิ่ม 24 พ.ย. 2026):** ระบบที่ซื้ออย่างเดียวในตลาดขาขึ้นจะดูดีเพราะตลาดพาไป เหมือนพายเรือตามน้ำ — จึงวัดว่าระบบได้ R/ไม้ **มากกว่าการสุ่มจุดเข้า** ที่ซื้อ/ขายในสัดส่วนเดียวกันและออกแบบเดียวกันอย่างน้อย ${S.settings?.research?.gates?.min_excess_r ?? 0.05}R (= ฝีมือจริงหลังหักแรงน้ำ)
+- **ช่วงข่าวแรง:** Lab ข้อ 8 แสดงผลไม้ที่เข้า ±2 ชม. รอบ NFP / CPI / FOMC เทียบไม้อื่น ถ้ากำไรมาจากช่วงข่าวอย่างเดียว = พนันข่าว ไม่ใช่รูปแบบของระบบ
+- **เพดานความเสี่ยงรวม (24 พ.ย. 2026):** สัญญาณ ACTIVE ทั้งพอร์ตเปิดค้างรวมกันได้ไม่เกิน ${S.settings?.max_total_risk_pct ?? 5}% · ระบบที่ "คงไว้" (ตกแค่ด่านหักโชค) เสี่ยงลดเหลือ ${S.settings?.kept_risk_pct ?? 0.5}%/ไม้
 - **OFF:** ไม่พบ edge → ไม่เทรด
-- **TRIAL (ทดลองบน demo):** WATCH ที่ผ่านทุกด่าน **ยกเว้นด่านหักโชค** (สูงสุด ${S.settings?.trials?.max_per_symbol ?? 2} ระบบต่อสินทรัพย์ เน้น H4/D1) — โปรแกรมเปิดให้ **เฉพาะบัญชี demo** ที่ความเสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% ไม่แจ้งเตือน เพื่อเก็บหลักฐานจากตลาดจริง
+- **TRIAL (ทดลองบน demo):** WATCH ที่ผ่านทุกด่าน **ยกเว้นด่านหักโชค** และ/หรือด่านข้อมูลใหม่ที่ไม้ยังไม่พอ (สูงสุด ${S.settings?.trials?.max_per_symbol ?? 2} ระบบต่อสินทรัพย์ เน้น H4/D1) — โปรแกรมเปิดให้ **เฉพาะบัญชี demo** ที่ความเสี่ยง ${S.settings?.trials?.risk_pct ?? 0.1}% ไม่แจ้งเตือน เพื่อเก็บหลักฐานจากตลาดจริง
   - **สอบเลื่อนขั้นด้วยผลจริง (ตั้งกติกา 9 พ.ย. 2026 ก่อนเห็นผล):** ครบ ${S.settings?.promotion?.min_trades ?? 30} ไม้ (พารามิเตอร์เดิม) ในเวลา ≥ ${S.settings?.promotion?.min_months ?? 3} เดือน · กำไรเฉลี่ย ≥ ${S.settings?.promotion?.min_exp_r ?? 0.05}R · ค่า t ≥ เกณฑ์หักโชคของ "จำนวนระบบทดลองทั้งหมดที่เคยมี" (~30 ระบบ → t ≈ 3 แทน 3.7 ของการวิจัย เพราะผลจริงเป็นข้อมูลใหม่ที่ไม่ได้ใช้คัดเลือก) → เป็น **ACTIVE** เสี่ยงปกติ + แจ้งเตือน · ถ้าผลจริงแย่ลงจน t ต่ำกว่าเกณฑ์ 1 หน่วย หรือกำไรเฉลี่ยติดลบ จะกลับเป็น TRIAL · ดูความคืบหน้าที่หน้า **สัญญาณ**
 - หลังเปิดใช้: ถ้า forward test ครบ 20 ไม้แล้ว expectancy ต่ำกว่าระดับแย่ 5% ของ Monte Carlo → สั่ง OFF
 - **หยุดอัตโนมัติ (ตกลงกันไว้ล่วงหน้า):** ถ้าขาดทุนสะสมจริงของระบบใดเกิน ${S.settings?.kill_dd_mult ?? 2} เท่าของ drawdown ที่แย่ที่สุดใน OOS → หยุดเปิดออเดอร์ใหม่ทันทีและแจ้งเตือน (ไม่ต้องตัดสินใจตอนกำลังขาดทุน)
@@ -2157,7 +2165,7 @@ const CLUSTERS = { usd_fx: ["คู่เงิน USD", ["EURUSD", "GBPUSD", "U
   jpy_cross: ["คู่เงิน JPY", ["GBPJPY", "EURJPY", "AUDJPY", "CHFJPY", "NZDJPY"]], eur_cross: ["คู่เงินยุโรป", ["EURGBP", "EURAUD", "EURCHF", "GBPCHF"]],
   aud_cross: ["คู่เงิน AUD", ["AUDNZD", "AUDCAD"]],
   metals: ["โลหะมีค่า", ["XAUUSD", "XAGUSD", "XPTUSD"]], industrial: ["โลหะอุตสาหกรรม", ["XCUUSD", "XALUSD"]], energy: ["น้ำมัน", ["USOIL", "UKOIL"]],
-  natgas: ["ก๊าซธรรมชาติ", ["XNGUSD"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"]],
+  natgas: ["ก๊าซธรรมชาติ", ["XNGUSD"]], us_equity: ["หุ้นสหรัฐ", ["NAS100", "US500", "GOOGL", "MSFT", "AMZN", "META", "AAPL"]],
   world_equity: ["ดัชนีนอกสหรัฐ", ["DE30", "JP225", "UK100", "FR40", "HK50", "AUS200"]], crypto: ["คริปโต", ["BTCUSD", "ETHUSD"]] };
 const clusterCap = (k) => { const c = S.settings?.cluster_risk_pct || {}; return +(c[k] ?? c.default ?? 1.5); };
 async function renderPort(view) {

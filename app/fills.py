@@ -61,6 +61,24 @@ def calibration() -> dict:
             "delay_s": round(float(np.median([x.get("delay_s") or 0 for x in f])), 0),
             "drift_r": round(float(np.median([x["drift_r"] for x in f if x.get("drift_r") is not None] or [0])), 3),
             "use": round(max(p75 * pt, 0.5 * est), 8) if ready else None}
+        # audit 24 Nov 2026, item 9: the spread QUOTED when the robot sent the order vs the spread the tests charge for
+        # that UTC hour (p75 of the H1 bars' spread field, which MT5 records as the bar's smallest spread). From
+        # MIN_PER_SYMBOL fills on, a median ratio above 1 scales the tests' spread up (never down).
+        q = [x for x in f if x.get("spread_pts") is not None and x.get("time")]
+        if q and pt:
+            from .config import broker_costs
+            bc = broker_costs(sym)
+            byh, base = bc.get("spread_by_hour") or [], float(bc.get("spread") or SYMBOLS[sym].get("spread") or 0)
+            ratios = []
+            for x in q:
+                h = int(str(x["time"])[11:13]) if len(str(x["time"])) >= 13 else 0
+                model = (byh[h] if h < len(byh) and byh[h] else base) or 0
+                if model > 0:
+                    ratios.append(float(x["spread_pts"]) * pt / model)
+            if ratios:
+                med = float(np.median(ratios))
+                out["symbols"][sym].update(spread_n=len(ratios), spread_ratio=round(med, 2),
+                                           spread_mult=round(med, 2) if ready and len(ratios) >= MIN_PER_SYMBOL and med > 1 else None)
     return out
 
 
@@ -79,3 +97,8 @@ def measured_slippage(sym: str) -> float | None:
             log.warning("slippage calibration failed: %s", e)
             _cache.update(mtime=m, data={})
     return ((_cache["data"].get("symbols") or {}).get(sym) or {}).get("use")
+
+
+def measured_spread_mult(sym: str) -> float | None:
+    measured_slippage(sym)            # refreshes the cache
+    return ((_cache["data"].get("symbols") or {}).get(sym) or {}).get("spread_mult")

@@ -54,8 +54,11 @@ SYMBOLS: dict[str, dict] = {
                "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00012, "slippage": 0.00002, "commission": 0.0},
     "USDCAD": {"name": "US Dollar / Canadian Dollar", "group": "Forex", "yahoo": "CAD=X", "quote": "CAD",
                "contract": 100000, "digits": 5, "pip": 0.0001, "spread": 0.00018, "slippage": 0.00002, "commission": 0.0},
-    "NVDA": {"name": "NVIDIA", "group": "Stocks", "yahoo": "NVDA", "quote": "USD",
-             "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.10, "slippage": 0.03, "commission": 0.0},
+    # US stocks = the 5 largest US companies by market value on 31 Mar 2019 that Exness offers (FT Global 500 Q1 2019:
+    # MSFT, AAPL, AMZN, GOOGL, META; Berkshire not offered) - picked by a rule from the start of the stock history, not
+    # by today's winners (audit 24 Nov 2026 replaced NVDA, a 2026-hindsight pick).
+    "GOOGL": {"name": "Alphabet", "group": "Stocks", "yahoo": "GOOGL", "quote": "USD",
+              "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.12, "slippage": 0.03, "commission": 0.0},
     "MSFT": {"name": "Microsoft", "group": "Stocks", "yahoo": "MSFT", "quote": "USD",
              "contract": 100, "digits": 2, "pip": 0.01, "spread": 0.20, "slippage": 0.05, "commission": 0.0},
     "AMZN": {"name": "Amazon", "group": "Stocks", "yahoo": "AMZN", "quote": "USD",
@@ -323,6 +326,13 @@ def symbol_spec(sym: str, settings: dict | None = None) -> dict:
     if slip is not None:
         spec["slippage"] = slip
         spec["slippage_source"] = "fills"
+    from .fills import measured_spread_mult
+    k = measured_spread_mult(sym)           # audit 24 Nov 2026: real quoted spreads wider than the bar data -> scale up
+    if k and k > 1:
+        spec["spread"] = float(spec.get("spread") or 0) * k
+        if spec.get("spread_by_hour"):
+            spec["spread_by_hour"] = [v * k if v is not None else None for v in spec["spread_by_hour"]]
+        spec["spread_mult"] = k
     return spec
 
 

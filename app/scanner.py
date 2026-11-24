@@ -66,6 +66,8 @@ def _make_signal(sym: str, cfg: dict, df: pd.DataFrame, res: dict, settings: dic
                (float(settings.get("portfolio_risk_pct") or 0.1) if cfg.get("source") == "portfolio" else 0) or \
                (float(settings.get("risk_per_trade_pct") or 0) or float(cfg.get("risk_pct") or 0)
                 or settings["default_risk_pct"] / 2)
+    if cfg.get("kept") and settings.get("kept_risk_pct") is not None:      # audit item 7: carried over, fails the luck gate
+        risk_pct = min(risk_pct, float(settings["kept_risk_pct"]))
     balance = float(settings["account_balance"])
     size = lots_for(sym, entry, sl, balance, risk_pct, info, settings)
     min_lot = float(size.get("min_lot") or 0.01)
@@ -160,7 +162,7 @@ CLUSTERS = {
     "usd_fx": ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "NZDUSD", "USDCHF"), "jpy_cross": ("GBPJPY", "EURJPY", "AUDJPY", "CHFJPY", "NZDJPY"),
     "eur_cross": ("EURGBP", "EURAUD", "EURCHF", "GBPCHF"), "aud_cross": ("AUDNZD", "AUDCAD"),
     "metals": ("XAUUSD", "XAGUSD", "XPTUSD"), "industrial": ("XCUUSD", "XALUSD"), "energy": ("USOIL", "UKOIL"), "natgas": ("XNGUSD",),
-    "us_equity": ("NAS100", "US500", "NVDA", "MSFT", "AMZN", "META", "AAPL"), "world_equity": ("DE30", "JP225", "UK100", "FR40", "HK50", "AUS200"),
+    "us_equity": ("NAS100", "US500", "GOOGL", "MSFT", "AMZN", "META", "AAPL"), "world_equity": ("DE30", "JP225", "UK100", "FR40", "HK50", "AUS200"),
     "crypto": ("BTCUSD", "ETHUSD"),
 }
 CLUSTER_TH = {"usd_fx": "คู่เงิน USD", "jpy_cross": "คู่เงิน JPY", "eur_cross": "คู่เงินยุโรป", "aud_cross": "คู่เงิน AUD", "metals": "โลหะมีค่า",
@@ -330,6 +332,15 @@ def scan_once() -> list[dict]:
                             if c_risk + float(s["risk_pct"]) > ccap + 1e-9:
                                 s.update(capped=True, user_status="skipped",
                                          note=f"ข้าม: ความเสี่ยงรวมกลุ่ม{CLUSTER_TH.get(cl, cl)} จะเป็น {c_risk + float(s['risk_pct']):.2f}% เกินเพดาน {ccap}%")
+                        # audit item 8: portfolio heat - all open ACTIVE alerts of every market together
+                        tcap = float(settings.get("max_total_risk_pct") or 0)
+                        if s["system_status"] == "ACTIVE" and not s.get("capped") and tcap > 0:
+                            t_risk = sum(float(x.get("risk_pct") or 0) for x in sigs
+                                         if x.get("outcome") == "open" and not x.get("capped") and x.get("system_status") == "ACTIVE"
+                                         and not (x["symbol"] == sym and same_sys(x)))
+                            if t_risk + float(s["risk_pct"]) > tcap + 1e-9:
+                                s.update(capped=True, user_status="skipped",
+                                         note=f"ข้าม: ความเสี่ยงรวมทั้งพอร์ตจะเป็น {t_risk + float(s['risk_pct']):.2f}% เกินเพดาน {tcap}%")
                         sigs.insert(0, s)
                         known.add(s["id"])
                         new.append(s)

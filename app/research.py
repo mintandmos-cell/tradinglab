@@ -28,6 +28,7 @@ from .metrics import equity_points, summarize
 from .montecarlo import run_mc
 from .robustness import robustness
 from .strategies import RETIRED, STRATEGIES
+from .engine import run as run_engine
 from .walkforward import random_benchmark, walk_forward
 
 log = logging.getLogger("tradinglab.research")
@@ -72,10 +73,98 @@ def weekly_r(oos_eq: list) -> pd.Series | None:
     return pd.Series([float(x[1]) for x in oos_eq], index=t).resample("W").sum()
 
 
+def _gate_key(i: int, x: dict) -> str:
+    return x.get("key") or ("luck" if i == 3 else str(i))       # gates judged before 24 Nov 2026 carry no key
+
+
 def only_mt_failed(gates: list[dict]) -> bool:
     """True when the multiple-testing gate (the 4th, "t ปรับตาม…") is the only failed gate."""
-    failed = [i for i, x in enumerate(gates) if not x["pass"]]
-    return failed == [3]
+    return [_gate_key(i, x) for i, x in enumerate(gates) if not x["pass"]] == ["luck"]
+
+
+def trial_eligible(gates: list[dict]) -> bool:
+    """A near-miss worth a small forward test (audit 24 Nov 2026): every gate passes except the luck gate and / or the
+    fresh-data gate that only failed for lack of trades since the cut-off (forward trading is exactly what it lacks)."""
+    failed = [(i, x) for i, x in enumerate(gates) if not x["pass"]]
+    return bool(failed) and all(_gate_key(i, x) == "luck" or (_gate_key(i, x) == "fresh" and x.get("insufficient"))
+                                for i, x in failed)
+
+
+HOLDOUT_LEDGER = RESEARCH_DIR / "holdout_ledger.json"
+# the sealed 12-month exam of the 1 Oct 2026 cut-off was looked at by these merges before the ledger existed (history/ files)
+_HOLDOUT_SEED = {"2026-10-01T00:00:00+00:00": ["20261103_0545", "20261103_1508", "20261103_1608", "20261104_1238",
+                                               "20261109_1514", "20261110_0133", "20261110_1053", "20261111_1255",
+                                               "20261113_1605"]}
+
+
+def holdout_uses(cutoff, record: bool = False) -> int:
+    """How many research merges have judged candidates on the sealed holdout of this cut-off (audit item 1, 24 Nov 2026).
+    A holdout is a clean exam only the FIRST time: each later look (new systems, new markets, new gates) lets luck pass it
+    again, so from the 2nd use on a candidate must ALSO pass the fresh-data gate with real trades (see _gates)."""
+    key = pd.Timestamp(cutoff).isoformat()
+    led = read_json(HOLDOUT_LEDGER, None)
+    if led is None:
+        led = {"cutoffs": {k: {"runs": v} for k, v in _HOLDOUT_SEED.items()}}
+    runs = led.setdefault("cutoffs", {}).setdefault(key, {"runs": []})["runs"]
+    if record:
+        runs.append(datetime.now(timezone.utc).strftime("%Y%m%d_%H%M"))
+        write_json(HOLDOUT_LEDGER, led)
+    return len(runs)
+
+
+def fresh_check(df_full: pd.DataFrame, sid: str, params: dict, spec: dict, tf: str, cutoff) -> dict | None:
+    """The live parameters on the data AFTER the cut-off, which no walk-forward fold, holdout or parameter pick has seen
+    (audit item 1). Closed trades only; the bars before the cut-off are only a warm-up for the indicators."""
+    if not params:
+        return None
+    cut = pd.Timestamp(cutoff)
+    tail = df_full[df_full.index >= data.add_months(cut, -36)]
+    tail.attrs.update(df_full.attrs)
+    if not len(tail) or tail.index[-1] <= cut:
+        return {"from": cut.isoformat(), "to": None, "trades": 0, "expectancy": None, "net_r": 0.0}
+    res = run_engine(tail, sid, params, spec, tf)
+    rs = [float(t["r"]) for t in res["trades"] if pd.Timestamp(t["entry_time"]) >= cut]
+    return {"from": cut.isoformat(), "to": tail.index[-1].isoformat(), "trades": len(rs),
+            "expectancy": round(float(np.mean(rs)), 4) if rs else None, "net_r": round(float(np.sum(rs)), 2)}
+
+
+_NEWS: list | None = None
+
+
+def news_times() -> np.ndarray:
+    """US high-impact releases (NFP, CPI, FOMC) in UTC from data/news/us_high_impact.csv (BLS / Federal Reserve)."""
+    global _NEWS
+    if _NEWS is None:
+        f = RESEARCH_DIR.parent / "news" / "us_high_impact.csv"
+        try:
+            d = pd.read_csv(f, comment="#")
+            _NEWS = list(pd.to_datetime(d["time_utc"], utc=True))
+        except Exception:
+            _NEWS = []
+    return np.array([t.value for t in _NEWS], dtype="int64")
+
+
+def news_split(trades: list[dict], hours: float = 2.0) -> dict | None:
+    """Diagnostic (audit item 4): trades ENTERED within +-2 h of NFP / CPI / FOMC vs the rest. A system whose edge lives
+    only in those few trades is a news bet, not the pattern its rule describes. Calendar starts 2018."""
+    ev = news_times()
+    if not len(ev) or not trades:
+        return None
+    w = int(hours * 3600e9)
+    first = ev.min() - w
+    near, rest = [], []
+    for t in trades:
+        x = pd.Timestamp(t["entry_time"]).value
+        if x < first:
+            continue
+        k = np.searchsorted(ev, x)
+        d = min(abs(x - ev[k]) if k < len(ev) else w + 1, abs(x - ev[k - 1]) if k > 0 else w + 1)
+        (near if d <= w else rest).append(float(t["r"]))
+    if not near and not rest:
+        return None
+    return {"window_h": hours, "n_near": len(near), "exp_near": round(float(np.mean(near)), 4) if near else None,
+            "net_near": round(float(np.sum(near)), 2), "n_rest": len(rest),
+            "exp_rest": round(float(np.mean(rest)), 4) if rest else None}
 
 
 def sel_oos(c: dict) -> dict:
@@ -87,7 +176,7 @@ def t_of(o: dict) -> float:
     return float(o["t_month"]) if o.get("t_month") is not None else float(o["t_stat"])
 
 
-def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: int = 1) -> list[dict]:
+def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: int = 1, hold_uses: int = 1) -> list[dict]:
     o = sel_oos(best)
     t = t_of(o)
     t_need = adjusted_t(n_cand) if g.get("multiple_testing", True) else g["min_t"]
@@ -103,10 +192,33 @@ def _gates(best: dict, rb: dict | None, mc: dict, rob: dict, g: dict, n_cand: in
         ("Parameter plateau", best["plateau"], g["min_plateau"], best["plateau"] >= g["min_plateau"]),
         ("Robustness score", rob.get("score"), g.get("min_robust_score", 60), (rob.get("score") or 0) >= g.get("min_robust_score", 60)),
     ]
+    keys = ["trades", "exp", "t", "luck", "mc", "random", "plateau", "robust"]
+    extra: dict = {}
     if hold is not None:   # sealed final exam (last 12 months, never used by the other gates); < 3 trades cannot judge
-        checks.append(("ข้อสอบปิดผนึก 12 เดือนล่าสุด (R/ไม้)", hold.get("expectancy") if hold.get("trades", 0) >= 3 else "ไม่พอประเมิน",
+        use = f" · ใช้ครั้งที่ {hold_uses}" if hold_uses > 1 else ""
+        checks.append((f"ข้อสอบปิดผนึก 12 เดือนล่าสุด (R/ไม้){use}", hold.get("expectancy") if hold.get("trades", 0) >= 3 else "ไม่พอประเมิน",
                        "≥ 0", hold.get("trades", 0) < 3 or (hold.get("expectancy") or 0) >= 0))
-    return [{"name": n, "value": v, "need": need, "pass": bool(ok)} for n, v, need, ok in checks]
+        keys.append("holdout")
+    # audit 24 Nov 2026, item 3: skill must beat the market drift. The random benchmark keeps the system's long/short mix
+    # and exits, so its mean R is what riding the trend of the market alone paid; the system must add >= min_excess_r on top.
+    min_x = float(g.get("min_excess_r", g["min_expectancy"]))
+    excess = round(float(rb["actual_exp"]) - float(rb["random_mean"]), 4) if rb else None
+    checks.append(("เกินการสุ่มทิศเดียวกัน (R/ไม้ หักแรงตลาด)", excess, min_x, excess is not None and excess >= min_x))
+    keys.append("excess")
+    # item 1: data after the cut-off, seen by no fold, holdout or parameter pick. From the 2nd look at a holdout it is the
+    # only clean exam left, so it then needs real trades (a first look may still pass with too few to judge).
+    fr = best.get("fresh") or {}
+    n_min = int(g.get("fresh_min_trades", 5))
+    n_fr = int(fr.get("trades") or 0)
+    if n_fr >= n_min:
+        checks.append(("ข้อมูลใหม่หลังวันตัด (R/ไม้)", fr.get("expectancy"), "≥ 0", (fr.get("expectancy") or 0) >= 0))
+    else:
+        checks.append(("ข้อมูลใหม่หลังวันตัด (R/ไม้)", f"{n_fr} ไม้ — ไม่พอประเมิน", f"≥ {n_min} ไม้" if hold_uses > 1 else "≥ 0",
+                       hold_uses <= 1))
+        extra[len(checks) - 1] = {"insufficient": True}
+    keys.append("fresh")
+    return [{"name": n, "value": v, "need": need, "pass": bool(ok), "key": k, **extra.get(i, {})}
+            for i, ((n, v, need, ok), k) in enumerate(zip(checks, keys))]
 
 
 MC_KEEP = ("method", "sims", "n_trades", "risk_pct", "return_pct", "max_dd_pct", "pf_p5", "expectancy_p5", "prob_profit",
@@ -178,7 +290,8 @@ def evaluate(df, wf: dict, spec: dict, tf: str, cfg: dict, settings: dict) -> tu
     summary = {k: wf[k] for k in ("strategy", "tf", "n_combos", "oos", "oos_years", "wfe", "plateau",
                                    "param_switches", "distinct_params", "current_params", "current_is_t", "current_lock")}
     summary["oos"] = {**summary["oos"], "t_month": monthly_t(wf["oos_trades"], wf["folds"], None)}
-    summary.update(oos_sel=sel, holdout=hold, sides=sides_split(wf["oos_trades"]), bh=buy_hold(df, wf))
+    summary.update(oos_sel=sel, holdout=hold, sides=sides_split(wf["oos_trades"]), bh=buy_hold(df, wf),
+                   news=news_split(wf["oos_trades"]))
     summary.update(name=STRATEGIES[wf["strategy"]]["name"], random_benchmark=rb,
                    mc_1y={k: mc[k] for k in MC_KEEP if k in mc}, mc_pf_p5=mc_full.get("pf_p5"), robustness=rob)
     heavy = {"oos_eq": [[int(t), round(float(x["r"]), 3)] for t, x in zip(data.to_unix([x["exit_time"] for x in wf["oos_trades"]]), wf["oos_trades"])],
@@ -218,8 +331,9 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
     cfg = settings["research"]
     spec = symbol_spec(sym, settings)
     cutoff = research_cutoff(settings)
-    df = data.get_bars(sym, tf)
-    df = df[df.index < cutoff]          # every candidate sits the same exam: data up to the start of the current quarter
+    df_full = data.get_bars(sym, tf)
+    df = df_full[df_full.index < cutoff]          # every candidate sits the same exam: data up to the cut-off
+    df.attrs.update(df_full.attrs)
     cfg = {**cfg, "cutoff": cutoff.isoformat()}
     h1 = data.load_h1(sym)
     out = {"symbol": sym, "tf": tf, "generated": datetime.now(timezone.utc).isoformat(), "data_source": data.price_source(sym, settings), "history_source": data.history_source(sym),
@@ -244,6 +358,12 @@ def research_part(sym: str, tf: str, settings: dict | None = None, chunk: str | 
         summary, heavy = evaluate(dfx, wf, spec, tf, cfg, settings)
         if clock_from:
             summary["clock_from"] = clock_from
+        o = summary["oos"]
+        if o["trades"] >= 10 and o["expectancy"] > 0 and summary.get("current_params"):   # only for candidates in the running
+            try:
+                summary["fresh"] = fresh_check(df_full, sid, summary["current_params"], spec, tf, cutoff)
+            except Exception:
+                log.exception("fresh check %s %s %s", sym, tf, sid)
         out["candidates"].append(summary)
         out["heavy"][sid] = heavy
         log.info("%s %s %-20s n=%4d t=%5.2f robust=%s (%.0fs)", sym, tf, sid, summary["oos"]["trades"], summary["oos"]["t_stat"],
@@ -441,7 +561,7 @@ def trial_systems(sym: str, cands: list[dict], settings: dict) -> list[dict]:
     tcfg = settings.get("trials", {})
     if not tcfg.get("enabled", True):
         return []
-    near = [c for c in cands if c["status"] == "WATCH" and c.get("current_params") and only_mt_failed(c["gates"])
+    near = [c for c in cands if c["status"] == "WATCH" and c.get("current_params") and trial_eligible(c["gates"])
             and not _forced_off(settings, sym, c)
             and not (STRATEGIES.get(c["strategy"], {}).get("clock_sensitive") and not c.get("clock_from"))]
     near.sort(key=lambda c: (c["tf"] != "H1", t_of(sel_oos(c))), reverse=True)
@@ -476,7 +596,8 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     else:
         n_cand = raw_n
     for c in cands:
-        c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand)
+        c["gates"] = _gates(c, c["random_benchmark"], {"pf_p5": c["mc_pf_p5"]}, c["robustness"] or {}, g, n_cand,
+                            int(cfg.get("_holdout_uses") or holdout_uses(cutoff)))
         c["status"] = _status(sel_oos(c), c["gates"], bool(c["current_params"]))
         c.pop("kept", None)
         if STRATEGIES.get(c["strategy"], {}).get("clock_sensitive") and not c.get("clock_from") and c["status"] == "ACTIVE":
@@ -503,8 +624,11 @@ def merge_symbol(sym: str, parts: list[dict], settings: dict, prev: dict | None 
     best = cands[0]
     status = best["status"]
     risk = float(settings.get("risk_per_trade_pct") or settings["default_risk_pct"])
+    # audit item 7: a system kept ACTIVE only by the carry-over rule (it now fails the luck gate) trades at a reduced risk
+    kept_risk = min(risk, float(settings.get("kept_risk_pct", risk)))
     systems = [{"strategy": c["strategy"], "strategy_name": STRATEGIES[c["strategy"]]["name"], "tf": c["tf"],
-                "params": c["current_params"], "status": "ACTIVE", "risk_pct": risk, "kept": bool(c.get("kept")), "source": "single",
+                "params": c["current_params"], "status": "ACTIVE", "risk_pct": kept_risk if c.get("kept") else risk,
+                "kept": bool(c.get("kept")), "source": "single",
                 "t": t_of(sel_oos(c)), "exp": c["oos"]["expectancy"], "trades": c["oos"]["trades"],
                 "max_dd_r": c["oos"].get("max_dd_r"), "robust": (c["robustness"] or {}).get("score")} for c in active]
     mc = best["mc_1y"] or {}
@@ -622,6 +746,8 @@ def merge(parts, symbols: list[str] | None = None) -> dict:
     else:
         stream = parts
     by_sym: dict[str, list[dict]] = {}          # compact copies for the portfolio test
+    # one more look at this cut-off's sealed holdout (audit item 1): counted once per merge, shown on the gate
+    settings["research"]["_holdout_uses"] = holdout_uses(research_cutoff(settings), record=True)
     for sym, sym_parts in stream:
         if (symbols and sym not in symbols) or sym not in SYMBOLS:
             continue
