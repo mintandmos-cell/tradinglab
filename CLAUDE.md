@@ -20,7 +20,7 @@ walk-forward, robustness tests and Monte Carlo, long and short (exits: see below
   (the code for both is kept: `engine.week_guard` / `friday_cutoff`). A reversal signal carries `reverse_of` and tells the user to close the old order.
 - Sizing (user, 24 Nov 2026, replaces 23 Nov's 1 %): EVERY signal risks 0.5 % (`risk_per_trade_pct` = `portfolio_risk_pct` = 0.5), kept 0.25 %,
   max 1 % per asset, total ACTIVE heat 4 %, clusters 0.5-2 %; below the minimum lot the robot trades the min lot only when it risks
-  <= `min_lot_ceiling_pct` (default 0.5, XAUUSD/XAGUSD H4 1.0, D1 2.0 — `sizing.min_lot_ceiling`), else skips (alerts say which). OLD (23 Nov): EVERY signal risked 1% (`risk_per_trade_pct` = `portfolio_risk_pct` = 1.0),
+  <= `min_lot_ceiling_pct` (default 0.5, XAUUSD/XAGUSD H4 1.0, D1 2.0; XPTUSD/USOIL/UKOIL/JP225 D1 1.0 — `sizing.min_lot_ceiling`), else skips (alerts say which). OLD (23 Nov): EVERY signal risked 1% (`risk_per_trade_pct` = `portfolio_risk_pct` = 1.0),
   max 2% open risk per asset (`max_symbol_risk_pct`, also settings.autotrade), cluster caps doubled; user accepts ~16 % stress DD
   (MC: 1 % -> 1-y p95 DD ~9 %); TRIALs stay 0.1 %; guards 25/30 % unchanged; data/settings.json is in the robot's CODE_PATHS; target asked 100%/yr — told the user that needs ~1% risk and 60-80% historical DD. Of `account_balance` (5000 USD; cloud = variable
   `ACCOUNT_BALANCE`). Lots appear in the push, the signal cards and the chart labels; below 0.01 lot the push says what 0.01 would risk.

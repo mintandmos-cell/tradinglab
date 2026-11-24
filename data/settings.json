@@ -132,7 +132,11 @@
   },
   "D1": {
    "XAUUSD": 2.0,
-   "XAGUSD": 2.0
+   "XAGUSD": 2.0,
+   "XPTUSD": 1.0,
+   "USOIL": 1.0,
+   "UKOIL": 1.0,
+   "JP225": 1.0
   }
  }
 }
