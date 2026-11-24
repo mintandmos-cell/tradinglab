@@ -965,6 +965,20 @@ def main() -> None:
             return
         except Exception as e:
             _log("error", reason=repr(e))
+            # 24 Nov 2026: a scan that raised on every loop (KeyError NVDA) skipped the update check above for hours, so the
+            # fix pushed to GitHub never arrived -> after an error, look for new code too (still between candles only)
+            try:
+                now = pd.Timestamp.now(tz="UTC")
+                if 20 <= now.minute <= 50 and not st.get("pending") and time.time() - _upd["at"] > 300 \
+                        and time.time() > _upd["blocked"]:
+                    _upd["at"] = time.time()
+                    if code_update_available():
+                        _log("update", reason="new program code on GitHub - restarting after errors")
+                        raise SystemExit(3)
+            except SystemExit:
+                raise
+            except Exception:
+                pass
         try:
             time.sleep(15)
         except KeyboardInterrupt:
