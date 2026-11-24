@@ -27,6 +27,7 @@ log = logging.getLogger("tradinglab.data")
 _mem: dict[str, tuple[float, pd.DataFrame]] = {}
 _lock = threading.RLock()
 _mt5_state = {"ok": None, "checked": 0.0, "error": ""}
+MT5_MISSING: set = set()       # symbols the last scan had to read from the free feed (MT5 had no bars yet)
 REFRESH_SEC = 240
 
 
@@ -548,6 +549,7 @@ def load_h1(sym: str, refresh: bool = False, src: str | None = None) -> pd.DataF
                 new = _fetch_mt5(sym, settings)
                 if new is None and cached is None:   # this broker has no such symbol (or MT5 hiccup): use the free feed
                     log.warning("MT5 has no data for %s — using the free feed for it", sym)
+                    MT5_MISSING.add(sym)
                     return load_h1(sym, refresh, "binance" if "binance" in SYMBOLS[sym] else "yahoo")
             elif src == "binance":
                 since = int(cached.index[-1].timestamp() * 1000) if cached is not None and len(cached) else None

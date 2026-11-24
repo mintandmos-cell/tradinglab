@@ -448,9 +448,22 @@ def _mark_done(st: dict, sig_id: str) -> None:
 
 def hourly_scan(c: dict, st: dict) -> list[dict]:
     """Same scanner as the cloud on MT5 candles; new ACTIVE signals are queued for execution."""
+    st.pop("scan_ok", None)                                            # only THIS scan's success counts
     ghsync.pull()                                                      # newest research + signal list (ids) first
     data._mem.clear()                                                  # rebuild candles from MT5 for the new close
+    data.MT5_MISSING.clear()
     new = scanner.scan_once()                                          # records + pushes the normal alert at once
+    # 24 Nov 2026: after a PC restart MT5 had no DE30 bars for three hourly scans, so a signal of the 08:00 candle was
+    # only found at 11:00 (too late to enter). Symbols read from the free feed are scanned again every 5 minutes this hour.
+    missing = sorted(data.MT5_MISSING)
+    hour = str(pd.Timestamp.now(tz="UTC").floor("h"))
+    if st.get("rescan_hour") != hour:
+        st.update(rescan_hour=hour, rescans=0)
+    if missing and int(st.get("rescans", 0)) < 8:
+        st.update(rescan_at=time.time() + 300, rescans=int(st.get("rescans", 0)) + 1, rescan_syms=missing)
+        _log("rescan_due", symbols=missing)
+    else:
+        st.pop("rescan_at", None)
     pub = ghsync.publish(new)                                          # website + cloud see them (no second alert)
     sync_exits(c, st)
     health = {"checked": scanner.STATE.get("checked"), "errors": scanner.STATE.get("errors", [])[:10]}
@@ -746,7 +759,7 @@ def cycle(c: dict, st: dict, new_bar: bool) -> None:
     if a is None:
         _log("error", reason=f"no account: {mt5.last_error()}")
         return
-    if new_bar:
+    if new_bar or (st.get("rescan_at") and time.time() >= float(st["rescan_at"])):
         hourly_scan(c, st)                                             # alerts + website run even if trading is refused
     if a.trade_mode == mt5.ACCOUNT_TRADE_MODE_REAL and not c["allow_live"]:
         if not st.get("warned_live"):
