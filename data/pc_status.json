@@ -7,10 +7,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-24T11:00:22.310971+00:00",
+ "time": "2026-11-24T11:21:47.646015+00:00",
  "account": "DEMO",
- "balance": 10311.4,
- "equity": 10716.03,
+ "balance": 10306.69,
+ "equity": 10713.73,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 79.677,
-   "profit": 339.62,
+   "price": 79.744,
+   "profit": 338.28,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.28,
-   "profit": 4.94,
+   "price": 159.142,
+   "profit": 4.08,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.28,
-   "profit": 4.94,
+   "price": 159.142,
+   "profit": 4.08,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.515,
-   "profit": 51.38,
+   "price": 105.483,
+   "profit": 52.03,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -79,26 +79,25 @@
    "price_open": 164.29,
    "sl": 172.33,
    "tp": null,
-   "price": 156.46,
-   "profit": 7.79,
+   "price": 155.68,
+   "profit": 8.57,
    "time": "2026-11-23T18:01:59+00:00"
-  },
-  {
-   "ticket": 2917188642,
-   "symbol": "EURUSD",
-   "system": "TL88-H4",
-   "signal_id": "EURUSD-H4-tsi_cross-1795449600",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 1.09011,
-   "sl": 1.09482,
-   "tp": null,
-   "price": 1.09415,
-   "profit": -4.04,
-   "time": "2026-11-23T20:01:53+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2917188642,
+   "signal_id": "EURUSD-H4-tsi_cross-1795449600",
+   "time": "2026-11-24T11:21:46.380426+00:00",
+   "symbol": "EURUSD",
+   "system": "TL88-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 1.09011,
+   "price": 1.09482,
+   "reason": "SL",
+   "profit": -4.71
+  },
   {
    "ticket": 2912807999,
    "signal_id": "US500-H4-pa_ins_year-1795420800",
@@ -280,19 +279,6 @@
    "price": 3733.45,
    "reason": "TP",
    "profit": 121.69
-  },
-  {
-   "ticket": 2786124974,
-   "signal_id": "GBPUSD-D1-mr_dn_raw-1793570400",
-   "time": "2026-11-18T09:06:10.533766+00:00",
-   "symbol": "GBPUSD",
-   "system": "TL293-D1",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 1.34058,
-   "price": 1.3149,
-   "reason": "TP",
-   "profit": 25.68
   }
  ],
  "fills": [
@@ -884,11 +870,17 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-24T10:01:42.748482+00:00",
-  "symbols": 40,
+  "time": "2026-11-24T11:01:41.200863+00:00",
+  "symbols": 41,
   "ok": true
  },
  "skipped": [
+  {
+   "signal_id": "DE30-H4-mr_reclaim_chop-1795492800",
+   "symbol": "DE30",
+   "time": "2026-11-24T11:01:41.216487+00:00",
+   "reason": "price moved +0.65 R from the signal's entry 25316.9 - too late to enter"
+  },
   {
    "signal_id": "USOIL-H4-mr_z_calm-1795435200",
    "symbol": "USOIL",
