@@ -190,6 +190,8 @@ def kill_switch(sigs: list[dict], latest: dict, settings: dict) -> list[str]:
     off = auto_off()
     new = []
     for sym, entry in latest.items():
+        if sym not in SYMBOLS:
+            continue
         for cfg in research.live_systems(entry) + list(entry.get("trial_systems") or []):
             key = f"{sym}:{cfg['strategy']}:{cfg['tf']}"
             limit = float(cfg.get("max_dd_r") or 0) * mult
@@ -266,6 +268,8 @@ def scan_once() -> list[dict]:
         # TRIAL systems that passed the pre-agreed forward test trade as ACTIVE (app/promotion.py, user 9 Nov 2026)
         promo = promotion.evaluate(sigs, latest, settings, set(stopped))
         for sym, entry in latest.items():
+            if sym not in SYMBOLS:          # dropped from the universe (NVDA, 24 Nov 2026) until the next merge removes it
+                continue
             # every ACTIVE system of the quarter is traded (several per symbol / TF allowed)
             trials = list(entry.get("trial_systems") or []) if settings.get("trials", {}).get("enabled", True) else []
             for cfg in research.live_systems(entry) + trials:
@@ -350,7 +354,7 @@ def scan_once() -> list[dict]:
                     STATE["last_error"] = f"{sym} {cfg.get('strategy')}: {e}"
                     STATE["errors"].append(f"{sym} {cfg.get('strategy')} {cfg.get('tf')}: {e!r}"[:200])
         for s in sigs:
-            if s.get("outcome") == "open":
+            if s.get("outcome") == "open" and s["symbol"] in SYMBOLS:     # a dropped symbol's MT5 order keeps its own SL / TP
                 df = frames.get((s["symbol"], s["tf"]))
                 if df is None:
                     try:

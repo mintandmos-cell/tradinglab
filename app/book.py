@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import data, research
-from .config import RESEARCH_DIR, load_settings, symbol_spec, write_json
+from .config import RESEARCH_DIR, SYMBOLS, load_settings, symbol_spec, write_json
 from .scanner import cluster_of
 from .walkforward import walk_forward
 
@@ -155,6 +155,8 @@ def build(settings: dict | None = None) -> dict:
     risk = float(settings.get("risk_per_trade_pct") or 0.5) / 100
     live, cands = [], []
     for sym, r in lat.items():
+        if sym not in SYMBOLS:
+            continue
         for x in research.live_systems(r):
             if x.get("status") == "ACTIVE":
                 live.append((sym, x["strategy"], x["tf"], float(x.get("risk_pct") or 0.5) / 100))

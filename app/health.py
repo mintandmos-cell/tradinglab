@@ -111,7 +111,7 @@ def checks(now: datetime | None = None) -> tuple[list[dict], list[str]]:
             s = by_id.get(sid)
             if s and s.get("outcome") != "open" and s.get("exit_reason") != "Rev":
                 probs.append(_p(f"robot_orphan:{sid}", f"MT5 ยังถือ {p.get('symbol')} ({sid}) แต่สัญญาณจบไปแล้ว ({s.get('exit_reason')})"))
-            if s and s.get("outcome") == "open" and p.get("sl"):
+            if s and s.get("outcome") == "open" and p.get("sl") and s["symbol"] in SYMBOLS:
                 want = s.get("stop_now") if s.get("stop_now") is not None else s.get("sl")
                 tick = 10 ** -int(symbol_spec(s["symbol"], settings)["digits"])
                 if want is not None and abs(float(p["sl"]) - float(want)) > max(5 * tick, 0.02 * float(s.get("sl_dist") or 0)):
