@@ -7,10 +7,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-24T12:00:29.029170+00:00",
+ "time": "2026-11-24T12:02:06.133321+00:00",
  "account": "DEMO",
  "balance": 10306.69,
- "equity": 10699.87,
+ "equity": 10700.51,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -23,8 +23,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 80.128,
-   "profit": 330.6,
+   "price": 80.188,
+   "profit": 329.4,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -37,8 +37,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.213,
-   "profit": 4.52,
+   "price": 159.193,
+   "profit": 4.4,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -51,8 +51,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.213,
-   "profit": 4.52,
+   "price": 159.193,
+   "profit": 4.4,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -65,8 +65,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.737,
-   "profit": 47.22,
+   "price": 105.697,
+   "profit": 47.98,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -79,9 +79,23 @@
    "price_open": 164.29,
    "sl": 172.33,
    "tp": null,
-   "price": 157.93,
-   "profit": 6.32,
+   "price": 156.59,
+   "profit": 7.66,
    "time": "2026-11-23T18:01:59+00:00"
+  },
+  {
+   "ticket": 2923229404,
+   "symbol": "CHFJPY",
+   "system": "TL470-H4",
+   "signal_id": "CHFJPY-H4-mr_crsi_year-1795507200",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 189.798,
+   "sl": 190.944,
+   "tp": null,
+   "price": 189.801,
+   "profit": -0.02,
+   "time": "2026-11-24T12:01:48+00:00"
   }
  ],
  "closed": [
@@ -282,6 +296,21 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-24T12:01:47.685657+00:00",
+   "signal": "CHFJPY-H4-mr_crsi_year-1795507200",
+   "symbol": "CHFJPY",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 189.798,
+   "fill": 189.798,
+   "signal_entry": 189.782,
+   "slip_pts": -0.0,
+   "spread_pts": 15.0,
+   "drift_r": -0.014,
+   "delay_s": 108
+  },
   {
    "time": "2026-11-23T20:01:53.055366+00:00",
    "signal": "EURUSD-H4-tsi_cross-1795449600",
@@ -827,20 +856,6 @@
    "slip_pts": 0.0,
    "drift_r": 0.135,
    "delay_s": 56
-  },
-  {
-   "time": "2026-11-04T13:01:03.171223+00:00",
-   "signal": "USDCAD-D1-mr_edist_calm-1793577600",
-   "symbol": "USDCAD",
-   "tf": "D1",
-   "status": "TRIAL",
-   "side": "BUY",
-   "asked": 1.39334,
-   "fill": 1.39334,
-   "signal_entry": 1.39831,
-   "slip_pts": 0.0,
-   "drift_r": -0.66,
-   "delay_s": 133263
   }
  ],
  "swap_watch": {
@@ -870,7 +885,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-24T11:01:41.200863+00:00",
+  "time": "2026-11-24T12:01:47.529412+00:00",
   "symbols": 41,
   "ok": true
  },
