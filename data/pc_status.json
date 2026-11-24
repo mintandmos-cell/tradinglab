@@ -8,10 +8,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-24T20:00:21.341300+00:00",
+ "time": "2026-11-24T20:02:00.090826+00:00",
  "account": "DEMO",
  "balance": 10306.69,
- "equity": 10674.06,
+ "equity": 10675.24,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -24,8 +24,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 81.441,
-   "profit": 304.34,
+   "price": 81.384,
+   "profit": 305.48,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -38,8 +38,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.201,
-   "profit": 4.45,
+   "price": 159.189,
+   "profit": 4.37,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -52,8 +52,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.201,
-   "profit": 4.45,
+   "price": 159.189,
+   "profit": 4.37,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -66,8 +66,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.724,
-   "profit": 47.47,
+   "price": 105.708,
+   "profit": 47.77,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -80,8 +80,8 @@
    "price_open": 164.29,
    "sl": 172.33,
    "tp": null,
-   "price": 152.48,
-   "profit": 11.77,
+   "price": 152.13,
+   "profit": 12.12,
    "time": "2026-11-23T18:01:59+00:00"
   },
   {
@@ -94,9 +94,37 @@
    "price_open": 189.798,
    "sl": 190.944,
    "tp": null,
-   "price": 190.612,
-   "profit": -5.11,
+   "price": 190.613,
+   "profit": -5.12,
    "time": "2026-11-24T12:01:48+00:00"
+  },
+  {
+   "ticket": 2927545755,
+   "symbol": "USDCAD",
+   "system": "TL29-H4",
+   "signal_id": "USDCAD-H4-bb_breakout-1795536000",
+   "side": "SELL",
+   "lots": 0.03,
+   "price_open": 1.427,
+   "sl": 1.43081,
+   "tp": 1.42081,
+   "price": 1.42713,
+   "profit": -0.27,
+   "time": "2026-11-24T20:01:40+00:00"
+  },
+  {
+   "ticket": 2927545806,
+   "symbol": "AUDCAD",
+   "system": "TL174-H4",
+   "signal_id": "AUDCAD-H4-mr_stoch_raw-1795536000",
+   "side": "BUY",
+   "lots": 0.02,
+   "price_open": 0.9476,
+   "sl": 0.94092,
+   "tp": 0.95812,
+   "price": 0.94748,
+   "profit": -0.17,
+   "time": "2026-11-24T20:01:41+00:00"
   }
  ],
  "closed": [
@@ -297,6 +325,36 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-24T20:01:41.700665+00:00",
+   "signal": "AUDCAD-H4-mr_stoch_raw-1795536000",
+   "symbol": "AUDCAD",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 0.9476,
+   "fill": 0.9476,
+   "signal_entry": 0.9478,
+   "slip_pts": 0.0,
+   "spread_pts": 12.0,
+   "drift_r": -0.029,
+   "delay_s": 102
+  },
+  {
+   "time": "2026-11-24T20:01:40.372586+00:00",
+   "signal": "USDCAD-H4-bb_breakout-1795536000",
+   "symbol": "USDCAD",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 1.427,
+   "fill": 1.427,
+   "signal_entry": 1.42681,
+   "slip_pts": -0.0,
+   "spread_pts": 11.0,
+   "drift_r": -0.048,
+   "delay_s": 100
+  },
   {
    "time": "2026-11-24T12:01:47.685657+00:00",
    "signal": "CHFJPY-H4-mr_crsi_year-1795507200",
@@ -829,34 +887,6 @@
    "slip_pts": 0.0,
    "drift_r": -0.104,
    "delay_s": 14466
-  },
-  {
-   "time": "2026-11-04T16:01:05.971193+00:00",
-   "signal": "USOIL-H4-mr_stoch_gold-1793793600",
-   "symbol": "USOIL",
-   "tf": "H4",
-   "status": "TRIAL",
-   "side": "BUY",
-   "asked": 91.208,
-   "fill": 91.208,
-   "signal_entry": 91.521,
-   "slip_pts": 0.0,
-   "drift_r": -0.112,
-   "delay_s": 66
-  },
-  {
-   "time": "2026-11-04T15:00:56.436325+00:00",
-   "signal": "NAS100-H1-bb_trend-1793800800",
-   "symbol": "NAS100",
-   "tf": "H1",
-   "status": "TRIAL",
-   "side": "BUY",
-   "asked": 28760.34,
-   "fill": 28760.34,
-   "signal_entry": 28705.31,
-   "slip_pts": 0.0,
-   "drift_r": 0.135,
-   "delay_s": 56
   }
  ],
  "swap_watch": {
@@ -886,7 +916,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-24T19:07:32.464595+00:00",
+  "time": "2026-11-24T20:01:40.310086+00:00",
   "symbols": 41,
   "ok": true
  },
