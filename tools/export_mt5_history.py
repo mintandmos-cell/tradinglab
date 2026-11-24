@@ -16,6 +16,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from app import data  # noqa: E402
 from app.config import HISTORY_DIR, load_settings  # noqa: E402
 
 SYMS = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "NAS100", "US500"]   # crypto already has years of Binance data
@@ -24,7 +25,7 @@ SYMS = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "NAS100", "US500"]   # crypto al
 def main() -> int:
     import MetaTrader5 as mt5
     s = load_settings()
-    if not mt5.initialize(path=s.get("mt5_path") or None, timeout=30000):
+    if not mt5.initialize(path=data.mt5_terminal_path(s), timeout=30000):
         print("เชื่อม MT5 ไม่ได้ — เปิด MT5 และล็อกอินก่อน:", mt5.last_error())
         return 1
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)

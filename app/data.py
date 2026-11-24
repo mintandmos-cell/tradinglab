@@ -31,6 +31,27 @@ REFRESH_SEC = 240
 
 
 # ----------------------------------------------------------------------------- MT5
+DEFAULT_TERMINAL = r"C:\Program Files\MetaTrader 5\terminal64.exe"
+
+
+def is_foreign_terminal(path: str | None) -> bool:
+    """IntradayLab runs its own MT5 in the folder "MetaTrader 5 EXNESS" (24 Nov 2026: both robots on one PC)."""
+    parts = [x for x in (path or "").replace("/", "\\").lower().split("\\") if x]
+    if parts and parts[-1].endswith(".exe"):
+        parts = parts[:-1]
+    return bool(parts) and "exness" in parts[-1]
+
+
+def mt5_terminal_path(settings) -> str | None:
+    """The terminal to attach to: local.json mt5_path, else the standard install when it exists (with two terminals on one
+    PC, initialize() without a path attaches to whichever runs - possibly IntradayLab's account)."""
+    import os
+    p = settings.get("mt5_path")
+    if p:
+        return p
+    return DEFAULT_TERMINAL if os.path.exists(DEFAULT_TERMINAL) else None
+
+
 def _mt5_init(settings) -> bool:
     now = time.time()
     if _mt5_state["ok"] is not None and now - _mt5_state["checked"] < 300:
@@ -38,8 +59,13 @@ def _mt5_init(settings) -> bool:
     _mt5_state["checked"] = now
     try:
         import MetaTrader5 as mt5
-        ok = mt5.initialize(path=settings.get("mt5_path") or None, timeout=20000)
+        ok = mt5.initialize(path=mt5_terminal_path(settings), timeout=20000)
         if ok and mt5.terminal_info() is not None and mt5.terminal_info().connected:
+            if is_foreign_terminal(mt5.terminal_info().path):
+                # 24 Nov 2026: IntradayLab's own terminal may run on the same PC - never trade or read its account
+                mt5.shutdown()
+                _mt5_state.update(ok=False, error=f"refused IntradayLab's MT5 terminal ({mt5.terminal_info().path if mt5.terminal_info() else ''}) - set mt5_path")
+                return False
             _mt5_state.update(ok=True, error="")
             return True
         _mt5_state.update(ok=False, error=str(mt5.last_error()))
