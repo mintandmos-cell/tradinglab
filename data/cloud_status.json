@@ -1,11 +1,8 @@
 {
- "last_scan": "2026-11-24T06:18:01.756059+00:00",
+ "last_scan": "2026-11-24T07:10:15.974681+00:00",
  "research_error": "",
- "last_error": "NVDA tf_emax_m3: 'NVDA'",
+ "last_error": null,
  "new_signals": 0,
  "checked": 40,
- "errors": [
-  "NVDA mo_ppo_year H1: KeyError('NVDA')",
-  "NVDA tf_emax_m3 H1: KeyError('NVDA')"
- ]
+ "errors": []
 }
