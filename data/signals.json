@@ -52,7 +52,7 @@
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": 0.00523,
-  "stop_now": 1.09769
+  "stop_now": 1.09499
  },
  {
   "id": "NVDA-H1-mo_ppo_year-1795453200",
@@ -1125,7 +1125,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 7.245,
-  "stop_now": 87.906
+  "stop_now": 86.888
  },
  {
   "id": "BTCUSD-D1-vb_atrb_r50-1794614400",
@@ -2023,15 +2023,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.011,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 2.0,
+  "exit_time": "2026-11-23T00:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": null,
-  "stop_now": 1.3381
+  "stop_now": 1.3381,
+  "exit_reason": "TP",
+  "exit_price": 1.30696
  },
  {
   "id": "XAUUSD-H4-pa_sold_wild-1794412800",
