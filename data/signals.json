@@ -109,7 +109,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1950.12,
-  "stop_now": 59116.54
+  "stop_now": 58084.02
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795564800",
@@ -327,15 +327,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.023,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -1.0,
+  "exit_time": "2026-11-25T08:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.395,
-  "stop_now": 190.944
+  "stop_now": 190.944,
+  "exit_reason": "SL",
+  "exit_price": 190.944
  },
  {
   "id": "DE30-H4-mr_reclaim_chop-1795492800",
