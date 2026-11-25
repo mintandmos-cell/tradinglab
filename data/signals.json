@@ -221,7 +221,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1950.12,
-  "stop_now": 58084.02
+  "stop_now": 57464.02
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795564800",
@@ -497,15 +497,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.02,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.5,
+  "exit_time": "2026-11-25T12:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": null,
-  "stop_now": 25587.35
+  "stop_now": 25587.35,
+  "exit_reason": "TP",
+  "exit_price": 24911.22
  },
  {
   "id": "EURUSD-H4-tsi_cross-1795449600",
@@ -672,7 +674,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 4.017,
-  "stop_now": 77.864
+  "stop_now": 79.348
  },
  {
   "id": "US500-H4-pa_ins_year-1795420800",
