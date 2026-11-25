@@ -492,15 +492,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.033,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.264,
+  "exit_time": "2026-11-24T20:00:00+00:00",
   "user_status": "new",
   "late": true,
   "origin": "pc",
   "cluster": "aud_cross",
   "trail_dist": 0.00845,
-  "stop_now": 0.94677
+  "stop_now": 0.94677,
+  "exit_reason": "Trail",
+  "exit_price": 0.94677
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795161600",
@@ -1351,7 +1353,7 @@
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 7.245,
-  "stop_now": 86.888
+  "stop_now": 86.065
  },
  {
   "id": "BTCUSD-D1-vb_atrb_r50-1794614400",
