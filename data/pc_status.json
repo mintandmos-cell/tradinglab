@@ -5,10 +5,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-25T08:05:56.335927+00:00",
+ "time": "2026-11-25T08:47:28.778155+00:00",
  "account": "DEMO",
- "balance": 10297.33,
- "equity": 10713.68,
+ "balance": 10290.14,
+ "equity": 10691.22,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 96.658,
    "sl": 98.852,
    "tp": null,
-   "price": 79.982,
-   "profit": 333.52,
+   "price": 80.767,
+   "profit": 317.82,
    "time": "2026-11-02T14:00:50+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.245,
-   "profit": 4.72,
+   "price": 159.46,
+   "profit": 6.06,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.245,
-   "profit": 4.72,
+   "price": 159.46,
+   "profit": 6.06,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -63,8 +63,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 104.467,
-   "profit": 71.13,
+   "price": 104.829,
+   "profit": 64.22,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -82,20 +82,6 @@
    "time": "2026-11-23T18:01:59+00:00"
   },
   {
-   "ticket": 2923229404,
-   "symbol": "CHFJPY",
-   "system": "TL470-H4",
-   "signal_id": "CHFJPY-H4-mr_crsi_year-1795507200",
-   "side": "SELL",
-   "lots": 0.01,
-   "price_open": 189.798,
-   "sl": 190.944,
-   "tp": null,
-   "price": 190.81,
-   "profit": -6.35,
-   "time": "2026-11-24T12:01:48+00:00"
-  },
-  {
    "ticket": 2927545755,
    "symbol": "USDCAD",
    "system": "TL29-H4",
@@ -105,8 +91,8 @@
    "price_open": 1.427,
    "sl": 1.43081,
    "tp": 1.42081,
-   "price": 1.42934,
-   "profit": -4.91,
+   "price": 1.42834,
+   "profit": -2.81,
    "time": "2026-11-24T20:01:40+00:00"
   },
   {
@@ -119,12 +105,25 @@
    "price_open": 174.34,
    "sl": 175.089,
    "tp": 172.663,
-   "price": 174.167,
-   "profit": 2.17,
+   "price": 174.469,
+   "profit": -1.62,
    "time": "2026-11-25T04:01:45+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2923229404,
+   "signal_id": "CHFJPY-H4-mr_crsi_year-1795507200",
+   "time": "2026-11-25T08:47:27.528192+00:00",
+   "symbol": "CHFJPY",
+   "system": "TL470-H4",
+   "side": "SELL",
+   "lots": 0.01,
+   "price_open": 189.798,
+   "price": 190.944,
+   "reason": "SL",
+   "profit": -7.19
+  },
   {
    "ticket": 2927545806,
    "signal_id": "AUDCAD-H4-mr_stoch_raw-1795536000",
@@ -306,19 +305,6 @@
    "price": 1.09957,
    "reason": "SL",
    "profit": -2.24
-  },
-  {
-   "ticket": 2864450169,
-   "signal_id": "AUDCAD-H4-mr_stoch_raw-1794844800",
-   "time": "2026-11-19T01:27:29.911970+00:00",
-   "symbol": "AUDCAD",
-   "system": "TL174-H4",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 0.96342,
-   "price": 0.95782,
-   "reason": "SL",
-   "profit": -7.81
   }
  ],
  "fills": [
@@ -913,8 +899,8 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-25T08:02:11.122688+00:00",
-  "symbols": 40,
+  "time": "2026-11-25T08:07:19.294240+00:00",
+  "symbols": 41,
   "ok": true
  },
  "skipped": [
