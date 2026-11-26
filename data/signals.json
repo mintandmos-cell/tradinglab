@@ -53,7 +53,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.47,
-  "stop_now": 192.747
+  "stop_now": 192.563
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795608000",
@@ -101,15 +101,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.017,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "loss",
+  "outcome_r": -0.722,
+  "exit_time": "2026-11-25T20:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.204,
-  "stop_now": 209.354
+  "stop_now": 208.935,
+  "exit_reason": "Trail",
+  "exit_price": 208.935
  },
  {
   "id": "XAUUSD-H4-pa_mss_m3-1795593600",
@@ -221,7 +223,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 1950.12,
-  "stop_now": 57464.02
+  "stop_now": 57364.02
  },
  {
   "id": "EURJPY-H4-pa_ins_year-1795564800",
@@ -383,15 +385,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.037,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 1.5,
+  "exit_time": "2026-11-25T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "usd_fx",
   "trail_dist": null,
-  "stop_now": 1.43081
+  "stop_now": 1.43081,
+  "exit_reason": "TP",
+  "exit_price": 1.42081
  },
  {
   "id": "CHFJPY-H4-mr_crsi_year-1795507200",
@@ -666,15 +670,17 @@
   "reverse_of": null,
   "price_source": "Exness MT5",
   "cost_r": 0.011,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 0.883,
+  "exit_time": "2026-11-25T16:00:00+00:00",
   "user_status": "new",
   "late": false,
   "origin": "pc",
   "cluster": "energy",
   "trail_dist": 4.017,
-  "stop_now": 79.348
+  "stop_now": 79.348,
+  "exit_reason": "Rev",
+  "exit_price": 82.89
  },
  {
   "id": "US500-H4-pa_ins_year-1795420800",
