@@ -5,10 +5,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-26T12:00:31.497490+00:00",
+ "time": "2026-11-26T12:01:48.981575+00:00",
  "account": "DEMO",
  "balance": 10559.01,
- "equity": 10620.77,
+ "equity": 10621.33,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -21,8 +21,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.284,
-   "profit": 4.97,
+   "price": 159.282,
+   "profit": 4.95,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -35,8 +35,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.284,
-   "profit": 4.97,
+   "price": 159.282,
+   "profit": 4.95,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -49,8 +49,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 105.583,
-   "profit": 50.1,
+   "price": 105.622,
+   "profit": 49.36,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -77,8 +77,8 @@
    "price_open": 174.34,
    "sl": 175.089,
    "tp": 172.663,
-   "price": 174.744,
-   "profit": -5.07,
+   "price": 174.753,
+   "profit": -5.19,
    "time": "2026-11-25T04:01:45+00:00"
   },
   {
@@ -91,8 +91,8 @@
    "price_open": 207.833,
    "sl": 209.354,
    "tp": null,
-   "price": 208.646,
-   "profit": -5.1,
+   "price": 208.679,
+   "profit": -5.31,
    "time": "2026-11-25T16:01:59+00:00"
   },
   {
@@ -105,8 +105,8 @@
    "price_open": 191.378,
    "sl": 192.27,
    "tp": null,
-   "price": 190.892,
-   "profit": 3.05,
+   "price": 190.847,
+   "profit": 3.33,
    "time": "2026-11-25T16:02:00+00:00"
   },
   {
@@ -119,12 +119,25 @@
    "price_open": 25246.3,
    "sl": 24943.0,
    "tp": 25690.0,
-   "price": 25146.8,
-   "profit": -7.65,
+   "price": 25164.8,
+   "profit": -6.26,
    "time": "2026-11-26T04:58:10+00:00"
   }
  ],
  "closed": [
+  {
+   "ticket": 2784039462,
+   "signal_id": "USOIL-H1-vol_breakout-1793624400",
+   "time": "2026-11-26T12:01:47.809727+00:00",
+   "symbol": "USOIL",
+   "system": "TL56-H1",
+   "side": "SELL",
+   "lots": 0.02,
+   "price_open": 96.658,
+   "price": 83.868,
+   "reason": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21\u0e1b\u0e34\u0e14",
+   "profit": 255.8
+  },
   {
    "ticket": 2927545755,
    "signal_id": "USDCAD-H4-bb_breakout-1795536000",
@@ -306,19 +319,6 @@
    "price": 159.451,
    "reason": "SL",
    "profit": -8.84
-  },
-  {
-   "ticket": 2883085008,
-   "signal_id": "AUDCAD-H4-mr_drop_wild-1795046400",
-   "time": "2026-11-19T17:06:23.580604+00:00",
-   "symbol": "AUDCAD",
-   "system": "TL338-H4",
-   "side": "BUY",
-   "lots": 0.02,
-   "price_open": 0.95853,
-   "price": 0.95335,
-   "reason": "SL",
-   "profit": -7.23
   }
  ],
  "fills": [
@@ -916,7 +916,7 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-26T11:01:43.185162+00:00",
+  "time": "2026-11-26T12:01:47.809727+00:00",
   "symbols": 41,
   "ok": true
  },
