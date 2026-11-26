@@ -165,7 +165,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.47,
-  "stop_now": 192.563
+  "stop_now": 192.27
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795608000",
@@ -5373,12 +5373,15 @@
   "reverse_of": null,
   "price_source": "mt5",
   "cost_r": 0.024,
-  "outcome": "open",
-  "outcome_r": null,
-  "exit_time": null,
+  "outcome": "win",
+  "outcome_r": 6.283,
+  "exit_time": "2026-11-26T11:00:00+00:00",
   "user_status": "new",
   "late": false,
-  "origin": "pc"
+  "origin": "pc",
+  "stop_now": 98.852,
+  "exit_reason": "Rev",
+  "exit_price": 83.893
  },
  {
   "id": "USDJPY-H1-vol_breakout-1793610000",
