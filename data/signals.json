@@ -221,7 +221,7 @@
   "origin": "pc",
   "cluster": "world_equity",
   "trail_dist": 2045.19,
-  "stop_now": 59493.59
+  "stop_now": 59485.09
  },
  {
   "id": "DE30-H4-mr_reclaim_chop-1795680000",
@@ -445,7 +445,7 @@
   "origin": "pc",
   "cluster": "jpy_cross",
   "trail_dist": 1.47,
-  "stop_now": 192.27
+  "stop_now": 192.22
  },
  {
   "id": "GBPJPY-H4-pa_ins_wild-1795608000",
