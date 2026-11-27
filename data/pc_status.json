@@ -9,10 +9,10 @@
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-27T04:00:28.452952+00:00",
+ "time": "2026-11-27T04:02:07.245571+00:00",
  "account": "DEMO",
  "balance": 10559.01,
- "equity": 10627.1,
+ "equity": 10627.32,
  "start_balance": 10000.0,
  "positions": [
   {
@@ -25,8 +25,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.235,
-   "profit": 4.66,
+   "price": 159.214,
+   "profit": 4.53,
    "time": "2026-11-06T20:01:07+00:00"
   },
   {
@@ -39,8 +39,8 @@
    "price_open": 158.493,
    "sl": 157.519,
    "tp": 160.921,
-   "price": 159.235,
-   "profit": 4.66,
+   "price": 159.214,
+   "profit": 4.53,
    "time": "2026-11-06T20:01:08+00:00"
   },
   {
@@ -53,8 +53,8 @@
    "price_open": 108.243,
    "sl": 108.755,
    "tp": null,
-   "price": 106.028,
-   "profit": 41.73,
+   "price": 106.006,
+   "profit": 42.15,
    "time": "2026-11-13T20:01:44+00:00"
   },
   {
@@ -81,8 +81,8 @@
    "price_open": 174.34,
    "sl": 175.089,
    "tp": 172.663,
-   "price": 174.783,
-   "profit": -5.56,
+   "price": 174.76,
+   "profit": -5.28,
    "time": "2026-11-25T04:01:45+00:00"
   },
   {
@@ -95,8 +95,8 @@
    "price_open": 207.833,
    "sl": 209.354,
    "tp": null,
-   "price": 208.878,
-   "profit": -6.56,
+   "price": 208.849,
+   "profit": -6.38,
    "time": "2026-11-25T16:01:59+00:00"
   },
   {
@@ -109,8 +109,8 @@
    "price_open": 191.378,
    "sl": 192.22,
    "tp": null,
-   "price": 190.971,
-   "profit": 2.56,
+   "price": 190.942,
+   "profit": 2.74,
    "time": "2026-11-25T16:02:00+00:00"
   },
   {
@@ -126,6 +126,34 @@
    "price": 25378.5,
    "profit": 10.15,
    "time": "2026-11-26T04:58:10+00:00"
+  },
+  {
+   "ticket": 2948431323,
+   "symbol": "AUDCAD",
+   "system": "TL174-H4",
+   "signal_id": "AUDCAD-H4-mr_stoch_raw-1795737600",
+   "side": "SELL",
+   "lots": 0.02,
+   "price_open": 0.94825,
+   "sl": 0.95506,
+   "tp": 0.93796,
+   "price": 0.94824,
+   "profit": 0.01,
+   "time": "2026-11-27T04:01:47+00:00"
+  },
+  {
+   "ticket": 2948431366,
+   "symbol": "HK50",
+   "system": "TL86-H4",
+   "signal_id": "HK50-H4-ssl_channel-1795737600",
+   "side": "BUY",
+   "lots": 0.2,
+   "price_open": 22426.0,
+   "sl": 22030.3,
+   "tp": 23367.9,
+   "price": 22403.0,
+   "profit": -0.59,
+   "time": "2026-11-27T04:01:48+00:00"
   }
  ],
  "closed": [
@@ -326,6 +354,36 @@
   }
  ],
  "fills": [
+  {
+   "time": "2026-11-27T04:01:48.249632+00:00",
+   "signal": "HK50-H4-ssl_channel-1795737600",
+   "symbol": "HK50",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "BUY",
+   "asked": 22426.0,
+   "fill": 22426.0,
+   "signal_entry": 22412.5,
+   "slip_pts": 0.0,
+   "spread_pts": 220.0,
+   "drift_r": 0.035,
+   "delay_s": 108
+  },
+  {
+   "time": "2026-11-27T04:01:46.999676+00:00",
+   "signal": "AUDCAD-H4-mr_stoch_raw-1795737600",
+   "symbol": "AUDCAD",
+   "tf": "H4",
+   "status": "TRIAL",
+   "side": "SELL",
+   "asked": 0.94825,
+   "fill": 0.94825,
+   "signal_entry": 0.94822,
+   "slip_pts": -0.0,
+   "spread_pts": 12.0,
+   "drift_r": -0.004,
+   "delay_s": 107
+  },
   {
    "time": "2026-11-26T04:58:09.950637+00:00",
    "signal": "DE30-H4-mr_reclaim_chop-1795651200",
@@ -864,34 +922,6 @@
    "slip_pts": 0.0,
    "drift_r": 0.002,
    "delay_s": 67
-  },
-  {
-   "time": "2026-11-06T12:01:05.979173+00:00",
-   "signal": "DE30-H4-mr_kelt_year-1793952000",
-   "symbol": "DE30",
-   "tf": "H4",
-   "status": "TRIAL",
-   "side": "BUY",
-   "asked": 25685.4,
-   "fill": 25685.4,
-   "signal_entry": 25712.9,
-   "slip_pts": 0.0,
-   "drift_r": -0.082,
-   "delay_s": 66
-  },
-  {
-   "time": "2026-11-06T00:02:36.729186+00:00",
-   "signal": "GBPJPY-H4-er_kama-1793908800",
-   "symbol": "GBPJPY",
-   "tf": "H4",
-   "status": "TRIAL",
-   "side": "SELL",
-   "asked": 211.938,
-   "fill": 211.938,
-   "signal_entry": 211.902,
-   "slip_pts": -0.0,
-   "drift_r": -0.033,
-   "delay_s": 157
   }
  ],
  "swap_watch": {
@@ -920,11 +950,17 @@
   ]
  },
  "bars_published": {
-  "time": "2026-11-27T03:01:45.734325+00:00",
+  "time": "2026-11-27T04:01:46.952800+00:00",
   "symbols": 41,
   "ok": true
  },
  "skipped": [
+  {
+   "signal_id": "NAS100-H4-pa_maru_range-1795737600",
+   "symbol": "NAS100",
+   "time": "2026-11-27T04:01:46.952800+00:00",
+   "reason": "lot 0.0118 < min 0.05 (0.05 lot would risk 0.42% > ceiling 0.0%)"
+  },
   {
    "signal_id": "JP225-H4-mo_acc_year-1795665600",
    "symbol": "JP225",
