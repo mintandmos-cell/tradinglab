@@ -1,13 +1,11 @@
 {
- "last_scan_hour": "2026-11-28 00:00:00+00:00",
- "new_signals": [
-  "USDJPY-D1-vb_nr_m3-1795737600"
- ],
+ "last_scan_hour": "2026-11-28 01:00:00+00:00",
+ "new_signals": [],
  "scan": {
   "checked": 35,
   "errors": []
  },
- "time": "2026-11-28T00:00:18.813782+00:00",
+ "time": "2026-11-28T01:00:22.188167+00:00",
  "account": "DEMO",
  "balance": 10549.47,
  "equity": 10646.64,
@@ -909,8 +907,8 @@
   }
  ],
  "swap_watch": {
-  "day": "2026-11-27",
-  "checked": 77,
+  "day": "2026-11-28",
+  "checked": 79,
   "charged": 3,
   "symbols": [
    "AAPL"
@@ -928,13 +926,13 @@
    },
    {
     "symbol": "NVDA",
-    "swap": -0.16,
+    "swap": -0.26,
     "type": "SELL"
    }
   ]
  },
  "bars_published": {
-  "time": "2026-11-27T23:01:43.829469+00:00",
+  "time": "2026-11-28T00:01:36.766142+00:00",
   "symbols": 41,
   "ok": true
  },
